@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>transfer_learning_and_fine_tuning_strategies_2</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-what-are-the-potential-risks-of-fine-tuning-a-pre-trained-model-on-a-dataset-that-is-very-different-from-the-original-training-data-and-how-do-you-mitigate-them" class="level2">
+<h2 class="anchored" data-anchor-id="question-what-are-the-potential-risks-of-fine-tuning-a-pre-trained-model-on-a-dataset-that-is-very-different-from-the-original-training-data-and-how-do-you-mitigate-them">Question: What are the potential risks of fine-tuning a pre-trained model on a dataset that is very different from the original training data, and how do you mitigate them?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Fine-tuning a pre-trained model on a dataset that differs significantly from its original training data can present several challenges. The primary risks include negative transfer, catastrophic forgetting, and overfitting to the new dataset. Understanding these risks and implementing appropriate mitigation strategies is crucial for successful transfer learning.</p>
+<p><strong>1. Negative Transfer:</strong></p>
+<ul>
+<li><p><strong>Definition:</strong> Negative transfer occurs when fine-tuning on a dissimilar dataset <em>decreases</em> performance compared to training a model from scratch on the target dataset. This happens when the features learned by the pre-trained model are irrelevant or even detrimental to the new task. Essentially, the pre-trained weights push the model in a direction that is unhelpful for the new task.</p></li>
+<li><p><strong>Why it Happens:</strong> The pre-trained model has learned feature representations that are optimized for the original data distribution. If the target dataset has a different distribution, those features might be misleading. For example, a model pre-trained on ImageNet might not perform well on medical images without careful adaptation. The low-level features (edges, textures) might transfer reasonably well, but higher-level, task-specific features learned during pre-training can interfere with learning appropriate features for the new task.</p></li>
+<li><p><strong>Mathematical Intuition:</strong> Consider the loss function being optimized during fine-tuning:</p>
+<p><span class="math display">\[L = L_{target} + \lambda L_{regularization}\]</span></p>
+<p>Where <span class="math inline">\(L_{target}\)</span> is the loss on the new dataset and <span class="math inline">\(L_{regularization}\)</span> is a regularization term (often L1 or L2 regularization) or in a Bayesian setting, can be thought of as a prior placed on the weights learned during the pre-training phase. If the features learned during pre-training (<span class="math inline">\(L_{regularization}\)</span>) are significantly mismatched to the target task, the model’s optimization process may be pulled in an undesirable direction. The <span class="math inline">\(\lambda\)</span> term controls the influence of the pre-trained weights.</p></li>
+<li><p><strong>Mitigation Strategies:</strong></p>
+<ul>
+<li><strong>Careful Dataset Analysis:</strong> Thoroughly analyze the target dataset and compare it to the pre-training dataset. If the datasets are drastically different, consider whether pre-training is even beneficial.</li>
+<li><strong>Feature Space Alignment:</strong> Techniques like domain adaptation can help align the feature spaces of the source and target datasets. This involves learning a transformation that minimizes the distance between the feature distributions of the two domains. This may involve adversarial training, or other metric learning approaches.</li>
+<li><strong>Lower Learning Rates:</strong> Using a smaller learning rate during fine-tuning helps prevent large weight updates that could disrupt the pre-trained features.</li>
+<li><strong>Layer Freezing/Unfreezing:</strong> Freezing the initial layers (which typically learn low-level, general features) and only fine-tuning the later layers (which learn task-specific features) can be effective. Experiment with unfreezing layers gradually.</li>
+<li><strong>Regularization:</strong> Employ stronger regularization techniques (L1, L2, dropout) to prevent the model from overfitting to the new dataset and relying too much on potentially irrelevant pre-trained features.</li>
+<li><strong>Transferability Metrics:</strong> Utilize metrics designed to estimate the transferability of a pre-trained model to a target task <em>before</em> fine-tuning. This can help determine if pre-training is likely to be beneficial. Examples include Neural Tangent Kernel (NTK) based metrics, or other measures of feature similarity.</li>
+</ul></li>
+</ul>
+<p><strong>2. Catastrophic Forgetting:</strong></p>
+<ul>
+<li><p><strong>Definition:</strong> Catastrophic forgetting (also known as catastrophic interference) refers to the phenomenon where a neural network abruptly forgets previously learned information upon learning new information. In the context of fine-tuning, this means the model loses its ability to perform well on the original task after being trained on the new, dissimilar dataset.</p></li>
+<li><p><strong>Why it Happens:</strong> Neural networks learn by adjusting their weights to minimize a loss function. When the target dataset is very different, the weight updates required to perform well on the new task can drastically alter the weights that were crucial for performing well on the original task.</p></li>
+<li><p><strong>Mathematical Intuition:</strong> The pre-trained model’s weights represent a minimum in the loss landscape of the original task. Fine-tuning shifts the objective to the loss landscape of the target task. If these landscapes are sufficiently dissimilar, the optimization process can move the weights far away from the original minimum, leading to catastrophic forgetting. The degree of overlap in the loss landscapes determines the severity of forgetting.</p></li>
+<li><p><strong>Mitigation Strategies:</strong></p>
+<ul>
+<li><p><strong>Elastic Weight Consolidation (EWC):</strong> EWC adds a regularization term to the loss function that penalizes changes to weights that were important for the original task. This helps preserve the knowledge learned during pre-training. The regularization term is based on the Fisher Information Matrix.</p>
+<p><span class="math display">\[L = L_{target} + \lambda \sum_i F_i (\theta_i - \theta_{i,pre})^2\]</span></p>
+<p>Where <span class="math inline">\(F_i\)</span> is the Fisher information for weight <span class="math inline">\(\theta_i\)</span>, <span class="math inline">\(\theta_{i,pre}\)</span> is the pre-trained value of the weight, and <span class="math inline">\(\lambda\)</span> is a hyperparameter controlling the strength of the regularization. The Fisher Information Matrix approximates the curvature of the loss landscape around the pre-trained weights, indicating the importance of each weight for the original task.</p></li>
+<li><p><strong>Learning without Forgetting (LwF):</strong> LwF uses the pre-trained model’s predictions on the target dataset as a form of regularization. This encourages the fine-tuned model to maintain similar predictions to the pre-trained model, preserving knowledge of the original task.</p></li>
+<li><p><strong>Regularization Techniques:</strong> L1/L2 regularization, dropout, and early stopping can help prevent overfitting to the new dataset and preserve some of the pre-trained knowledge.</p></li>
+<li><p><strong>Multi-Task Learning:</strong> Training the model on both the original and new datasets simultaneously (multi-task learning) can help mitigate catastrophic forgetting by forcing the model to maintain performance on both tasks. This assumes access to a representative sample of the original training data.</p></li>
+</ul></li>
+</ul>
+<p><strong>3. Overfitting:</strong></p>
+<ul>
+<li><p><strong>Definition:</strong> Overfitting occurs when the model learns the training data too well, including its noise and peculiarities, leading to poor generalization performance on unseen data. In fine-tuning, this can happen when the target dataset is small or the model is fine-tuned for too long, causing it to memorize the training examples instead of learning generalizable features.</p></li>
+<li><p><strong>Why it Happens:</strong> When the target dataset is small and significantly different from the original pre-training data, the model may not have enough data to adequately adjust the pre-trained weights to represent the new data distribution effectively. This can lead to the model fitting the noise and specific characteristics of the new training data, rather than learning the underlying patterns.</p></li>
+<li><p><strong>Mitigation Strategies:</strong></p>
+<ul>
+<li><strong>Data Augmentation:</strong> Increase the size of the target dataset by applying data augmentation techniques (e.g., rotations, translations, flips) to the existing data. This helps the model generalize better by exposing it to a wider range of variations in the data.</li>
+<li><strong>Regularization:</strong> Employ L1/L2 regularization, dropout, and batch normalization to prevent the model from overfitting.</li>
+<li><strong>Early Stopping:</strong> Monitor the model’s performance on a validation set during fine-tuning and stop training when the validation performance starts to decrease. This prevents the model from overfitting to the training data.</li>
+<li><strong>Smaller Learning Rates:</strong> Using a smaller learning rate during fine-tuning helps prevent large weight updates that could lead to overfitting.</li>
+<li><strong>Transfer Learning Metrics</strong>: These can help with diagnosing overfitting prior to fine-tuning by assessing the degree of feature reuse from the source data.</li>
+<li><strong>Layer Freezing</strong>: Only finetuning the last layer of the pre-trained network and keeping the prior layers frozen is an effective form of regularizaiton, provided the original pre-trained network is high quality.</li>
+</ul></li>
+</ul>
+<p>In summary, fine-tuning a pre-trained model on a dissimilar dataset requires careful consideration of the potential risks of negative transfer, catastrophic forgetting, and overfitting. Implementing the appropriate mitigation strategies, such as careful dataset analysis, feature space alignment, lower learning rates, layer freezing, regularization, and data augmentation, is crucial for achieving successful transfer learning and improving performance on the target task.</p>
+<hr>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s how to structure your answer verbally in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with a brief overview:</strong></p>
+<ul>
+<li>“Fine-tuning a pre-trained model on a very different dataset can be beneficial, but it also introduces risks like negative transfer, catastrophic forgetting, and overfitting.”</li>
+<li>“Let me explain each of these and then discuss strategies to mitigate them.”</li>
+</ul></li>
+<li><p><strong>Explain Negative Transfer:</strong></p>
+<ul>
+<li>“Negative transfer occurs when the pre-trained model’s learned features actually <em>hurt</em> performance on the new task.”</li>
+<li>“This happens because the pre-trained model has learned features specific to its original training data, which may be irrelevant or misleading for the new dataset.”</li>
+<li>“Think of it like a chef who is amazing at Italian cuisine trying to cook Japanese food without learning the basics – their Italian techniques might actually be detrimental.”</li>
+<li><em>(Optional, if the interviewer seems engaged):</em> “Mathematically, you can think of it as the pre-trained weights acting as a prior that pulls the optimization in the wrong direction. The regularization term can be expressed as…” (Briefly show the regularization equation, <span class="math inline">\(L = L_{target} + \lambda L_{regularization}\)</span>).</li>
+<li>“To mitigate this, we can analyze the datasets carefully, align feature spaces using domain adaptation, use lower learning rates, selectively freeze/unfreeze layers, and employ stronger regularization.”</li>
+</ul></li>
+<li><p><strong>Explain Catastrophic Forgetting:</strong></p>
+<ul>
+<li>“Catastrophic forgetting is when the model loses its ability to perform well on the original task after being fine-tuned on the new task.”</li>
+<li>“The weight updates needed for the new dataset can drastically alter the weights that were important for the original task.”</li>
+<li>“Imagine trying to update a complex software system with a patch designed for a completely different operating system – it could break the original functionality.”</li>
+<li><em>(Optional, if the interviewer seems engaged):</em> “One technique to combat this is Elastic Weight Consolidation (EWC), which adds a regularization term that penalizes changes to important weights. The EWC regularization term is…” (Briefly show the equation, <span class="math inline">\(L = L_{target} + \lambda \sum_i F_i (\theta_i - \theta_{i,pre})^2\)</span>). Explain <em>briefly</em> what Fisher Information Matrix is.</li>
+<li>“Other mitigation techniques include Learning without Forgetting (LwF), regularization, and multi-task learning.”</li>
+</ul></li>
+<li><p><strong>Explain Overfitting:</strong></p>
+<ul>
+<li>“Overfitting occurs when the model memorizes the training data of the new dataset too well, including its noise, which leads to poor generalization on unseen data.”</li>
+<li>“This is especially likely when the new dataset is small.”</li>
+<li>“Think of it as a student who memorizes the answers to a specific practice exam but doesn’t understand the underlying concepts – they’ll fail the real exam if the questions are different.”</li>
+<li>“To prevent overfitting, we can use data augmentation, regularization, early stopping, and smaller learning rates.”</li>
+</ul></li>
+<li><p><strong>Conclude with a summary:</strong></p>
+<ul>
+<li>“In summary, fine-tuning a pre-trained model on a dissimilar dataset presents several challenges, but by understanding these risks and applying appropriate mitigation strategies, we can achieve successful transfer learning.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace yourself:</strong> Don’t rush through the explanations. Give the interviewer time to process the information.</li>
+<li><strong>Use analogies:</strong> Analogies help make complex concepts more accessible.</li>
+<li><strong>Check for understanding:</strong> Ask the interviewer if they have any questions after explaining each risk and mitigation strategy. “Does that make sense?” or “Do you have any questions about that?”</li>
+<li><strong>Be prepared to go deeper:</strong> If the interviewer asks for more detail on a specific technique, be ready to provide it.</li>
+<li><strong>Balance theory and practice:</strong> Show that you understand the theoretical concepts but also know how to apply them in real-world scenarios.</li>
+<li><strong>Confidence:</strong> Speak confidently and demonstrate your expertise.</li>
+</ul>
+<p><strong>Handling Mathematical Sections:</strong></p>
+<ul>
+<li><strong>Don’t just recite the equation:</strong> Explain the intuition behind the equation and the meaning of each term.</li>
+<li><strong>Keep it brief:</strong> Unless the interviewer specifically asks for a detailed derivation, keep the mathematical explanations concise.</li>
+<li><strong>Focus on the high-level idea:</strong> Emphasize the key takeaway from the equation and how it relates to the overall concept.</li>
+<li><strong>Read the room:</strong> If the interviewer seems uninterested or overwhelmed, skip the mathematical details altogether. You can say something like, “There’s also a mathematical formulation for this, which I can explain if you’d like, but the basic idea is…”</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

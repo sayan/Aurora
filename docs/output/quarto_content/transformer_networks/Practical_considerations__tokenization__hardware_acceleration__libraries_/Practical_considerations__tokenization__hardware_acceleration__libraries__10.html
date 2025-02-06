@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>practical_considerations__tokenization__hardware_acceleration__libraries__10</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-what-pitfalls-might-occur-when-integrating-third-party-libraries-for-tokenization-or-hardware-acceleration-into-an-existing-production-pipeline-and-how-would-you-mitigate-these-issues" class="level2">
+<h2 class="anchored" data-anchor-id="question-what-pitfalls-might-occur-when-integrating-third-party-libraries-for-tokenization-or-hardware-acceleration-into-an-existing-production-pipeline-and-how-would-you-mitigate-these-issues">Question: What pitfalls might occur when integrating third-party libraries for tokenization or hardware acceleration into an existing production pipeline, and how would you mitigate these issues?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Integrating third-party libraries, especially for critical components like tokenization or hardware acceleration, into a production pipeline introduces several potential pitfalls. Mitigation strategies require careful planning, testing, and monitoring. Here’s a breakdown of common issues and their corresponding solutions:</p>
+<p><strong>1. Dependency Conflicts:</strong></p>
+<ul>
+<li><strong>Problem:</strong> The third-party library may depend on specific versions of other libraries or system components that conflict with existing dependencies in the production environment. This can lead to unpredictable behavior, application crashes, or even system instability. Imagine the production environment already depends on <code>LibraryA==1.0</code>, but the third-party library for tokenization requires <code>LibraryA&gt;=2.0</code>.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>Containerization (Docker, etc.):</strong> Encapsulate the entire application and its dependencies within a container. This isolates the third-party library’s dependencies from the host system and existing pipeline components. Docker images are an excellent choice here.</li>
+<li><strong>Virtual Environments (Python venv, Conda):</strong> For non-containerized deployments, use virtual environments to manage dependencies for specific components. This creates isolated environments for each part of the pipeline.</li>
+<li><strong>Dependency Management Tools:</strong> Use tools like <code>pipenv</code>, <code>poetry</code> (for Python), <code>npm</code> (for Node.js), or <code>Maven</code> (for Java) to explicitly declare and manage dependencies, including version constraints. Use the requirements files (i.e.&nbsp;<code>requirements.txt</code> for python), <code>package.json</code> for node, etc.</li>
+<li><strong>Dependency Scanning:</strong> Employ tools that scan dependencies for known vulnerabilities and compatibility issues. Examples include <code>Snyk</code>, <code>OWASP Dependency-Check</code>, and <code>Black Duck</code>.</li>
+<li><strong>Thorough Testing:</strong> Rigorously test the integrated system in a staging environment that mirrors the production environment to identify dependency conflicts before deployment.</li>
+</ul></li>
+</ul>
+<p><strong>2. Performance Bottlenecks:</strong></p>
+<ul>
+<li><strong>Problem:</strong> The third-party library might introduce performance overhead that slows down the pipeline. This can arise from inefficient algorithms, excessive memory usage, or suboptimal hardware utilization.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>Profiling and Benchmarking:</strong> Before integration, thoroughly profile and benchmark the third-party library in a representative environment using realistic data. Identify potential bottlenecks, such as excessive memory allocation or slow I/O operations. Tools like <code>cProfile</code> (Python), <code>perf</code> (Linux), or specialized profiling tools for hardware accelerators (e.g., NVIDIA Nsight) can be useful.</li>
+<li><strong>Code Optimization:</strong> If possible, optimize the integration code to minimize the overhead of using the third-party library. This might involve batching operations, reducing data transfers, or optimizing data formats.</li>
+<li><strong>Hardware Acceleration Optimization:</strong> For hardware acceleration libraries, ensure that the code is properly optimized for the target hardware. This includes using appropriate data types, memory layouts, and kernel configurations. Consult the library’s documentation for best practices.</li>
+<li><strong>Asynchronous Processing:</strong> Offload computationally intensive tasks to separate threads or processes to prevent blocking the main pipeline. This can improve overall throughput and responsiveness.</li>
+<li><strong>Caching:</strong> Cache intermediate results to avoid redundant computations. Implement caching mechanisms to store frequently accessed data and reduce the load on the third-party library.</li>
+<li><strong>Load Testing:</strong> Simulate realistic workloads to identify performance bottlenecks under production-like conditions. Use load testing tools like <code>Locust</code>, <code>JMeter</code>, or <code>Gatling</code> to simulate a large number of concurrent users or requests.</li>
+</ul></li>
+</ul>
+<p><strong>3. Security Vulnerabilities:</strong></p>
+<ul>
+<li><strong>Problem:</strong> The third-party library may contain security vulnerabilities that can be exploited by attackers to compromise the system.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>Vulnerability Scanning:</strong> Use automated vulnerability scanning tools to identify known security vulnerabilities in the third-party library and its dependencies. Tools like <code>OWASP ZAP</code>, <code>Nessus</code>, or commercial vulnerability scanners can be used.</li>
+<li><strong>Security Audits:</strong> Conduct regular security audits of the integrated system to identify potential weaknesses and vulnerabilities. This includes reviewing the code, configuration, and deployment practices.</li>
+<li><strong>Sandboxing:</strong> Run the third-party library in a sandboxed environment with limited access to system resources and sensitive data. This restricts the potential impact of security vulnerabilities. Examples include using Docker containers with restricted privileges or virtual machines.</li>
+<li><strong>Regular Updates:</strong> Stay up-to-date with the latest security patches and updates for the third-party library and its dependencies. Establish a process for regularly monitoring and applying security updates.</li>
+<li><strong>Input Validation:</strong> Thoroughly validate all inputs to the third-party library to prevent injection attacks, such as SQL injection or command injection. Implement robust input validation and sanitization techniques.</li>
+</ul></li>
+</ul>
+<p><strong>4. Licensing Issues:</strong></p>
+<ul>
+<li><strong>Problem:</strong> The third-party library may have licensing terms that are incompatible with the intended use case or commercial model. This can lead to legal issues and potential fines.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>License Review:</strong> Carefully review the licensing terms of the third-party library before integration. Ensure that the license is compatible with the intended use case and commercial model.</li>
+<li><strong>Open Source Licenses:</strong> Pay close attention to the terms of open source licenses, such as GPL, LGPL, MIT, or Apache. Understand the obligations and restrictions associated with each license.</li>
+<li><strong>Commercial Licenses:</strong> Obtain the necessary commercial licenses if the third-party library is not available under an open source license. Negotiate the terms and conditions of the license agreement.</li>
+<li><strong>License Compliance Tools:</strong> Use license compliance tools to track and manage the licenses of all third-party libraries used in the system. This helps ensure that the organization is in compliance with the licensing terms.</li>
+</ul></li>
+</ul>
+<p><strong>5. Lack of Maintainability:</strong></p>
+<ul>
+<li><strong>Problem:</strong> The third-party library may be poorly maintained or abandoned by its developers, making it difficult to fix bugs, address security vulnerabilities, or adapt to changing requirements.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>Community Support:</strong> Evaluate the community support for the third-party library. Check the activity level on forums, mailing lists, and issue trackers.</li>
+<li><strong>Code Quality:</strong> Assess the code quality of the third-party library. Look for well-documented code, comprehensive test suites, and a clear and consistent coding style.</li>
+<li><strong>Backup Plan:</strong> Develop a backup plan in case the third-party library is no longer maintained. This might involve forking the library, finding an alternative library, or developing a custom solution.</li>
+<li><strong>Version Locking:</strong> Pin the third-party library to a specific version to ensure that the system remains stable and predictable. This prevents unexpected behavior due to updates or changes in the library.</li>
+<li><strong>Abstraction Layers:</strong> Introduce abstraction layers between the pipeline and the third-party library. This makes it easier to switch to an alternative library or custom solution in the future.</li>
+</ul></li>
+</ul>
+<p><strong>6. Integration Complexity:</strong></p>
+<ul>
+<li><strong>Problem:</strong> Integrating a complex third-party library can be challenging and time-consuming, requiring significant development effort and expertise.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>Clear Documentation:</strong> Ensure the third-party library has clear, comprehensive documentation that explains how to use it and integrate it into existing systems.</li>
+<li><strong>Example Code:</strong> Look for example code and tutorials that demonstrate how to use the library in common use cases.</li>
+<li><strong>Incremental Integration:</strong> Integrate the library incrementally, testing each component as it is integrated. This makes it easier to identify and fix integration issues.</li>
+<li><strong>Expert Consultation:</strong> Consult with experts in the third-party library or integration to get guidance and support.</li>
+</ul></li>
+</ul>
+<p><strong>7. Hardware Incompatibilities:</strong></p>
+<ul>
+<li><strong>Problem:</strong> With hardware acceleration libraries (e.g., CUDA, OpenCL, Intel MKL), there might be incompatibilities between the library versions, driver versions, and the specific hardware available in the production environment.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>Driver Compatibility Matrix:</strong> Check the driver compatibility matrix provided by the hardware vendor to ensure that the driver version is compatible with the third-party library and the hardware.</li>
+<li><strong>Hardware Abstraction:</strong> Use hardware abstraction layers (e.g., SYCL) that allow the code to run on different hardware platforms without modification.</li>
+<li><strong>Runtime Detection:</strong> Implement runtime detection of hardware capabilities and adapt the code accordingly. This allows the code to run on different hardware configurations without requiring separate builds.</li>
+<li><strong>Fallback Mechanisms:</strong> Implement fallback mechanisms that allow the code to run on the CPU if the hardware accelerator is not available or compatible.</li>
+</ul></li>
+</ul>
+<p><strong>8. Data Format Mismatches:</strong></p>
+<ul>
+<li><strong>Problem:</strong> The third-party library might require data in a specific format that is different from the format used in the existing pipeline.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>Data Conversion:</strong> Implement data conversion routines to convert data between the formats used in the pipeline and the formats required by the third-party library.</li>
+<li><strong>Standard Data Formats:</strong> Use standard data formats (e.g., JSON, Protocol Buffers, Apache Arrow) to minimize the need for data conversion.</li>
+<li><strong>Zero-Copy Integration:</strong> Explore zero-copy integration techniques that allow data to be shared between the pipeline and the third-party library without copying it. This can improve performance and reduce memory usage.</li>
+</ul></li>
+</ul>
+<p><strong>Example: Tokenization Library</strong></p>
+<p>Consider integrating a new, faster tokenization library (e.g., Hugging Face’s <code>tokenizers</code> library).</p>
+<ul>
+<li><strong>Dependency Conflict:</strong> The library might require a newer version of <code>transformers</code> than the one used in the existing pipeline.</li>
+<li><strong>Performance Bottleneck:</strong> The new tokenization library might be faster on average, but slower for specific types of input (e.g., very long documents).</li>
+<li><strong>Security Vulnerability:</strong> The tokenization library might contain a vulnerability that allows an attacker to inject malicious code into the pipeline.</li>
+</ul>
+<p>By addressing these potential pitfalls proactively, you can successfully integrate third-party libraries into your production pipeline and realize their benefits while minimizing the risks.</p>
+<hr>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a guide on how to deliver this answer verbally:</p>
+<ol type="1">
+<li><p><strong>Start with a General Statement:</strong> “Integrating third-party libraries can significantly enhance a production pipeline, but it also introduces potential risks. It’s crucial to be aware of these pitfalls and have mitigation strategies in place.”</p></li>
+<li><p><strong>Categorize the Pitfalls (and use signposting):</strong> “I think about the potential problems in a few key categories. First, dependency conflicts; second, performance impacts; third, security vulnerabilities; and finally, licensing.”</p></li>
+<li><p><strong>Explain Dependency Conflicts (Example):</strong> “Dependency conflicts arise when the new library requires different versions of supporting packages than what’s already in use. For example, if the pipeline currently depends on <code>LibraryA==1.0</code>, and the new library requires <code>LibraryA&gt;=2.0</code>, that’s a problem.”</p></li>
+<li><p><strong>Mitigation for Dependency Conflicts:</strong> “The best way to handle this is containerization with Docker. This isolates the library and its dependencies. Alternatively, virtual environments or careful dependency management with tools like <code>pipenv</code> are crucial. Rigorous testing in a staging environment is also a must.”</p></li>
+<li><p><strong>Walk Through Other Categories:</strong> “Similarly, for performance, we need to benchmark thoroughly <em>before</em> integration. Profiling tools help identify bottlenecks, and we can then optimize code or use asynchronous processing. Security vulnerabilities are addressed through scanning tools, sandboxing, and keeping the libraries updated regularly.”</p></li>
+<li><p><strong>Licensing:</strong> “It is crucial to carefully check the licensing terms to ensure they align with the intended use of the library. Compliance tools can help manage and track open-source licenses, and legal counsel is needed for commercial ones.”</p></li>
+<li><p><strong>Hardware Acceleration:</strong> “When it comes to hardware acceleration, incompatibilities between libraries, drivers, and hardware can emerge. Use hardware abstraction layers when possible and implement fallback mechanisms to the CPU.”</p></li>
+<li><p><strong>Concrete Examples:</strong> “To illustrate, imagine integrating a new tokenization library. We might face dependency conflicts with existing <code>transformers</code> versions, find it slower on some inputs, or uncover security risks if the library isn’t actively maintained.” (Relate to interviewer’s initial example if possible.)</p></li>
+<li><p><strong>Concluding Summary:</strong> “In summary, successful integration requires careful planning, thorough testing, and continuous monitoring. Mitigation strategies like containerization, sandboxing, and version locking are essential to minimize the risks.”</p></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush through the answer. Allow the interviewer time to process the information.</li>
+<li><strong>Visual Aids:</strong> If you’re in a virtual interview, consider sharing your screen to display a diagram or flowchart that illustrates the integration process.</li>
+<li><strong>Engage the Interviewer:</strong> Ask the interviewer if they have any questions or would like you to elaborate on a specific point.</li>
+<li><strong>Use “Signposting” Language:</strong> Use phrases like “Another important consideration is…” or “In addition to that…” to guide the interviewer through your answer.</li>
+<li><strong>Be Prepared to Go Deeper:</strong> The interviewer may ask follow-up questions about specific mitigation techniques or tools. Be prepared to discuss these in more detail.</li>
+<li><strong>Stay Practical:</strong> Relate your answer back to real-world scenarios and practical considerations. This demonstrates your experience and expertise.</li>
+</ul>
+<p>By following these guidelines, you can effectively communicate your knowledge of the challenges and solutions involved in integrating third-party libraries into a production pipeline.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>pretraining_objectives__masked_lm__next_sentence_prediction__etc___9</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-10.-scalability-is-a-major-challenge-in-pretraining-large-transformer-models.-can-you-discuss-the-challenges-associated-with-scaling-pretraining-objectives-like-mlm-and-what-distributed-training-techniques-might-be-employed" class="level2">
+<h2 class="anchored" data-anchor-id="question-10.-scalability-is-a-major-challenge-in-pretraining-large-transformer-models.-can-you-discuss-the-challenges-associated-with-scaling-pretraining-objectives-like-mlm-and-what-distributed-training-techniques-might-be-employed">Question: 10. Scalability is a major challenge in pretraining large transformer models. Can you discuss the challenges associated with scaling pretraining objectives like MLM, and what distributed training techniques might be employed?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Scaling pretraining objectives like Masked Language Modeling (MLM) for large transformer models presents significant challenges stemming from computational demands, memory constraints, and communication overhead. These challenges necessitate sophisticated distributed training techniques to effectively leverage parallel computing resources. Let’s delve into these challenges and the corresponding techniques.</p>
+<p><strong>Challenges in Scaling Pretraining Objectives</strong></p>
+<ol type="1">
+<li><p><strong>Computational Complexity</strong>: Transformer models, especially large ones, have a computational complexity that scales quadratically with the sequence length and roughly linearly with the number of parameters (though attention mechanisms like sparse attention can mitigate this). MLM requires processing large volumes of text data, making each training iteration extremely computationally intensive. The core operation is the self-attention mechanism, which has a complexity of <span class="math inline">\(O(n^2d)\)</span>, where <span class="math inline">\(n\)</span> is the sequence length and <span class="math inline">\(d\)</span> is the hidden dimension.</p></li>
+<li><p><strong>Memory Requirements</strong>: Training large models requires substantial memory. Storing model parameters, activations, and gradients for backpropagation can quickly exceed the memory capacity of a single GPU. This issue is exacerbated by large batch sizes, which are often used to improve training stability and throughput.</p></li>
+<li><p><strong>Communication Overhead</strong>: Distributed training involves transferring data and gradients between different devices (GPUs or machines). The communication overhead can become a bottleneck, particularly when dealing with large models and datasets spread across multiple nodes. Gradient synchronization, in particular, requires all workers to exchange gradient updates after each batch, which can be very costly in terms of bandwidth.</p></li>
+<li><p><strong>Data Handling</strong>: Pretraining involves processing massive datasets (e.g., terabytes of text). Efficient data loading, preprocessing, and sharding across multiple workers are essential for maintaining high training throughput.</p></li>
+<li><p><strong>Optimization Challenges</strong>: Large models can be difficult to optimize. They often have highly non-convex loss landscapes with numerous local minima and saddle points. Scalability is important, but it’s imperative to address these fundamental optimization challenges. The generalization gap and the ability to converge into high-performing solutions must be considered.</p></li>
+</ol>
+<p><strong>Distributed Training Techniques</strong></p>
+<p>To address these challenges, various distributed training techniques are employed:</p>
+<ol type="1">
+<li><p><strong>Data Parallelism</strong>: In data parallelism, the training data is divided among different workers (GPUs or machines), and each worker trains a complete copy of the model on its subset of the data. After each batch, the gradients computed by each worker are aggregated (e.g., averaged), and the model parameters are updated.</p>
+<ul>
+<li><p><strong>Synchronous Data Parallelism</strong>: Workers synchronize gradients after each batch. This approach is simple to implement but can suffer from straggler effects, where the slowest worker slows down the entire training process. The update rule can be summarized as follows:</p>
+<p><span class="math display">\[
+\theta_{t+1} = \theta_t - \eta \frac{1}{N} \sum_{i=1}^{N} \nabla L(\theta_t, D_i)
+\]</span></p>
+<p>where <span class="math inline">\(\theta_t\)</span> is the model parameters at time <span class="math inline">\(t\)</span>, <span class="math inline">\(\eta\)</span> is the learning rate, <span class="math inline">\(N\)</span> is the number of workers, and <span class="math inline">\(\nabla L(\theta_t, D_i)\)</span> is the gradient of the loss function <span class="math inline">\(L\)</span> with respect to the model parameters <span class="math inline">\(\theta_t\)</span> on data partition <span class="math inline">\(D_i\)</span>.</p></li>
+<li><p><strong>Asynchronous Data Parallelism</strong>: Workers update the model parameters independently without strict synchronization. This approach can be more resilient to stragglers but may lead to slower convergence due to inconsistent gradient updates. Hogwild! is a well-known example.</p></li>
+</ul></li>
+<li><p><strong>Model Parallelism</strong>: In model parallelism, the model itself is partitioned across different workers. This is useful when the model is too large to fit on a single device.</p>
+<ul>
+<li><p><strong>Tensor Parallelism</strong>: Individual layers or tensors within the model are split across multiple devices. For example, a large matrix multiplication can be partitioned along rows or columns. Consider a weight matrix <span class="math inline">\(W\)</span> that is partitioned into <span class="math inline">\(W_1\)</span> and <span class="math inline">\(W_2\)</span> across two devices. The forward pass then involves distributing the input <span class="math inline">\(x\)</span>: <span class="math display">\[ y = W x = [W_1, W_2] \begin{bmatrix} x_1 \\ x_2 \end{bmatrix} = W_1x_1 + W_2x_2 \]</span> The gradients must be aggregated after each forward/backward pass to ensure proper weight updates.</p></li>
+<li><p><strong>Pipeline Parallelism</strong>: The layers of the model are distributed across different devices, forming a pipeline. Each device processes a different stage of the pipeline for different mini-batches. While it can significantly improve memory efficiency, pipeline parallelism introduces latency due to the need to fill and drain the pipeline.</p></li>
+</ul></li>
+<li><p><strong>Pipeline Parallelism</strong>: Different stages of the model are assigned to different devices. Consider a model with layers <span class="math inline">\(L_1, L_2, ..., L_n\)</span>. The first device performs computation for <span class="math inline">\(L_1\)</span>, the second for <span class="math inline">\(L_2\)</span>, and so on. This creates a pipeline where different mini-batches are processed concurrently on different devices. Techniques like PipeDream are used to mitigate pipeline bubbles.</p></li>
+<li><p><strong>Hybrid Parallelism</strong>: Combines data and model parallelism to achieve optimal scalability. For instance, one might use data parallelism across nodes and model parallelism within each node.</p></li>
+<li><p><strong>Gradient Accumulation</strong>: To effectively increase the batch size without increasing memory usage, gradient accumulation is used. Instead of updating the model parameters after each mini-batch, gradients are accumulated over multiple mini-batches, and the model is updated only after accumulating the gradients from all mini-batches. This simulates training with a larger batch size.</p></li>
+<li><p><strong>Mixed Precision Training</strong>: Uses lower-precision floating-point formats (e.g., FP16) to reduce memory usage and accelerate computation. NVIDIA’s Tensor Cores are optimized for mixed-precision operations. Care must be taken to avoid underflow/overflow issues by using techniques like loss scaling.</p></li>
+<li><p><strong>Communication Optimization</strong>:</p>
+<ul>
+<li><strong>Ring All-Reduce</strong>: Efficiently aggregates gradients across multiple devices in a ring-like fashion, minimizing communication overhead.</li>
+<li><strong>Gradient Compression</strong>: Reduces the size of gradients before transmitting them, using techniques like quantization or sparsification.</li>
+</ul></li>
+<li><p><strong>Activation Checkpointing (Gradient Checkpointing)</strong>: Saves computation time by recomputing activations during backpropagation instead of storing them. This reduces memory footprint at the expense of additional computation.</p></li>
+</ol>
+<p><strong>Real-World Considerations</strong></p>
+<ul>
+<li><p><strong>Infrastructure</strong>: The choice of distributed training technique depends on the available hardware infrastructure, including the number and type of GPUs, network bandwidth, and storage capacity.</p></li>
+<li><p><strong>Frameworks</strong>: Deep learning frameworks like PyTorch, TensorFlow, and Megatron-LM provide built-in support for distributed training, making it easier to implement these techniques.</p></li>
+<li><p><strong>Hyperparameter Tuning</strong>: Distributed training can affect the optimal values of hyperparameters such as learning rate and batch size. Careful tuning is necessary to achieve good performance. Larger batch sizes often require increased learning rates.</p></li>
+<li><p><strong>Debugging</strong>: Debugging distributed training can be challenging due to the increased complexity. Tools for monitoring resource utilization, communication patterns, and gradient statistics are essential.</p></li>
+</ul>
+<p>In summary, scaling pretraining objectives requires addressing both computational and communication challenges. By employing a combination of data parallelism, model parallelism, pipeline parallelism, gradient accumulation, mixed precision training, and communication optimization techniques, we can effectively train large transformer models on massive datasets and unlock their full potential.</p>
+<hr>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a step-by-step guide on how to articulate this answer in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with a high-level overview:</strong></p>
+<ul>
+<li>“Scaling pretraining for large transformer models is a significant challenge due to the computational demands, memory constraints, and communication overhead involved.”</li>
+<li>“To address these challenges, we need to leverage distributed training techniques effectively.”</li>
+</ul></li>
+<li><p><strong>Discuss the challenges in detail:</strong></p>
+<ul>
+<li>“First, consider the computational complexity. The self-attention mechanism in transformers scales quadratically with sequence length, making each iteration very expensive. I can provide the formula if you like: <span class="math inline">\(O(n^2d)\)</span> where <span class="math inline">\(n\)</span> is sequence length and <span class="math inline">\(d\)</span> is the hidden dimension.” (Pause and gauge the interviewer’s interest in the formula; only provide it if they seem receptive.)</li>
+<li>“Memory requirements are another major concern. Storing model parameters, activations, and gradients can quickly exceed the capacity of a single GPU. Large batch sizes exacerbate this.”</li>
+<li>“Communication overhead is a third challenge. Synchronizing gradients across multiple workers after each batch can be a major bottleneck, especially with large models.”</li>
+<li>“Data Handling becomes a challenge as well, because pretraining involves processing terabytes of text data. Efficient data loading, preprocessing and sharding across multiple workers are essential.”</li>
+<li>“Finally, Optimization Challenges exist as the loss landscapes are non-convex, requiring effective convergence into high-performing solutions.”</li>
+</ul></li>
+<li><p><strong>Transition to distributed training techniques:</strong></p>
+<ul>
+<li>“To overcome these challenges, several distributed training techniques are employed. The primary techniques involve data parallelism, model parallelism, and pipeline parallelism. And there are complementary approaches, such as Gradient Accumulation and Mixed Precision Training.”</li>
+</ul></li>
+<li><p><strong>Explain Data Parallelism:</strong></p>
+<ul>
+<li>“In data parallelism, we split the training data across multiple workers, each training a copy of the full model. After each batch, gradients are aggregated.”</li>
+<li>“There are synchronous and asynchronous variants. Synchronous data parallelism involves strict synchronization after each batch, while asynchronous allows workers to update independently.”</li>
+<li>“The update rule can be expressed as: &lt;Show the equation, if appropriate and requested by the interviewer; otherwise, just explain its meaning in words.&gt;”</li>
+</ul></li>
+<li><p><strong>Explain Model Parallelism:</strong></p>
+<ul>
+<li>“Model parallelism involves partitioning the model itself across multiple workers. This is essential when the model is too large to fit on a single GPU.”</li>
+<li>“Tensor parallelism is one approach, where individual layers or tensors are split. Pipeline parallelism is another, where the layers of the model are distributed to form a processing pipeline.”</li>
+</ul></li>
+<li><p><strong>Explain Pipeline Parallelism:</strong></p>
+<ul>
+<li>“In pipeline parallelism, the layers are distributed across different devices. This creates a pipeline where different mini-batches are processed concurrently on different devices.”</li>
+</ul></li>
+<li><p><strong>Explain Gradient Accumulation and Mixed Precision Training</strong></p>
+<ul>
+<li>“Gradient Accumulation effectively increases the batch size without increasing memory usage, which is great.”</li>
+<li>“Mixed Precision Training uses lower-precision floating-point formats to reduce memory usage and accelerate computation.”</li>
+</ul></li>
+<li><p><strong>Mention Communication Optimizations:</strong></p>
+<ul>
+<li>“Communication optimization is also crucial. Techniques like Ring All-Reduce efficiently aggregate gradients, and gradient compression reduces the size of gradients.”</li>
+</ul></li>
+<li><p><strong>Discuss real-world considerations:</strong></p>
+<ul>
+<li>“The choice of technique depends on the available infrastructure and the specific model architecture. Deep learning frameworks provide built-in support for these techniques.”</li>
+<li>“Hyperparameter tuning becomes more important, as distributed training can affect the optimal learning rate and batch size.”</li>
+<li>“Debugging distributed training can be complex, requiring specialized tools.”</li>
+</ul></li>
+<li><p><strong>Summarize and conclude:</strong></p>
+<ul>
+<li>“In summary, scaling pretraining objectives requires a multifaceted approach, combining data parallelism, model parallelism, pipeline parallelism, and various optimization techniques to efficiently train large models on massive datasets.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips</strong></p>
+<ul>
+<li><strong>Pace yourself:</strong> Don’t rush through the explanation. Speak clearly and deliberately.</li>
+<li><strong>Use visual cues:</strong> If possible, use hand gestures to illustrate concepts like data partitioning or pipeline stages.</li>
+<li><strong>Check for understanding:</strong> Pause periodically and ask the interviewer if they have any questions.</li>
+<li><strong>Be adaptable:</strong> Adjust the level of detail based on the interviewer’s background and interest. If they seem less technical, focus on the high-level concepts and avoid diving too deep into the equations. If they seem more technical, be prepared to discuss the implementation details and trade-offs.</li>
+<li><strong>Show enthusiasm:</strong> Convey your passion for the topic and your excitement about the potential of large transformer models.</li>
+<li><strong>Avoid jargon:</strong> While it’s important to demonstrate your knowledge, avoid using overly technical jargon that might confuse or alienate the interviewer.</li>
+<li><strong>Highlight practical experience:</strong> If you have experience implementing these techniques in real-world projects, be sure to mention it.</li>
+</ul>
+<p>By following these guidelines, you can deliver a comprehensive and compelling answer that showcases your expertise and leaves a lasting impression on the interviewer.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

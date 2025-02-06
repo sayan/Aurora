@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>practical_considerations__tokenization__hardware_acceleration__libraries__1</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-how-would-you-approach-the-problem-of-tokenizing-text-in-a-language-with-complex-morphology-or-limited-whitespace-cues" class="level2">
+<h2 class="anchored" data-anchor-id="question-how-would-you-approach-the-problem-of-tokenizing-text-in-a-language-with-complex-morphology-or-limited-whitespace-cues">Question: How would you approach the problem of tokenizing text in a language with complex morphology or limited whitespace cues?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Tokenizing text in languages with complex morphology (e.g., Turkish, Finnish, German) or limited whitespace cues (e.g., Chinese, Japanese, Thai) presents significant challenges to traditional whitespace-based tokenization methods. These languages require more sophisticated approaches to accurately segment text into meaningful units for downstream NLP tasks. Here’s a breakdown of how I would approach this problem:</p>
+<p><strong>1. Understanding the Language’s Characteristics:</strong></p>
+<ul>
+<li><strong>Morphological Complexity:</strong> Languages like Turkish have agglutinative morphology, where words are formed by concatenating multiple morphemes, each carrying distinct grammatical meanings. Stemming or lemmatization after tokenization becomes especially crucial but is impacted by the initial tokenization quality.</li>
+<li><strong>Limited Whitespace:</strong> Languages like Chinese don’t use whitespace to separate words. The task of identifying word boundaries is called word segmentation.</li>
+<li><strong>Ambiguity:</strong> In many languages, a single sequence of characters can be interpreted as different words or phrases depending on the context.</li>
+<li><strong>Character Encoding:</strong> Before any processing, ensuring correct character encoding (e.g., UTF-8) is critical to handle the diverse character sets used in these languages.</li>
+</ul>
+<p><strong>2. Tokenization Approaches:</strong></p>
+<p>I would consider a combination of rule-based, statistical, and neural approaches, tailored to the specific language:</p>
+<ul>
+<li><strong>Rule-Based Tokenization:</strong>
+<ul>
+<li><strong>Dictionary-Based Segmentation:</strong> For languages with limited whitespace, this approach relies on a pre-compiled dictionary of known words. The algorithm tries to match substrings of the input text to entries in the dictionary. Maximum matching (finding the longest possible match) is a common strategy. For example, in Chinese, the sentence “我爱自然语言处理” (I love natural language processing) could be segmented using a dictionary of Chinese words.</li>
+<li><strong>Morphological Analysis:</strong> This approach uses rules based on the language’s morphological structure to identify morpheme boundaries. This is useful for languages like Finnish, where a word can be composed of several morphemes. Libraries like <code>pymorphy2</code> in Python offer morphological analysis capabilities.</li>
+<li><strong>Regular Expressions:</strong> Can be helpful for handling specific patterns, such as numbers, dates, or email addresses.</li>
+<li><strong>Limitations:</strong> Rule-based methods can struggle with out-of-vocabulary (OOV) words and ambiguity. They often require significant manual effort to create and maintain the rules.</li>
+</ul></li>
+<li><strong>Statistical Tokenization:</strong>
+<ul>
+<li><strong>N-gram Models:</strong> These models use the frequency of character or word sequences to predict word boundaries. For example, a character-level n-gram model could learn the probability of a space occurring after a particular character sequence.
+<ul>
+<li>The probability of a sentence <span class="math inline">\(w_1, w_2, ..., w_n\)</span> can be approximated using n-grams: <span class="math display">\[P(w_1, w_2, ..., w_n) \approx \prod_{i=1}^{n} P(w_i | w_{i-N+1}, ..., w_{i-1})\]</span></li>
+</ul></li>
+<li><strong>Conditional Random Fields (CRFs):</strong> CRFs are a probabilistic model used for sequence labeling. They can be trained to predict whether a character is the beginning of a word or not. CRFs can incorporate various features, such as character type, surrounding characters, and dictionary lookups.</li>
+<li><strong>Hidden Markov Models (HMMs):</strong> HMMs can be used to model the sequence of hidden word boundaries based on the observed character sequence.</li>
+<li><strong>Subword Tokenization:</strong>
+<ul>
+<li><strong>Byte Pair Encoding (BPE):</strong> BPE starts with individual characters as tokens and iteratively merges the most frequent pair of tokens into a new token until a desired vocabulary size is reached. It is especially useful for handling rare words and OOV words by breaking them down into subword units. For example, “unbelievable” might be tokenized into “un”, “believ”, “able”.</li>
+<li><strong>WordPiece:</strong> Similar to BPE, but instead of merging the most frequent pair, WordPiece merges the pair that maximizes the likelihood of the training data.</li>
+<li><strong>Unigram Language Model:</strong> This method, used in SentencePiece, trains a unigram language model and uses it to determine the optimal segmentation of a word into subwords.</li>
+<li>These subword tokenization techniques are highly effective in handling complex morphology because they don’t rely on pre-defined word boundaries. They can adapt to new words and handle different word forms effectively.</li>
+</ul></li>
+</ul></li>
+<li><strong>Neural Tokenization:</strong>
+<ul>
+<li><strong>Sequence-to-Sequence Models:</strong> Encoder-decoder models, such as those based on LSTMs or Transformers, can be trained to directly segment the input text. The encoder reads the input character sequence, and the decoder generates the sequence of tokens. Attention mechanisms can help the model focus on relevant parts of the input when generating the output.</li>
+<li><strong>Character-Level CNNs/RNNs:</strong> Convolutional or recurrent neural networks can be trained to predict word boundaries based on character embeddings.</li>
+<li><strong>Pre-trained Language Models (PLMs):</strong> Models like BERT, mBERT, XLM-RoBERTa, and others provide contextualized embeddings that implicitly capture morphological and syntactic information. These models can be fine-tuned for tokenization tasks or used to generate features for other tokenization methods. mBERT is particularly useful for multilingual scenarios.</li>
+<li><strong>Limitations:</strong> Neural methods typically require large amounts of training data. The performance of these models depends on the quality and representativeness of the training data.</li>
+</ul></li>
+</ul>
+<p><strong>3. Implementation Considerations:</strong></p>
+<ul>
+<li><strong>Libraries and Tools:</strong>
+<ul>
+<li><strong>SentencePiece:</strong> A library developed by Google for subword tokenization. It implements BPE, WordPiece, and Unigram LM algorithms.</li>
+<li><strong>spaCy:</strong> A popular NLP library that supports custom tokenization rules and integration with pre-trained language models.</li>
+<li><strong>Hugging Face Transformers:</strong> Provides easy access to a wide range of pre-trained language models and tokenizers.</li>
+<li><strong>NLTK (Natural Language Toolkit):</strong> A Python library with various tokenization methods and tools for morphological analysis.</li>
+</ul></li>
+<li><strong>Customization:</strong> Tokenization strategies should be adaptable to the specific domain and task. For example, tokenizing scientific text might require special handling of chemical formulas or mathematical expressions. It is also important to tune parameters for things like vocabulary size and training iterations.</li>
+<li><strong>Evaluation:</strong> It is crucial to evaluate the performance of different tokenization methods using appropriate metrics, such as F1-score, precision, and recall, against a gold-standard dataset.</li>
+<li><strong>Handling OOV Words:</strong> Subword tokenization methods help mitigate the OOV problem. Another approach is to use a vocabulary of known words and replace OOV words with a special <code>&lt;UNK&gt;</code> token. However, simply replacing with <code>&lt;UNK&gt;</code> loses information; subword tokenization offers a better alternative.</li>
+<li><strong>Normalization:</strong> Before tokenization, normalizing the text (e.g., converting to lowercase, removing punctuation) can improve the consistency and accuracy of the results. However, the specific normalization steps should be chosen carefully based on the language and task.</li>
+<li><strong>Hardware Acceleration:</strong> For large-scale text processing, consider using GPUs or TPUs to accelerate the tokenization process, especially for neural methods.</li>
+</ul>
+<p><strong>4. Hybrid Approach:</strong></p>
+<p>In practice, a hybrid approach often yields the best results. For instance:</p>
+<ol type="1">
+<li>Use rule-based methods to handle specific patterns like URLs or email addresses.</li>
+<li>Apply subword tokenization (e.g., BPE or WordPiece) to handle the remaining text, effectively dealing with both known and unknown words and morphological variations.</li>
+<li>Fine-tune a pre-trained language model (e.g., mBERT) on a language-specific corpus to further improve tokenization accuracy.</li>
+</ol>
+<p><strong>Example: Tokenizing Turkish Text with BPE and mBERT</strong></p>
+<p>Turkish is an agglutinative language where words can be formed by adding multiple suffixes to a stem. A hybrid approach could be:</p>
+<ol type="1">
+<li>Use regular expressions to handle URLs and email addresses.</li>
+<li>Apply BPE to the remaining text.</li>
+<li>Fine-tune mBERT on a Turkish text corpus to learn contextualized subword embeddings.</li>
+</ol>
+<p>This approach would combine the strengths of rule-based methods, subword tokenization, and pre-trained language models to achieve high tokenization accuracy for Turkish text.</p>
+<p>In summary, tokenizing text in languages with complex morphology or limited whitespace requires a careful consideration of the language’s characteristics and a combination of rule-based, statistical, and neural approaches. By tailoring the tokenization strategy to the specific language and task, and by leveraging appropriate tools and libraries, it is possible to achieve accurate and robust tokenization results.</p>
+<hr>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a guide on how to present this information in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with the Problem:</strong> Begin by acknowledging the challenge: “Tokenizing text in languages with complex morphology or limited whitespace is a difficult problem because standard whitespace tokenization fails.” Briefly mention examples like Turkish (complex morphology) and Chinese (limited whitespace).</p></li>
+<li><p><strong>Language Characteristics:</strong> “Before choosing a technique, it’s crucial to understand the language’s specific challenges. For example, agglutinative languages like Turkish create words by combining morphemes, while languages like Chinese lack spaces between words.” Mention the problem of ambiguity.</p></li>
+<li><p><strong>Tokenization Approaches (Overview):</strong> “I would consider a combination of rule-based, statistical, and neural approaches.” Then, delve into each category:</p>
+<ul>
+<li><strong>Rule-Based:</strong> “Rule-based methods use dictionaries, morphological analysis, and regular expressions. A dictionary-based method for Chinese, for example, would try to match substrings to entries in a dictionary.” Give a simple example of matching “我爱自然语言处理” to the dictionary. Mention limitations: “However, these methods struggle with out-of-vocabulary words and maintaining rules.”</li>
+<li><strong>Statistical:</strong> “Statistical methods use n-gram models, CRFs, and subword tokenization.” Explain N-grams briefly: “N-gram models use the frequency of character sequences to predict word boundaries.” If asked to elaborate, you can provide the formula: “<span class="math inline">\(P(w_1, w_2, ..., w_n) \approx \prod_{i=1}^{n} P(w_i | w_{i-N+1}, ..., w_{i-1})\)</span>$”. Follow this with Subword Tokenization, “For example, BPE iteratively merges the most frequent pairs of tokens to create a new token. This handles rare and OOV words well.” Example, “unbelievable might be tokenized into un, believ, able”</li>
+<li><strong>Neural:</strong> “Neural methods use sequence-to-sequence models, character-level CNNs/RNNs, and pre-trained language models like BERT.” Mention mBERT’s usefulness for multilingual data. Acknowledge limitations: “Neural methods need large datasets and their performance depends on data quality.”</li>
+</ul></li>
+<li><p><strong>Implementation Considerations:</strong> “Important practical aspects include choosing the right libraries, customizing the process, and evaluating the performance.” Mention tools like SentencePiece, spaCy, and Hugging Face Transformers. Emphasize the need to adapt the method to the domain: “For scientific text, we’d need to handle formulas specially.” Mention the importance of using metrics such as F1-score for evaluation.</p></li>
+<li><p><strong>Hybrid Approach:</strong> “In practice, a hybrid approach often works best. For instance, use rules for URLs, BPE for most text, and fine-tune a language model.”</p></li>
+<li><p><strong>Example:</strong> “As a concrete example, for Turkish, I might use regular expressions for URLs, BPE for the rest, and then fine-tune mBERT on a Turkish corpus.”</p></li>
+<li><p><strong>Concluding Remarks:</strong> Reiterate the importance of adapting the technique to the specific language and task.</p></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush. Clearly articulate each method and its advantages/disadvantages.</li>
+<li><strong>Check for Understanding:</strong> Pause after explaining a complex method (e.g., CRFs) and ask, “Does that make sense?” or “Would you like me to elaborate on that?”</li>
+<li><strong>Visual Aids (If Possible):</strong> If interviewing remotely, consider sharing your screen to show code examples or diagrams (e.g., of BPE merging steps).</li>
+<li><strong>Balance Theory and Practice:</strong> Show that you understand the theory behind the methods but also have practical experience implementing them.</li>
+<li><strong>Be Ready to Elaborate:</strong> The interviewer might ask you to go deeper into a specific method. Be prepared to provide more details, including mathematical formulations or implementation considerations. However, avoid overwhelming the interviewer with excessive technical jargon unless specifically asked.</li>
+<li><strong>Confidence:</strong> Speak with confidence and project your expertise.</li>
+</ul>
+<p>By following these steps, you can effectively demonstrate your knowledge of tokenization techniques and your ability to apply them to real-world problems.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

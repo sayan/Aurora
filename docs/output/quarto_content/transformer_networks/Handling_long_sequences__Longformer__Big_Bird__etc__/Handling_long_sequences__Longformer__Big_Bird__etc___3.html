@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>handling_long_sequences__longformer__big_bird__etc___3</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-4.-describe-the-potential-pitfalls-or-edge-cases-that-might-arise-when-applying-sparse-attention-methods-to-datasets-with-long-sequences.-how-would-you-diagnose-and-address-these" class="level2">
+<h2 class="anchored" data-anchor-id="question-4.-describe-the-potential-pitfalls-or-edge-cases-that-might-arise-when-applying-sparse-attention-methods-to-datasets-with-long-sequences.-how-would-you-diagnose-and-address-these">Question: 4. Describe the potential pitfalls or edge cases that might arise when applying sparse attention methods to datasets with long sequences. How would you diagnose and address these?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Sparse attention mechanisms, like those employed in Longformer, Big Bird, and others, are designed to reduce the computational complexity of the standard self-attention mechanism from <span class="math inline">\(O(n^2)\)</span> to something closer to <span class="math inline">\(O(n)\)</span>, where <span class="math inline">\(n\)</span> is the sequence length. While effective in addressing the memory and computational bottlenecks of processing long sequences, they introduce their own set of challenges and edge cases.</p>
+<p>Here’s a detailed look at potential pitfalls, diagnostic methods, and mitigation strategies:</p>
+<p><strong>1. Loss of Long-Distance Dependencies:</strong></p>
+<ul>
+<li><p><strong>Problem:</strong> The core idea behind sparse attention is to attend to only a subset of tokens in the sequence. If the selected subset doesn’t adequately capture long-range relationships crucial for understanding the sequence, performance can suffer. This is especially problematic when the long-range relationships aren’t local and occur sporadically.</p></li>
+<li><p><strong>Why it matters:</strong> Many tasks, such as document summarization, question answering over long passages, or understanding plotlines in long stories, inherently require understanding dependencies that span a significant portion of the input sequence.</p></li>
+<li><p><strong>Mathematical Intuition:</strong> In standard attention, each token’s representation is a weighted sum of all other tokens:</p>
+<p><span class="math display">\[
+Attention(Q, K, V) = softmax(\frac{QK^T}{\sqrt{d_k}})V
+\]</span></p>
+<p>where <span class="math inline">\(Q\)</span>, <span class="math inline">\(K\)</span>, and <span class="math inline">\(V\)</span> are the query, key, and value matrices, respectively, and <span class="math inline">\(d_k\)</span> is the dimensionality of the key vectors. In sparse attention, the <span class="math inline">\(K\)</span> and <span class="math inline">\(V\)</span> matrices are effectively masked, limiting the summation to a subset of tokens. If that subset doesn’t contain the right information, performance suffers.</p></li>
+<li><p><strong>Example:</strong> In a long legal document, a clause in the first paragraph may heavily influence the interpretation of a clause in the last paragraph. If the sparse attention pattern doesn’t allow these clauses to attend to each other, the model’s understanding of the document will be incomplete.</p></li>
+</ul>
+<p><strong>2. Difficulty in Capturing Global Context:</strong></p>
+<ul>
+<li><strong>Problem:</strong> Even with some global attention (e.g., attending to a few special tokens like [CLS] or [SEP]), sparse attention models can struggle to maintain a holistic understanding of the entire sequence. The limited connectivity can hinder information flow across the sequence.</li>
+<li><strong>Why it matters:</strong> Global context is often necessary for tasks that require reasoning or making high-level inferences about the entire input.</li>
+<li><strong>Technical Explanation:</strong> Most sparse attention patterns enforce locality (attending to nearby tokens). While efficient, this restricts the model’s ability to “see” the big picture. A token might be heavily influenced by its neighbors but lack awareness of the broader context defined by distant parts of the sequence.</li>
+<li><strong>Example:</strong> Consider sentiment analysis of a long movie review. The overall sentiment might depend on a few key sentences scattered throughout the review. If the sparse attention pattern focuses too narrowly on local phrases, the model may miss these crucial sentences and misclassify the sentiment.</li>
+</ul>
+<p><strong>3. Potential for Introducing Bias due to Fixed Attention Patterns:</strong></p>
+<ul>
+<li><strong>Problem:</strong> Many sparse attention methods rely on predefined, fixed patterns (e.g., block-sparse, strided). These patterns can introduce biases if they are not well-suited to the specific characteristics of the data. For example, a block-sparse pattern might perform poorly if relevant information frequently crosses block boundaries.</li>
+<li><strong>Why it matters:</strong> Bias in the attention mechanism can lead to suboptimal performance and potentially unfair or discriminatory outcomes.</li>
+<li><strong>Underlying Reason:</strong> Fixed patterns don’t adapt to the varying importance of different parts of the sequence. They treat all segments equally, regardless of their actual contribution to the overall meaning.</li>
+<li><strong>Example:</strong> In source code, long-range dependencies often exist between function definitions and their calls. If the sparse attention pattern isn’t designed to capture these dependencies, the model might struggle to understand the code’s behavior.</li>
+</ul>
+<p><strong>4. Sensitivity to Hyperparameter Tuning:</strong></p>
+<ul>
+<li><strong>Problem:</strong> Sparse attention models often have additional hyperparameters that control the sparsity pattern (e.g., block size, number of global attention tokens). Performance can be highly sensitive to the choice of these hyperparameters.</li>
+<li><strong>Why it matters:</strong> Improper hyperparameter settings can negate the benefits of sparse attention and even lead to worse results than using standard attention on shorter sequences.</li>
+<li><strong>Practical Consideration:</strong> The optimal hyperparameters often depend on the specific dataset and task. Finding the right values requires careful experimentation and validation.</li>
+</ul>
+<p><strong>5. Difficulty in Capturing Hierarchical Structures:</strong></p>
+<ul>
+<li><strong>Problem:</strong> Many real-world sequences exhibit hierarchical structures (e.g., sentences within paragraphs, paragraphs within sections, sections within documents). Sparse attention mechanisms, particularly those with fixed patterns, may not effectively capture these hierarchical relationships.</li>
+<li><strong>Why it matters:</strong> Failing to model hierarchical structures can limit the model’s ability to perform complex reasoning or summarization tasks.</li>
+</ul>
+<p><strong>Diagnosis Techniques:</strong></p>
+<ol type="1">
+<li><strong>Ablation Studies:</strong> Systematically remove or modify parts of the sparse attention mechanism (e.g., remove global attention, change the sparsity pattern) to assess their impact on performance. This helps identify which components are most crucial and which might be introducing biases.</li>
+<li><strong>Attention Visualization:</strong> Visualize the attention weights to understand which tokens are attending to which others. This can reveal whether the model is capturing relevant long-range dependencies or if it’s primarily focusing on local information. Tools like attention heatmaps or interactive visualizations can be useful.</li>
+<li><strong>Performance Analysis on Specific Examples:</strong> Manually inspect the model’s predictions on specific long sequences, paying particular attention to cases where the model makes errors. This can provide insights into the types of dependencies the model is failing to capture. Look at examples known to have long distance dependencies.</li>
+<li><strong>Probing Tasks:</strong> Design auxiliary tasks specifically aimed at testing the model’s ability to capture long-range dependencies. For example, a “sentence ordering” task can assess whether the model understands the relationships between sentences separated by a large distance.</li>
+<li><strong>Layer-wise Relevance Propagation (LRP):</strong> Use LRP or similar techniques to trace the model’s decisions back to the input tokens. This can help identify which tokens are most influential in the model’s predictions, even if they are far apart in the sequence.</li>
+</ol>
+<p><strong>Mitigation Strategies:</strong></p>
+<ol type="1">
+<li><strong>Dynamic Attention Adjustments:</strong> Instead of using a fixed sparse attention pattern, dynamically adjust the pattern based on the input sequence. This can be achieved through learned sparsity masks or by incorporating content-based routing mechanisms.
+<ul>
+<li><em>Example:</em> Use a separate neural network to predict which tokens should attend to which others, based on the current input.</li>
+</ul></li>
+<li><strong>Hybrid Models:</strong> Combine sparse attention with other techniques, such as recurrent neural networks (RNNs) or transformers with sliding windows, to capture both local and global dependencies.
+<ul>
+<li><em>Example:</em> Use a sparse attention mechanism for most of the sequence but rely on a global RNN to summarize the entire input and provide context to the sparse attention layers.</li>
+</ul></li>
+<li><strong>Multi-Head Attention with Diverse Patterns:</strong> Use multiple attention heads, each with a different sparse attention pattern. This allows the model to capture a wider range of dependencies.
+<ul>
+<li><em>Example:</em> One head might use a block-sparse pattern, while another uses a strided pattern, and a third uses a learned sparsity mask.</li>
+</ul></li>
+<li><strong>Augmenting with Global Tokens:</strong> Strategically insert global tokens into the sequence and allow all other tokens to attend to them. These global tokens can act as a “memory” for the entire sequence, facilitating information flow across long distances.
+<ul>
+<li><em>Example:</em> Periodically insert special tokens that aggregate information from the preceding block of tokens.</li>
+</ul></li>
+<li><strong>Hierarchical Attention:</strong> Apply attention mechanisms hierarchically, first attending to local regions and then attending to higher-level representations of those regions. This can help the model capture hierarchical structures in the data.
+<ul>
+<li><em>Example:</em> First attend to words within sentences, then attend to sentences within paragraphs, and finally attend to paragraphs within the document.</li>
+</ul></li>
+<li><strong>Hyperparameter Optimization:</strong> Conduct a thorough hyperparameter search, using techniques like grid search or Bayesian optimization, to find the optimal sparsity pattern and other hyperparameters for the specific dataset and task.
+<ul>
+<li><em>Practical Tip:</em> Use a validation set that contains long sequences to ensure that the hyperparameters are optimized for long-range dependencies.</li>
+</ul></li>
+<li><strong>Re-introducing Full Attention Periodically</strong>: Introduce a layer with full self-attention periodically to allow the model to attend to any part of the sequence.</li>
+</ol>
+<p><strong>Conclusion:</strong></p>
+<p>Sparse attention methods are powerful tools for processing long sequences, but they require careful consideration of potential pitfalls and the use of appropriate diagnostic and mitigation strategies. A deep understanding of the underlying principles of attention and the characteristics of the data is essential for successfully applying these techniques.</p>
+<hr>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s how you might present this answer in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with the Motivation:</strong> “Sparse attention methods like Longformer and Big Bird are crucial for handling very long sequences that traditional attention mechanisms can’t handle due to their quadratic complexity. However, they introduce new challenges.”</p></li>
+<li><p><strong>Outline the Pitfalls:</strong> “Several potential pitfalls can arise. The most significant are the loss of long-distance dependencies, difficulty in capturing global context, the potential for introducing bias due to fixed attention patterns, sensitivity to hyperparameter tuning, and difficulty in capturing hierarchical structures.”</p></li>
+<li><p><strong>Elaborate on Each Pitfall (Selectively):</strong> Choose 2-3 pitfalls to discuss in more detail, prioritizing the ones you understand best. For each:</p>
+<ul>
+<li>Briefly explain the problem.</li>
+<li>Give a concrete example to illustrate the issue.</li>
+<li><em>If comfortable:</em> Briefly mention the mathematical reason or intuition behind it. “For example, because the full attention mechanism <mention equation=""> is masked”.</mention></li>
+</ul></li>
+<li><p><strong>Transition to Diagnosis:</strong> “To diagnose these issues, we can use several techniques…”</p></li>
+<li><p><strong>Describe Diagnosis Techniques:</strong> Mention 3-4 diagnostic techniques, explaining what each one helps to uncover.</p>
+<ul>
+<li>“Ablation studies help us understand which parts of the sparse attention mechanism are most important.”</li>
+<li>“Attention visualization can reveal whether the model is capturing long-range dependencies or focusing too much on local information.”</li>
+<li>“We can also look at performance on specific, difficult examples to see where the model is failing.”</li>
+</ul></li>
+<li><p><strong>Present Mitigation Strategies:</strong> “Based on the diagnosis, we can employ several mitigation strategies…”</p></li>
+<li><p><strong>Discuss Mitigation Strategies:</strong> Briefly explain 3-4 mitigation strategies.</p>
+<ul>
+<li>“One approach is to use dynamic attention adjustments, where the sparsity pattern is learned or adapted based on the input sequence.”</li>
+<li>“Another is to combine sparse attention with other techniques like RNNs or sliding window transformers.”</li>
+<li>“Using multi-head attention with diverse patterns can also help capture a wider range of dependencies.”</li>
+</ul></li>
+<li><p><strong>Conclude with Synthesis:</strong> “In summary, while sparse attention methods are essential for handling long sequences, it’s crucial to be aware of their potential drawbacks and to use appropriate diagnostic and mitigation techniques. A careful consideration of the specific dataset and task is key.”</p></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush through the explanation. Allow the interviewer time to process the information.</li>
+<li><strong>Use Visual Aids (If Possible):</strong> If you’re in a virtual interview, consider sharing your screen to show diagrams or examples of attention patterns.</li>
+<li><strong>Check for Understanding:</strong> Periodically ask the interviewer if they have any questions. This ensures they are following your explanation.</li>
+<li><strong>Be Honest About Limitations:</strong> If you’re not sure about a particular aspect of sparse attention, be honest about it. It’s better to admit uncertainty than to give a wrong answer.</li>
+<li><strong>Adapt to the Interviewer:</strong> Adjust the level of detail based on the interviewer’s background and questions. If they seem particularly interested in a specific area, delve into that area in more detail.</li>
+<li><strong>Avoid Jargon Overload:</strong> While it’s important to demonstrate your technical expertise, avoid using too much jargon. Explain concepts in a clear and concise manner.</li>
+<li><strong>Express Enthusiasm:</strong> Show that you are genuinely interested in the topic of sparse attention and its applications. Enthusiasm is contagious and can make a positive impression on the interviewer.</li>
+<li><strong>Keep it conversational:</strong> Make eye contact, smile, and nod to demonstrate that you are engaged in the conversation.</li>
+<li><strong>Be ready to delve deeper:</strong> The interviewer might ask you to explain certain points in greater detail. Have some additional information prepared in advance. For instance, you could have a specific paper or blog post in mind that provides a more in-depth explanation of a particular technique.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

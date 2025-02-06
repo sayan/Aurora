@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>pretraining_objectives__masked_lm__next_sentence_prediction__etc___7</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-8.-how-would-you-adapt-pretraining-strategies-including-mlm-and-nsp-when-dealing-with-extremely-long-documents-or-contexts-that-exceed-typical-transformer-input-lengths" class="level2">
+<h2 class="anchored" data-anchor-id="question-8.-how-would-you-adapt-pretraining-strategies-including-mlm-and-nsp-when-dealing-with-extremely-long-documents-or-contexts-that-exceed-typical-transformer-input-lengths">Question: 8. How would you adapt pretraining strategies, including MLM and NSP, when dealing with extremely long documents or contexts that exceed typical transformer input lengths?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Pretraining strategies like Masked Language Modeling (MLM) and Next Sentence Prediction (NSP), while effective for many NLP tasks, face significant challenges when dealing with extremely long documents that exceed the input length limitations of standard Transformer architectures. Adapting these strategies requires careful consideration of computational efficiency, memory constraints, and the preservation of long-range dependencies. Here’s a breakdown of common techniques and considerations:</p>
+<section id="chunking-and-sliding-windows" class="level3">
+<h3 class="anchored" data-anchor-id="chunking-and-sliding-windows">1. Chunking and Sliding Windows</h3>
+<ul>
+<li><strong>Basic Idea:</strong> Divide the long document into smaller, overlapping chunks that fit within the Transformer’s input length.</li>
+<li><strong>MLM Adaptation:</strong> Apply MLM independently to each chunk. The masked tokens are predicted based on the context within that chunk. To somewhat alleviate issues at chunk boundaries, use overlap.</li>
+<li><strong>NSP Adaptation:</strong> Instead of predicting the <em>next sentence</em>, predict if two adjacent chunks are truly adjacent in the original document. This aims to capture local coherence.</li>
+<li><strong>Mathematical Intuition:</strong> Let <span class="math inline">\(D\)</span> be the long document, and <span class="math inline">\(L\)</span> be the maximum input length of the Transformer. We divide <span class="math inline">\(D\)</span> into chunks <span class="math inline">\(C_1, C_2, ..., C_n\)</span> such that <span class="math inline">\(|C_i| \le L\)</span> for all <span class="math inline">\(i\)</span>.
+<ul>
+<li>For MLM, the loss function for each chunk <span class="math inline">\(C_i\)</span> is: <span class="math display">\[ \mathcal{L}_{MLM}(C_i) = - \sum_{t \in M_i} \log P(w_t | w_{\setminus t}, C_i) \]</span> where <span class="math inline">\(M_i\)</span> is the set of masked tokens in <span class="math inline">\(C_i\)</span>, and <span class="math inline">\(w_{\setminus t}\)</span> represents the unmasked tokens in <span class="math inline">\(C_i\)</span>.</li>
+<li>For NSP, we create pairs <span class="math inline">\((C_i, C_j)\)</span> where <span class="math inline">\(C_j\)</span> is either the chunk immediately following <span class="math inline">\(C_i\)</span> (positive example) or a random chunk from the document (negative example). The loss is then a binary cross-entropy loss.</li>
+</ul></li>
+<li><strong>Advantages:</strong> Simple to implement, computationally efficient for each individual chunk.</li>
+<li><strong>Disadvantages:</strong> Breaks long-range dependencies across chunks. Information at the edges of chunks might be lost, leading to suboptimal performance when those long range dependencies are relevant. The overlap parameter needs to be carefully chosen.</li>
+<li><strong>Real-World Considerations:</strong> Careful selection of chunk size and overlap is crucial. Shorter chunks may lose context, while longer chunks increase computational cost.</li>
+</ul>
+</section>
+<section id="hierarchical-modeling" class="level3">
+<h3 class="anchored" data-anchor-id="hierarchical-modeling">2. Hierarchical Modeling</h3>
+<ul>
+<li><p><strong>Basic Idea:</strong> Use a hierarchical Transformer architecture to process the document in stages. The first level processes chunks of the document, and the second level processes the representations generated by the first level.</p></li>
+<li><p><strong>MLM Adaptation:</strong> Apply MLM at the chunk level. Then, use the representations from the first level Transformer as input to a second level Transformer to capture inter-chunk dependencies and perform a second MLM task at a higher level of abstraction.</p></li>
+<li><p><strong>NSP Adaptation:</strong> The second-level Transformer can be trained to predict relationships between chunks, such as whether they belong to the same section or topic. This can be seen as a form of hierarchical NSP.</p></li>
+<li><p><strong>Mathematical Intuition:</strong> Let <span class="math inline">\(E_i\)</span> be the embedding of chunk <span class="math inline">\(C_i\)</span> produced by the first-level Transformer. The second-level Transformer takes the sequence <span class="math inline">\(E_1, E_2, ..., E_n\)</span> as input. The MLM loss at the second level could be: <span class="math display">\[ \mathcal{L}_{MLM}^{(2)} = - \sum_{i \in M} \log P(E_i | E_{\setminus i}, E_1, ..., E_n) \]</span> where <span class="math inline">\(M\)</span> is the set of masked chunk embeddings.</p></li>
+<li><p><strong>Advantages:</strong> Captures hierarchical relationships and longer-range dependencies.</p></li>
+<li><p><strong>Disadvantages:</strong> More complex to implement and train. Significantly increases computational cost. Requires careful design of the hierarchical structure.</p></li>
+<li><p><strong>Real-World Considerations:</strong> Effective for documents with clear hierarchical structures (e.g., books with chapters, sections, paragraphs).</p></li>
+</ul>
+</section>
+<section id="memory-augmented-transformers" class="level3">
+<h3 class="anchored" data-anchor-id="memory-augmented-transformers">3. Memory-Augmented Transformers</h3>
+<ul>
+<li><strong>Basic Idea:</strong> Equip the Transformer with an external memory module to store and retrieve information from previous parts of the document.</li>
+<li><strong>MLM Adaptation:</strong> The MLM task can access information from the external memory to better predict masked tokens, especially those that depend on context from earlier in the document.</li>
+<li><strong>NSP Adaptation:</strong> The memory can store representations of previous chunks, allowing the model to consider the entire document history when predicting the relationship between two chunks. Effectively allowing it to see beyond the chunks.</li>
+<li><strong>Mathematical Intuition:</strong> The Transformer attends not only to the input tokens but also to the memory slots <span class="math inline">\(M = \{m_1, m_2, ..., m_k\}\)</span>. The attention mechanism is modified to include these memory slots: <span class="math display">\[ Attention(Q, K, V) = softmax(\frac{QK^T + QM^T}{\sqrt{d_k}})V \]</span> where <span class="math inline">\(Q\)</span>, <span class="math inline">\(K\)</span>, and <span class="math inline">\(V\)</span> are the query, key, and value matrices, respectively, and <span class="math inline">\(d_k\)</span> is the dimension of the keys. <span class="math inline">\(M\)</span> represents the memory embeddings.</li>
+<li><strong>Advantages:</strong> Enables access to a wider context without increasing the input length. Can model very long-range dependencies.</li>
+<li><strong>Disadvantages:</strong> More complex architecture and training procedure. The memory management strategy (e.g., read/write operations) needs to be carefully designed.</li>
+<li><strong>Real-World Considerations:</strong> Requires efficient memory access mechanisms. Models like Transformer-XL and Longformer fall into this category.</li>
+</ul>
+</section>
+<section id="sparse-attention-mechanisms" class="level3">
+<h3 class="anchored" data-anchor-id="sparse-attention-mechanisms">4. Sparse Attention Mechanisms</h3>
+<ul>
+<li><p><strong>Basic Idea:</strong> Reduce the computational complexity of the attention mechanism by attending only to a subset of the input tokens.</p></li>
+<li><p><strong>MLM Adaptation:</strong> Apply sparse attention during MLM pretraining. For example, tokens can attend to nearby tokens, a few randomly selected tokens, and tokens from specific positions (e.g., the beginning of the document).</p></li>
+<li><p><strong>NSP Adaptation:</strong> Sparse attention can be used to efficiently compare different parts of the document when predicting relationships between chunks or sentences.</p></li>
+<li><p><strong>Mathematical Intuition:</strong> Instead of computing the full attention matrix, <span class="math inline">\(A = softmax(\frac{QK^T}{\sqrt{d_k}})\)</span>, we compute a sparse attention matrix <span class="math inline">\(A'\)</span> where most of the entries are zeroed out. The sparsity pattern can be based on distance, random selection, or learned patterns. For example, the Longformer uses a combination of sliding window attention, global attention (to specific tokens), and random attention.</p></li>
+<li><p><strong>Advantages:</strong> Reduces computational cost, allowing for longer input sequences.</p></li>
+<li><p><strong>Disadvantages:</strong> Requires careful design of the sparsity pattern to ensure that important dependencies are captured.</p></li>
+<li><p><strong>Real-World Considerations:</strong> Models like Longformer, BigBird, and Reformer use sparse attention mechanisms.</p></li>
+</ul>
+</section>
+<section id="relative-position-embeddings-and-contextualized-embeddings" class="level3">
+<h3 class="anchored" data-anchor-id="relative-position-embeddings-and-contextualized-embeddings">5. Relative Position Embeddings and Contextualized Embeddings</h3>
+<ul>
+<li><strong>Importance:</strong> Using relative position embeddings (e.g., as in Transformer-XL) is critical for chunking approaches to correctly model positionality when the chunks are recombined later for downstream tasks. Similarly, contextualized embeddings like those produced by ELMo can be used to represent input at the chunk-level.</li>
+<li><strong>Advantages:</strong> Models can “understand” the distance between tokens, even across chunk boundaries.</li>
+<li><strong>Disadvantages:</strong> Can increase model complexity.</li>
+</ul>
+</section>
+<section id="summary-table-of-approaches" class="level3">
+<h3 class="anchored" data-anchor-id="summary-table-of-approaches">Summary Table of Approaches</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 18%">
+<col style="width: 22%">
+<col style="width: 26%">
+<col style="width: 26%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Approach</th>
+<th style="text-align: left;">MLM Adaptation</th>
+<th style="text-align: left;">NSP Adaptation</th>
+<th style="text-align: left;">Advantages</th>
+<th style="text-align: left;">Disadvantages</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Chunking/Sliding Windows</td>
+<td style="text-align: left;">Apply MLM to each chunk independently.</td>
+<td style="text-align: left;">Predict if two adjacent chunks are truly adjacent.</td>
+<td style="text-align: left;">Simple, computationally efficient.</td>
+<td style="text-align: left;">Breaks long-range dependencies, requires careful chunk size selection.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Hierarchical Modeling</td>
+<td style="text-align: left;">MLM at chunk level, then at higher level on chunk representations.</td>
+<td style="text-align: left;">Predict relationships between chunks at the higher level.</td>
+<td style="text-align: left;">Captures hierarchical relationships, longer-range dependencies.</td>
+<td style="text-align: left;">Complex, computationally expensive.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Memory-Augmented</td>
+<td style="text-align: left;">MLM can access information from external memory.</td>
+<td style="text-align: left;">Memory stores representations of previous chunks to inform NSP.</td>
+<td style="text-align: left;">Access to wider context, models very long-range dependencies.</td>
+<td style="text-align: left;">Complex architecture, memory management is critical.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sparse Attention</td>
+<td style="text-align: left;">Apply sparse attention patterns during MLM.</td>
+<td style="text-align: left;">Use sparse attention for efficient comparison of document parts.</td>
+<td style="text-align: left;">Reduces computational cost, allows for longer input sequences.</td>
+<td style="text-align: left;">Requires careful design of sparsity patterns.</td>
+</tr>
+</tbody>
+</table>
+<p>In conclusion, adapting pretraining strategies for extremely long documents requires a trade-off between computational cost, memory usage, and the ability to capture long-range dependencies. The optimal approach depends on the specific characteristics of the documents and the downstream tasks. It is crucial to carefully consider the advantages and disadvantages of each technique and to design the pretraining procedure accordingly.</p>
+<hr>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a suggested way to deliver this answer in an interview, balancing technical depth with clarity:</p>
+<ol type="1">
+<li><p><strong>Start with the Problem:</strong></p>
+<ul>
+<li>“The challenge with applying standard pretraining objectives like MLM and NSP to very long documents stems from the input length limitations of Transformers. We need to adapt the strategies to handle these longer contexts effectively.” (Sets the stage)</li>
+</ul></li>
+<li><p><strong>Outline the Main Approaches:</strong></p>
+<ul>
+<li>“There are several ways to tackle this. The most common approaches are: chunking the documents, using hierarchical models, incorporating memory-augmented architectures, or employing sparse attention mechanisms.” (Gives a high-level overview).</li>
+</ul></li>
+<li><p><strong>Explain Chunking (with light math):</strong></p>
+<ul>
+<li>“Chunking involves dividing the long document into smaller, overlapping segments. We can then apply MLM or NSP to each segment independently. For example, the MLM loss for a chunk can be expressed as <code>&lt;explain the MLM loss equation briefly&gt;</code>. The NSP is adapted to asking if two chunks are really next to each other.”</li>
+<li>“This approach is simple to implement but has the disadvantage of breaking long-range dependencies.”</li>
+</ul></li>
+<li><p><strong>Introduce Hierarchical Models:</strong></p>
+<ul>
+<li>“A more sophisticated approach is hierarchical modeling. Here, you have one Transformer that processes the chunks and then another Transformer that processes the <em>representations</em> of those chunks. This allows the second transformer to learn relationships between the chunks and model dependencies.”</li>
+<li>“This is more computationally expensive, but is much better for long-range dependencies.”</li>
+</ul></li>
+<li><p><strong>Discuss Memory-Augmented Transformers:</strong></p>
+<ul>
+<li>“Another powerful technique is to use memory-augmented Transformers. These architectures have an external memory module that allows the model to store information from previous parts of the document, thus bypassing the context length limitation. For instance, we modify the attention mechanism to also attend to memory using the following equation: <code>&lt;explain the attention equation with memory briefly&gt;</code>.”</li>
+<li>“The trade-off here is increased complexity in the architecture and training process.”</li>
+</ul></li>
+<li><p><strong>Describe Sparse Attention:</strong></p>
+<ul>
+<li>“Sparse attention mechanisms reduce the computational burden by attending only to a subset of the input tokens, enabling longer input sequences. Instead of computing the full attention matrix, we compute a sparse one: <code>&lt;explain the sparse attention matrix briefly&gt;</code>.”</li>
+</ul></li>
+<li><p><strong>Summarize and Conclude:</strong></p>
+<ul>
+<li>“In summary, adapting MLM and NSP for long documents requires balancing computational cost, memory usage, and the preservation of long-range dependencies. The optimal choice depends on the specific application. It’s also crucial to consider things like relative positional embeddings.” (Brings it all together).</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace yourself:</strong> Don’t rush through the explanations, especially when discussing the mathematical aspects.</li>
+<li><strong>Use visual aids (if possible):</strong> If you are in a virtual interview, consider sharing your screen and sketching a diagram of the architectures. If in person, use the whiteboard.</li>
+<li><strong>Check for understanding:</strong> Pause after explaining a concept and ask the interviewer if they have any questions.</li>
+<li><strong>Tailor the depth:</strong> Gauge the interviewer’s understanding and adjust the level of detail accordingly. If they seem unfamiliar with a concept, provide a simpler explanation. If they are knowledgeable, you can delve deeper into the technical aspects.</li>
+<li><strong>Demonstrate Practical Awareness:</strong> Mention the names of specific models (Longformer, Transformer-XL, etc.) and highlight the real-world considerations involved in implementing these techniques.</li>
+<li><strong>Highlight Tradeoffs:</strong> Emphasize the trade-offs between different approaches (e.g., computational cost vs.&nbsp;accuracy) to demonstrate your understanding of the practical implications.</li>
+<li><strong>Be Confident:</strong> Speak clearly and confidently, conveying your expertise in the field.</li>
+</ul>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

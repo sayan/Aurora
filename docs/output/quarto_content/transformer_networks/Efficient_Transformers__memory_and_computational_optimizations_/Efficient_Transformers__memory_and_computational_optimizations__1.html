@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>efficient_transformers__memory_and_computational_optimizations__1</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-describe-the-concept-of-sparse-attention-and-how-it-is-utilized-in-models-like-the-longformer-or-bigbird." class="level2">
+<h2 class="anchored" data-anchor-id="question-describe-the-concept-of-sparse-attention-and-how-it-is-utilized-in-models-like-the-longformer-or-bigbird.">Question: Describe the concept of sparse attention and how it is utilized in models like the Longformer or BigBird.</h2>
+<p><strong>Best Answer</strong></p>
+<p>Sparse attention is a set of techniques designed to mitigate the computational and memory bottlenecks associated with the standard self-attention mechanism in Transformers, especially when dealing with long sequences. The standard self-attention mechanism has a quadratic complexity with respect to the sequence length (<span class="math inline">\(n\)</span>), specifically <span class="math inline">\(O(n^2)\)</span>, which becomes prohibitively expensive for long inputs. Sparse attention aims to reduce this complexity, often to near-linear complexity, making it feasible to process much longer sequences.</p>
+<p>The core idea is to avoid computing attention weights between <em>all</em> pairs of tokens in the input sequence. Instead, attention is restricted to a subset of token pairs. Different sparse attention patterns exist, each with its own tradeoffs between computational efficiency and modeling capability. Let’s formally define the standard attention and contrast it with sparse attention.</p>
+<p>Standard Attention:</p>
+<p>Given a sequence of input tokens represented as embeddings <span class="math inline">\(X \in \mathbb{R}^{n \times d}\)</span>, where <span class="math inline">\(n\)</span> is the sequence length and <span class="math inline">\(d\)</span> is the embedding dimension, we derive query (<span class="math inline">\(Q\)</span>), key (<span class="math inline">\(K\)</span>), and value (<span class="math inline">\(V\)</span>) matrices:</p>
+<p><span class="math display">\[
+Q = XW_Q, \quad K = XW_K, \quad V = XW_V
+\]</span></p>
+<p>where <span class="math inline">\(W_Q, W_K, W_V \in \mathbb{R}^{d \times d}\)</span> are learnable weight matrices.</p>
+<p>The attention weights <span class="math inline">\(A\)</span> are calculated as:</p>
+<p><span class="math display">\[
+A = \text{softmax}\left(\frac{QK^T}{\sqrt{d}}\right)
+\]</span></p>
+<p>where <span class="math inline">\(A \in \mathbb{R}^{n \times n}\)</span>. The output is then computed as:</p>
+<p><span class="math display">\[
+\text{Attention}(Q, K, V) = AV
+\]</span></p>
+<p>The computational complexity of this operation is dominated by the matrix multiplication <span class="math inline">\(QK^T\)</span>, which is <span class="math inline">\(O(n^2d)\)</span>, and the application of the attention weights <span class="math inline">\(AV\)</span>, also <span class="math inline">\(O(n^2d)\)</span>. The memory complexity is <span class="math inline">\(O(n^2)\)</span> due to storing the attention matrix <span class="math inline">\(A\)</span>.</p>
+<p>Sparse Attention:</p>
+<p>In sparse attention, we define a sparse attention mask <span class="math inline">\(S\)</span>, where <span class="math inline">\(S_{ij} = 1\)</span> if token <span class="math inline">\(i\)</span> attends to token <span class="math inline">\(j\)</span>, and <span class="math inline">\(S_{ij} = 0\)</span> otherwise. The attention weights are then calculated as:</p>
+<p><span class="math display">\[
+A_{ij} = \begin{cases}
+\text{softmax}\left(\frac{Q_iK_j^T}{\sqrt{d}}\right) &amp; \text{if } S_{ij} = 1 \\
+-\infty &amp; \text{if } S_{ij} = 0
+\end{cases}
+\]</span></p>
+<p>The key is how <span class="math inline">\(S\)</span> is constructed to achieve sparsity and efficiency.</p>
+<p>Here are some common sparse attention patterns, as seen in Longformer and BigBird:</p>
+<ol type="1">
+<li><p><strong>Sliding Window Attention (Local Attention):</strong> Each token attends to a fixed-size window of tokens around it. This is computationally efficient, as the number of attended tokens per token is constant, leading to a linear complexity <span class="math inline">\(O(n)\)</span>.</p>
+<ul>
+<li><p><strong>Example:</strong> A token at position <span class="math inline">\(i\)</span> attends to tokens in the range <span class="math inline">\([i-w, i+w]\)</span>, where <span class="math inline">\(w\)</span> is the window size.</p></li>
+<li><p><strong>Mathematical Representation:</strong> <span class="math inline">\(S_{ij} = 1\)</span> if <span class="math inline">\(|i - j| \le w\)</span>, and <span class="math inline">\(S_{ij} = 0\)</span> otherwise.</p></li>
+</ul></li>
+<li><p><strong>Global Attention:</strong> A small set of “global” tokens attend to all other tokens, and all other tokens attend to these global tokens. This allows the model to capture long-range dependencies. These tokens can be, for example, the <code>[CLS]</code> token in BERT or task-specific tokens.</p>
+<ul>
+<li><p><strong>Purpose:</strong> To provide a global context to the local information captured by the sliding window.</p></li>
+<li><p><strong>Mathematical Representation:</strong> Let <span class="math inline">\(G\)</span> be the set of global tokens. Then, <span class="math inline">\(S_{ij} = 1\)</span> if <span class="math inline">\(i \in G\)</span> or <span class="math inline">\(j \in G\)</span>, and potentially <span class="math inline">\(S_{ij} = 1\)</span> according to a local window as well.</p></li>
+</ul></li>
+<li><p><strong>Random Attention:</strong> Each token attends to a small set of randomly selected tokens. This can help with information propagation across the sequence.</p>
+<ul>
+<li><p><strong>Purpose:</strong> Introduce diversity and allow for potentially capturing dependencies beyond the local window.</p></li>
+<li><p><strong>Mathematical Representation:</strong> <span class="math inline">\(S_{ij} = 1\)</span> with probability <span class="math inline">\(p\)</span> (a hyperparameter), and <span class="math inline">\(S_{ij} = 0\)</span> otherwise. The number of random connections is typically kept small to maintain efficiency.</p></li>
+</ul></li>
+<li><p><strong>Block Sparse Attention:</strong> The sequence is divided into blocks, and attention is restricted to tokens within the same block. Attention can also occur between a subset of blocks.</p>
+<ul>
+<li><p><strong>Example:</strong> Divide sequence into non-overlapping blocks of size <span class="math inline">\(b\)</span>. Tokens within block <span class="math inline">\(k\)</span> can only attend to tokens in block <span class="math inline">\(k\)</span> and possibly some other blocks.</p></li>
+<li><p><strong>Mathematical Representation:</strong> Define a block index function <span class="math inline">\(B(i)\)</span> that maps a token index <span class="math inline">\(i\)</span> to its block index. Then <span class="math inline">\(S_{ij} = 1\)</span> if <span class="math inline">\(B(i) = B(j)\)</span> or if <span class="math inline">\(B(i)\)</span> and <span class="math inline">\(B(j)\)</span> are in a set of allowed block pairs.</p></li>
+</ul></li>
+</ol>
+<p><strong>Longformer:</strong></p>
+<p>The Longformer combines sliding window attention, global attention, and task-specific attention. Specifically:</p>
+<ul>
+<li>It uses a sliding window attention for most tokens.</li>
+<li>It uses global attention for a few pre-selected tokens (e.g., <code>[CLS]</code> token), enabling these tokens to attend to the entire sequence and vice versa. This is critical for tasks requiring global sequence representation, like classification.</li>
+<li>It allows task-specific tokens to attend to all tokens, which is useful for tasks like question answering.</li>
+</ul>
+<p><strong>BigBird:</strong></p>
+<p>BigBird uses a combination of random attention, sliding window attention, and global attention to achieve a theoretical <span class="math inline">\(O(n)\)</span> complexity. It proves that these three types of attention are theoretically Turing Complete. Specifically, BigBird uses:</p>
+<ul>
+<li><strong>Random Attention:</strong> Each token attends to a fixed number of random tokens.</li>
+<li><strong>Sliding Window Attention:</strong> Each token attends to tokens in its neighborhood.</li>
+<li><strong>Global Attention:</strong> A set of global tokens that attend to all other tokens, and all tokens attend to these global tokens.</li>
+</ul>
+<p>The combination of these sparse attention mechanisms allows BigBird to process very long sequences while maintaining computational efficiency and achieving strong performance on various NLP tasks.</p>
+<p><strong>Implementation Details and Considerations:</strong></p>
+<ul>
+<li><p><strong>Efficient Implementation:</strong> Sparse attention requires custom implementations to avoid materializing the full <span class="math inline">\(n \times n\)</span> attention matrix. Libraries like <code>torch.nn.functional.scaled_dot_product_attention</code> in recent PyTorch versions now support sparse attention via attention masks. Custom CUDA kernels are also frequently used for further optimization.</p></li>
+<li><p><strong>Padding:</strong> Handling padding tokens correctly is important. Padding tokens should not attend to other tokens and should not be attended to by other tokens. This can be achieved by setting the corresponding entries in the attention mask <span class="math inline">\(S\)</span> to 0 (or <span class="math inline">\(-\infty\)</span> in the log domain).</p></li>
+<li><p><strong>Trade-offs:</strong> While sparse attention improves efficiency, it can potentially reduce the model’s ability to capture long-range dependencies if not designed carefully. The choice of sparse attention pattern depends on the specific task and the characteristics of the input data.</p></li>
+<li><p><strong>Hardware Acceleration:</strong> Sparse matrix operations are generally less optimized than dense matrix operations on standard hardware. Therefore, specialized hardware or libraries optimized for sparse computations can further improve the performance of sparse attention mechanisms.</p></li>
+</ul>
+<p>In summary, sparse attention is a powerful technique to enable Transformers to process long sequences efficiently. Models like Longformer and BigBird demonstrate the effectiveness of different sparse attention patterns in capturing long-range dependencies while maintaining computational feasibility. The key is to choose a sparse attention pattern that balances computational efficiency with the ability to capture relevant dependencies in the data.</p>
+<hr>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a guide on how to deliver this answer verbally in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with the Big Picture (30 seconds):</strong></p>
+<ul>
+<li>“Sparse attention is a collection of techniques designed to make Transformers more efficient when dealing with long sequences. The standard self-attention mechanism has quadratic complexity, making it computationally expensive for long inputs. Sparse attention aims to reduce this complexity.”</li>
+<li>“The key idea is to avoid calculating attention weights between all pairs of tokens. Instead, attention is restricted to a subset of token pairs using an attention mask.”</li>
+</ul></li>
+<li><p><strong>Explain Standard Attention (1 minute):</strong></p>
+<ul>
+<li>“To understand sparse attention, it’s helpful to quickly review standard self-attention. Given an input sequence, we calculate query, key, and value matrices. Then, the attention weights are computed using a softmax function. The computational bottleneck is the matrix multiplication in calculating the attention weights, which has a complexity of <span class="math inline">\(O(n^2)\)</span>.” Briefly explain the equations for the full attention mechanism.</li>
+<li>“The main limitation here is the quadratic complexity with respect to sequence length, limiting the length of the sequences we can process.”</li>
+</ul></li>
+<li><p><strong>Introduce Sparse Attention Patterns (2-3 minutes):</strong></p>
+<ul>
+<li>“Sparse attention reduces this complexity by applying a mask to the full attention matrix.”</li>
+<li>“There are several different sparse attention patterns, including:”
+<ul>
+<li><strong>Sliding Window Attention:</strong> “Each token attends to a fixed-size window around it. This is computationally efficient. For example, tokens attend to their <span class="math inline">\(w\)</span> neighbors on both sides.”</li>
+<li><strong>Global Attention:</strong> “Certain tokens (e.g., the [CLS] token) attend to all other tokens, and all tokens attend to these global tokens. This allows the model to capture long-range dependencies. This can be useful to provide a global context for sequence classification tasks.”</li>
+<li><strong>Random Attention:</strong> “Each token attends to a small set of randomly selected tokens. This adds diversity.”</li>
+<li><strong>Block Sparse Attention:</strong> “Divide sequence into blocks and allow attention between the same blocks or subset of blocks.”</li>
+</ul></li>
+<li>“You can draw a quick diagram on a whiteboard to illustrate these patterns if available.”</li>
+</ul></li>
+<li><p><strong>Discuss Longformer and BigBird (2 minutes):</strong></p>
+<ul>
+<li>“Models like Longformer and BigBird leverage these sparse attention patterns. The Longformer combines sliding window attention with global attention for specific tokens.”</li>
+<li>“BigBird uses a combination of random attention, sliding window attention, and global attention to achieve near-linear complexity. The cool thing is that they showed this combination makes the model theoretically Turing Complete.”</li>
+<li>“These models demonstrate the practical benefits of sparse attention in handling long sequences and improving performance.”</li>
+</ul></li>
+<li><p><strong>Mention Implementation Details and Trade-offs (1 minute):</strong></p>
+<ul>
+<li>“Implementing sparse attention efficiently requires custom code to avoid materializing the full attention matrix. Considerations like padding and specialized hardware can also impact performance.”</li>
+<li>“There are trade-offs. While sparse attention improves efficiency, it can potentially reduce the model’s ability to capture long-range dependencies if not designed carefully.”</li>
+</ul></li>
+<li><p><strong>Concluding Remarks (30 seconds):</strong></p>
+<ul>
+<li>“In summary, sparse attention is a valuable technique for enabling Transformers to process long sequences. Models like Longformer and BigBird showcase the effectiveness of different sparse attention patterns in balancing efficiency and modeling capability.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush through the explanation. Give the interviewer time to process the information.</li>
+<li><strong>Check for Understanding:</strong> Pause periodically and ask if they have any questions.</li>
+<li><strong>Tailor the Depth:</strong> Adjust the level of detail based on the interviewer’s background and interest. If they seem particularly interested in the mathematical aspects, you can delve deeper into the equations. If they’re more interested in the practical applications, focus on the examples of Longformer and BigBird.</li>
+<li><strong>Use Visual Aids (If Possible):</strong> Diagrams can be very helpful in explaining the different sparse attention patterns.</li>
+<li><strong>Be Confident:</strong> Demonstrate your expertise by clearly articulating the concepts and providing relevant examples.</li>
+</ul>
+<p><strong>Walking Through Mathematical Sections:</strong></p>
+<ul>
+<li><strong>Don’t Just Recite:</strong> Explain the <em>meaning</em> of the equations, not just the symbols.</li>
+<li><strong>Start Simple:</strong> Begin with the basic definition and gradually introduce more complex concepts.</li>
+<li><strong>Focus on the Key Components:</strong> Highlight the most important terms and explain their significance.</li>
+<li><strong>Use Analogies:</strong> Relate the mathematical concepts to real-world examples or intuitive ideas. For instance, explain the softmax function as a way to normalize attention weights into probabilities.</li>
+</ul>
+<p>By following these guidelines, you can effectively explain the concept of sparse attention in an interview and demonstrate your expertise in this area.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

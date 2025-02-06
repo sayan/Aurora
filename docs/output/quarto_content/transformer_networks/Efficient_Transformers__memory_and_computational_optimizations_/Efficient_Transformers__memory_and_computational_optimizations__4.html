@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>efficient_transformers__memory_and_computational_optimizations__4</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-memory-optimization-is-critical-for-processing-long-sequences.-can-you-describe-one-memory-efficient-approach-used-in-transformer-architectures-and-its-implications-on-backpropagation" class="level2">
+<h2 class="anchored" data-anchor-id="question-memory-optimization-is-critical-for-processing-long-sequences.-can-you-describe-one-memory-efficient-approach-used-in-transformer-architectures-and-its-implications-on-backpropagation">Question: Memory optimization is critical for processing long sequences. Can you describe one memory-efficient approach used in Transformer architectures and its implications on backpropagation?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Memory optimization is a significant challenge when training Transformer architectures, especially when dealing with long sequences. The quadratic complexity of the attention mechanism with respect to sequence length contributes heavily to this. One prominent memory-efficient approach is <strong>gradient checkpointing</strong> (also known as activation checkpointing). Let’s delve into it.</p>
+<p><strong>Gradient Checkpointing</strong></p>
+<p>The core idea behind gradient checkpointing is to reduce the memory footprint by strategically discarding intermediate activations during the forward pass and recomputing them during the backward pass. This technique trades computation for memory.</p>
+<ul>
+<li><strong>Forward Pass:</strong> In a standard forward pass, all activations from each layer are stored, which is necessary for computing gradients during backpropagation. Gradient checkpointing avoids this.</li>
+<li><strong>Checkpointing:</strong> Instead of storing <em>all</em> activations, only the inputs to certain layers (the “checkpoint” layers) are stored.</li>
+<li><strong>Backward Pass:</strong> During backpropagation, when the gradient with respect to a discarded activation is needed, the forward pass is recomputed from the nearest checkpoint to regenerate the necessary activation.</li>
+</ul>
+<p><strong>Mathematical Formulation</strong></p>
+<p>Consider a neural network with <span class="math inline">\(L\)</span> layers, where the <span class="math inline">\(l\)</span>-th layer’s operation is represented by a function <span class="math inline">\(f_l\)</span>. The forward pass can be described as:</p>
+<p><span class="math display">\[a_0 = x\]</span> <span class="math display">\[a_l = f_l(a_{l-1}) \text{  for } l = 1, 2, ..., L\]</span></p>
+<p>where <span class="math inline">\(x\)</span> is the input to the network and <span class="math inline">\(a_l\)</span> is the activation after the <span class="math inline">\(l\)</span>-th layer. In the standard approach, all <span class="math inline">\(a_l\)</span> are stored. Let <span class="math inline">\(J\)</span> be the loss function. The backward pass computes gradients <span class="math inline">\(\frac{\partial J}{\partial a_l}\)</span>.</p>
+<p>With gradient checkpointing, we select a subset of layers to act as checkpoints. Let’s say we checkpoint every <span class="math inline">\(k\)</span> layers. Then, during the backward pass for a layer <span class="math inline">\(l\)</span> between two checkpoints, the activations <span class="math inline">\(a_{l-1}, a_{l-2}, ..., a_{l-k+1}\)</span> need to be recomputed from <span class="math inline">\(a_{l-k}\)</span>. This recomputation effectively doubles the computation time for those layers.</p>
+<p><strong>Implications on Backpropagation</strong></p>
+<ol type="1">
+<li><p><strong>Memory Reduction:</strong> The primary benefit is a substantial reduction in memory consumption. Instead of storing all intermediate activations <span class="math inline">\(a_l\)</span>, only a subset is stored. The memory complexity can be reduced from <span class="math inline">\(O(L)\)</span> to <span class="math inline">\(O(k)\)</span>, where <span class="math inline">\(k\)</span> is the checkpointing interval (number of layers between checkpoints), often resulting in a significant memory saving, especially for deep networks.</p></li>
+<li><p><strong>Increased Computation:</strong> The trade-off is an increase in computation time. Activations need to be recomputed during backpropagation. In the worst case, the computation time could double, depending on the checkpointing frequency.</p></li>
+<li><p><strong>Numerical Stability:</strong> The recomputation can, in some cases, affect numerical stability. Floating-point operations are not perfectly associative due to rounding errors. The order of operations is different during the recomputation, which can lead to slight differences in the computed activations. However, this is rarely a practical issue.</p></li>
+<li><p><strong>Implementation Complexity:</strong> Implementing gradient checkpointing requires modifying the backpropagation process to recompute activations. Deep learning frameworks like PyTorch and TensorFlow provide built-in functionalities to facilitate gradient checkpointing, which simplifies the implementation.</p></li>
+</ol>
+<p><strong>Why is it important?</strong></p>
+<p>Gradient checkpointing allows training larger models with longer sequences that would otherwise be infeasible due to memory limitations. This unlocks the potential for improved performance on tasks that require processing long-range dependencies, such as long document summarization, video processing, and speech recognition.</p>
+<p><strong>Variations and Advanced Techniques</strong></p>
+<ul>
+<li><strong>Reversible Layers:</strong> A more advanced technique involves designing layers that allow for exact or approximate reversal of the forward pass, eliminating the need to store activations altogether. Notable examples include RevNets and reversible versions of Transformer layers. These are typically more complex to implement but offer greater memory savings. During backpropagation, the inverse function is used to reconstruct the input of the layer, rather than storing the intermediate activations.</li>
+<li><strong>Selective Checkpointing:</strong> Instead of applying checkpointing uniformly across all layers, one can selectively checkpoint layers based on their memory footprint or computational cost. For example, layers with large activations or computationally cheap layers could be preferentially checkpointed.</li>
+<li><strong>Offloading to CPU/Disk:</strong> In extremely memory-constrained scenarios, intermediate activations can be offloaded to CPU memory or even disk storage. However, this introduces significant overhead due to the slower memory access times.</li>
+</ul>
+<p><strong>Real-World Considerations</strong></p>
+<ul>
+<li><strong>Framework Support:</strong> Most modern deep learning frameworks (PyTorch, TensorFlow, JAX) provide built-in support for gradient checkpointing. Using these built-in functionalities simplifies the implementation and ensures proper integration with the framework’s optimization routines.</li>
+<li><strong>Hyperparameter Tuning:</strong> The checkpointing interval (<span class="math inline">\(k\)</span>) is a hyperparameter that needs to be tuned. A smaller interval results in lower memory consumption but higher computational overhead, and vice-versa. The optimal value depends on the specific model, hardware, and task.</li>
+<li><strong>Mixed Precision Training:</strong> Gradient checkpointing can be combined with mixed-precision training (e.g., using FP16 instead of FP32) to further reduce memory consumption.</li>
+</ul>
+<p><strong>Conclusion</strong></p>
+<p>Gradient checkpointing is a valuable technique for training memory-intensive models, particularly Transformers processing long sequences. It trades computation for memory, enabling the training of larger models and handling longer sequences than would be possible otherwise. Understanding its principles and limitations is essential for practitioners working with large-scale deep learning models.</p>
+<hr>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a guide on how to present this information in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with the Problem:</strong> “Memory optimization is a critical challenge, especially for Transformers dealing with long sequences because of the quadratic complexity of the attention mechanism. One effective approach is gradient checkpointing.”</p></li>
+<li><p><strong>Explain the Core Idea (Forward and Backward Pass):</strong> “The basic idea behind gradient checkpointing is to reduce memory usage by selectively discarding intermediate activations during the forward pass and then recomputing them during the backward pass when they’re needed for gradient calculations. So, during the forward pass, only the inputs to a subset of layers, called the ‘checkpoint’ layers, are stored. During backpropagation, when the gradient with respect to a discarded activation is needed, we recompute the forward pass from the nearest checkpoint to regenerate that activation.”</p></li>
+<li><p><strong>Briefly Mention the Math (without getting bogged down):</strong> “Mathematically, we can think of each layer as a function, <span class="math inline">\(f_l\)</span>. Instead of storing all the activations <span class="math inline">\(a_l\)</span> for each layer <span class="math inline">\(l\)</span>, we only store the activations at checkpoint layers. Then, during backpropagation, if we need an activation that wasn’t stored, we simply recompute it by reapplying the forward pass from the previous checkpoint. I can go into more detail about the mathematical representation if you would like.” (Gauge the interviewer’s interest before diving into the full equations).</p></li>
+<li><p><strong>Highlight Trade-offs and Implications:</strong> “The main benefit is significant memory reduction, allowing us to train larger models and process longer sequences. The trade-off is increased computation time since we’re recomputing activations. There could also be numerical instability issue. Implementing gradient checkpointing does involve modifying the backpropagation process, but frameworks like PyTorch and TensorFlow provide built-in support.”</p></li>
+<li><p><strong>Explain Importance and Advanced Techniques:</strong> “Gradient checkpointing is important because it makes training larger models with longer sequences feasible, opening the door to improved performance. There are also more advanced techniques like reversible layers, selective checkpointing, and offloading to CPU/disk for even greater memory savings, but these come with increased complexity.”</p></li>
+<li><p><strong>Discuss Real-World Considerations:</strong> “In practice, you’ll want to use the built-in gradient checkpointing functionalities of your deep learning framework. You’ll also need to tune the checkpointing interval as a hyperparameter, balancing memory savings and computation time. Also, Combining gradient checkpointing with mixed-precision training helps to further reduce memory consumption.”</p></li>
+<li><p><strong>Summarize:</strong> “So, in summary, gradient checkpointing is a valuable tool for training memory-intensive models. It allows us to trade computation for memory, enabling us to tackle larger models and longer sequences.”</p></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pause and Gauge Interest:</strong> After explaining the core idea, pause and ask if the interviewer wants you to elaborate on the mathematical details. This prevents you from overwhelming them with equations if they are more interested in the high-level concepts.</li>
+<li><strong>Use Visual Aids (if possible):</strong> If you’re interviewing remotely, consider using a shared whiteboard or drawing tool to illustrate the forward and backward passes with and without checkpointing. A simple diagram can significantly improve understanding.</li>
+<li><strong>Relate to Experience:</strong> If you have experience using gradient checkpointing in a specific project, briefly mention it. This adds credibility to your answer and shows that you have practical knowledge.</li>
+<li><strong>Speak Clearly and Concisely:</strong> Avoid jargon and use clear, straightforward language. Focus on conveying the key concepts and trade-offs.</li>
+<li><strong>Be Prepared to Answer Follow-Up Questions:</strong> The interviewer may ask follow-up questions about the impact of gradient checkpointing on convergence, the choice of checkpointing interval, or the implementation details. Be prepared to answer these questions with specific examples and insights.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

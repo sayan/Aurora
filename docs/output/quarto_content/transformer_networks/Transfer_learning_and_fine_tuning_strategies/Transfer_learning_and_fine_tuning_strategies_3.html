@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>transfer_learning_and_fine_tuning_strategies_3</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-describe-how-you-would-approach-fine-tuning-a-model-when-you-have-limited-labeled-data-for-the-target-task." class="level2">
+<h2 class="anchored" data-anchor-id="question-describe-how-you-would-approach-fine-tuning-a-model-when-you-have-limited-labeled-data-for-the-target-task.">Question: Describe how you would approach fine-tuning a model when you have limited labeled data for the target task.</h2>
+<p><strong>Best Answer</strong></p>
+<p>Fine-tuning a pre-trained model with limited labeled data for a new target task requires a careful strategy to avoid overfitting and ensure effective transfer learning. Here’s a breakdown of my approach:</p>
+<ol type="1">
+<li><p><strong>Understanding the Data &amp; Task Similarity:</strong></p>
+<ul>
+<li>First, I would deeply analyze both the source task (the one the pre-trained model was originally trained on) and the target task. Understanding the similarities and differences is crucial. For instance, if the pre-trained model was trained on ImageNet and the target task is classifying different types of medical scans, the low-level feature extractors (edges, textures) might still be relevant, but the high-level features will likely need adjustment.</li>
+</ul></li>
+<li><p><strong>Data Augmentation:</strong></p>
+<ul>
+<li>Given the scarcity of labeled data, data augmentation becomes vital. I would apply various transformations to the existing data to artificially increase its size and diversity.</li>
+<li>For image data, common techniques include: rotations, flips, crops, zooms, color jittering, and adding noise. More advanced techniques like CutMix, MixUp, and RandAugment could also be considered. The specific augmentations should be tailored to the nature of the data and the target task. For instance, horizontal flips might be appropriate for general object recognition but not for tasks where orientation is critical.</li>
+<li>For text data, augmentation techniques include synonym replacement, random insertion, random deletion, and back translation.</li>
+<li>The key is to generate realistic variations of the existing data without introducing biases or artifacts that could hurt performance.</li>
+</ul></li>
+<li><p><strong>Freezing Layers &amp; Fine-tuning Specific Parts:</strong></p>
+<ul>
+<li><p><strong>Layer Freezing:</strong> The most common starting point is to freeze a significant portion of the pre-trained model (typically the earlier layers, responsible for lower-level feature extraction) and only fine-tune the later layers (responsible for task-specific features) along with the classification head.</p></li>
+<li><p><strong>Rationale:</strong> The idea is that the pre-trained model has already learned useful general features from a large dataset. By freezing the early layers, we prevent them from being drastically altered by the limited target data, thereby reducing the risk of overfitting.</p></li>
+<li><p><strong>Progressive Unfreezing:</strong> An advanced technique here is <em>progressive unfreezing</em>. We start by fine-tuning only the classification head. Then, after a few epochs, we unfreeze a layer or two and fine-tune those along with the head. We repeat this process, gradually unfreezing more layers as training progresses. This allows the model to adapt more smoothly to the new task.</p></li>
+<li><p><strong>Mathematical Intuition:</strong> Let <span class="math inline">\(\theta\)</span> be the parameters of the pre-trained model and <span class="math inline">\(\theta_f\)</span> be the parameters of the layers that are being fine-tuned. The loss function for the fine-tuning process can be represented as:</p>
+<p><span class="math display">\[L(\theta_f) = \frac{1}{N} \sum_{i=1}^{N} l(f(x_i; \theta, \theta_f), y_i) + \lambda R(\theta_f)\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(x_i\)</span> is the input data.</li>
+<li><span class="math inline">\(y_i\)</span> is the corresponding label.</li>
+<li><span class="math inline">\(f(x_i; \theta, \theta_f)\)</span> is the model’s prediction.</li>
+<li><span class="math inline">\(l\)</span> is the loss function (e.g., cross-entropy).</li>
+<li><span class="math inline">\(N\)</span> is the number of training samples.</li>
+<li><span class="math inline">\(R(\theta_f)\)</span> is a regularization term (e.g., L1 or L2 regularization).</li>
+<li><span class="math inline">\(\lambda\)</span> is the regularization strength. Crucially, the pre-trained parameters <span class="math inline">\(\theta\)</span> are <em>not</em> updated during the initial stages of fine-tuning. Progressive unfreezing gradually allows elements of <span class="math inline">\(\theta\)</span> to be incorporated into <span class="math inline">\(\theta_f\)</span>.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Regularization Techniques:</strong></p>
+<ul>
+<li><strong>L1/L2 Regularization:</strong> Adding L1 or L2 regularization to the trainable parameters (especially those in the fine-tuned layers) can help prevent overfitting. L1 regularization encourages sparsity, while L2 regularization penalizes large weights. The strength of the regularization should be carefully tuned using a validation set.</li>
+<li><strong>Dropout:</strong> Applying dropout to the fine-tuned layers can also be effective. Dropout randomly deactivates neurons during training, forcing the network to learn more robust features.</li>
+<li><strong>Batch Normalization:</strong> Using Batch Normalization can stabilize training and improve generalization, especially when fine-tuning deep networks. However, it’s important to note that the batch statistics (mean and variance) are typically frozen in the pre-trained layers and only updated in the fine-tuned layers.</li>
+</ul></li>
+<li><p><strong>Learning Rate Scheduling &amp; Optimization:</strong></p>
+<ul>
+<li><p><strong>Lower Learning Rate:</strong> When fine-tuning, it’s generally recommended to use a <em>much lower</em> learning rate than what was used during the original pre-training. This is because the pre-trained model is already in a good parameter space, and we want to make small, incremental adjustments rather than drastic changes. Typical learning rates are in the range of 1e-5 to 1e-3.</p></li>
+<li><p><strong>Differential Learning Rates:</strong> Further refine this by applying <em>differential learning rates</em>. Assign a smaller learning rate to the earlier frozen layers (if any are unfrozen) and a larger learning rate to the later, task-specific layers. This allows the model to adapt the task-specific layers more quickly while preserving the knowledge learned in the earlier layers.</p></li>
+<li><p><strong>Learning Rate Schedulers:</strong> Employ learning rate schedulers like Step Decay, Cosine Annealing, or ReduceLROnPlateau to dynamically adjust the learning rate during training. These schedulers can help the model converge faster and escape local minima.</p></li>
+</ul></li>
+<li><p><strong>Early Stopping:</strong></p>
+<ul>
+<li>Monitor the performance of the model on a validation set during training. Implement early stopping to halt training when the validation loss stops improving for a certain number of epochs. This prevents overfitting and saves training time.</li>
+</ul></li>
+<li><p><strong>Semi-Supervised Learning or Self-Supervised Learning:</strong></p>
+<ul>
+<li><strong>Pseudo-Labeling:</strong> If unlabeled data is available for the target task, consider using pseudo-labeling. Train the model on the labeled data, then use the trained model to predict labels for the unlabeled data. Select the unlabeled data points with high-confidence predictions and add them to the training set with their predicted labels. Retrain the model on the combined labeled and pseudo-labeled data.</li>
+<li><strong>Self-Supervised Pretraining:</strong> Even better, leverage <em>self-supervised pretraining</em> on the unlabeled data <em>before</em> fine-tuning. This involves creating pretext tasks (e.g., predicting rotated image patches, filling in missing words in a sentence) that allow the model to learn useful representations from the unlabeled data. After pre-training, fine-tune the model on the limited labeled data. This can significantly boost performance.</li>
+</ul></li>
+<li><p><strong>Few-Shot Learning &amp; Meta-Learning (Advanced):</strong></p>
+<ul>
+<li>If the target task falls into a few-shot learning scenario (e.g., only a few examples per class), explore meta-learning techniques like MAML (Model-Agnostic Meta-Learning) or prototypical networks. These techniques train a model to learn how to learn quickly from limited data. They are more complex to implement but can be effective in extremely data-scarce situations.</li>
+</ul></li>
+<li><p><strong>Ensemble Methods:</strong></p>
+<ul>
+<li>Even with the best fine-tuning strategy, the resulting model might still have limitations due to the limited data. In such cases, consider using ensemble methods. Train multiple models with different initializations, data augmentations, or fine-tuning strategies, and combine their predictions to improve overall accuracy and robustness.</li>
+</ul></li>
+<li><p><strong>Careful Evaluation &amp; Iteration:</strong></p>
+<ul>
+<li>Rigorous evaluation is vital. Use appropriate metrics (precision, recall, F1-score, AUC, etc.) to assess the model’s performance. Analyze the errors the model makes and iterate on the fine-tuning strategy based on the insights gained.</li>
+</ul></li>
+</ol>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a step-by-step guide on how to articulate this to an interviewer:</p>
+<ol type="1">
+<li><p><strong>Start with the Challenge:</strong> “Fine-tuning with limited labeled data is challenging because we need to transfer knowledge from a pre-trained model without overfitting to the small dataset. My approach focuses on balancing these two aspects.”</p></li>
+<li><p><strong>Data Analysis &amp; Augmentation:</strong> “First, I’d analyze the similarity between the source and target tasks. Then, I’d aggressively use data augmentation to artificially increase the size and diversity of the training data. I’d consider techniques like rotations, flips, crops, and more advanced methods like MixUp and CutMix, tailoring the augmentations to the specifics of the data.”</p></li>
+<li><p><strong>Layer Freezing &amp; Fine-tuning:</strong> “Next, I’d carefully manage which layers to fine-tune. I’d start by freezing the early layers of the pre-trained model and only fine-tuning the later layers and the classification head. I might use progressive unfreezing, gradually unfreezing more layers as training progresses, to help the model adapt more smoothly.” Explain <em>why</em> freezing layers is important.</p></li>
+<li><p><strong>Regularization:</strong> “To prevent overfitting, I’d use regularization techniques like L1 or L2 regularization and dropout, especially on the fine-tuned layers.”</p></li>
+<li><p><strong>Learning Rate Scheduling:</strong> “Choosing the right learning rate is crucial. I’d use a lower learning rate than what was used during pre-training, perhaps in the range of 1e-5 to 1e-3. Differential learning rates, where different layers have different learning rates, can also be effective. Also I will implement learning rate scheduler techniques like Step Decay, Cosine Annealing to dynamically adjust the learning rate during training.”</p></li>
+<li><p><strong>Early Stopping:</strong> “I’d closely monitor the model’s performance on a validation set and use early stopping to halt training when the validation loss plateaus.”</p></li>
+<li><p><strong>(Optional) Semi-Supervised Learning:</strong> “If unlabeled data is available, I’d consider using semi-supervised learning techniques like pseudo-labeling to leverage that data.”</p></li>
+<li><p><strong>(Optional) Advanced Techniques:</strong> “In more challenging scenarios, I’d explore few-shot learning and meta-learning techniques like MAML or prototypical networks. Self-supervised pretraining on unlabeled data could also be very beneficial.”</p></li>
+<li><p><strong>(Optional) Ensemble Methods:</strong> Briefly mention the possibility of using ensemble methods to combine the predictions of multiple models for improved robustness.</p></li>
+<li><p><strong>Conclude with Evaluation:</strong> “Finally, I’d carefully evaluate the model’s performance using appropriate metrics and iterate on the fine-tuning strategy based on the results.”</p></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace yourself:</strong> Don’t rush through the explanation. Take your time and explain each step clearly.</li>
+<li><strong>Explain the “why”:</strong> Don’t just list techniques. Explain <em>why</em> each technique is important and <em>how</em> it helps to address the challenge of limited data.</li>
+<li><strong>Check for understanding:</strong> Pause periodically and ask the interviewer if they have any questions. This ensures that they are following your explanation.</li>
+<li><strong>Adapt to the interviewer:</strong> If the interviewer seems particularly interested in a specific area (e.g., meta-learning), delve into more detail on that topic.</li>
+<li><strong>Be honest about limitations:</strong> If you’re not familiar with a particular technique, it’s okay to say so. But demonstrate that you understand the underlying principles and are willing to learn.</li>
+<li><strong>Mathematical notations should be simplified:</strong> During the interview, you won’t have the luxury of writing out equations in LaTeX. Instead, explain the core idea behind the equations in plain language. For example, instead of writing out the regularization term, say something like, “We add a penalty to the loss function that discourages large weights, which helps prevent overfitting.”</li>
+<li><strong>Emphasize Practicality:</strong> Frame your answer in terms of concrete actions you would take. For example, “I’d <em>start</em> with freezing the layers, and then <em>carefully monitor</em> the validation loss while progressively unfreezing layers.”</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

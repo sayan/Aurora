@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>efficient_transformers__memory_and_computational_optimizations__5</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-efficient-transformer-models-often-trade-off-precision-for-speed.-can-you-elaborate-on-the-potential-downsides-of-these-approximations-in-real-world-applications" class="level2">
+<h2 class="anchored" data-anchor-id="question-efficient-transformer-models-often-trade-off-precision-for-speed.-can-you-elaborate-on-the-potential-downsides-of-these-approximations-in-real-world-applications">Question: Efficient Transformer models often trade off precision for speed. Can you elaborate on the potential downsides of these approximations in real-world applications?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Efficient Transformer models have become crucial for deploying these architectures in resource-constrained environments or when dealing with massive datasets. However, the approximations introduced to improve speed and reduce memory footprint can lead to several downsides in real-world applications. Understanding these trade-offs is essential for choosing the right model and mitigating potential negative impacts.</p>
+<p><strong>1. Loss of Model Accuracy:</strong></p>
+<ul>
+<li><p><strong>Approximation Error:</strong> Many efficiency techniques, such as low-rank approximations or kernel approximations, inherently introduce approximation errors. These errors accumulate and can reduce the model’s ability to accurately represent complex data patterns. For example, low-rank approximations of attention matrices can lead to a loss of fine-grained relationships between tokens.</p>
+<ul>
+<li>Mathematical Representation: If <span class="math inline">\(A\)</span> is the original attention matrix and <span class="math inline">\(\tilde{A}\)</span> is its low-rank approximation, the error can be quantified as: <span class="math display">\[||A - \tilde{A}||_F\]</span> where <span class="math inline">\(||\cdot||_F\)</span> is the Frobenius norm. Minimizing this error is crucial, but it’s often a trade-off with computational efficiency.</li>
+</ul></li>
+<li><p><strong>Impact on Downstream Tasks:</strong> Reduced accuracy directly impacts performance on downstream tasks. In NLP, this can manifest as lower BLEU scores for translation, reduced F1 scores for named entity recognition, or poorer sentiment analysis. In computer vision, it might lead to decreased accuracy in object detection or image classification.</p></li>
+</ul>
+<p><strong>2. Degradation in Capturing Long-Range Dependencies:</strong></p>
+<ul>
+<li><p><strong>Sparse Attention Patterns:</strong> Some efficient Transformers employ sparse attention mechanisms (e.g., Longformer, BigBird) to reduce the quadratic complexity of the attention mechanism. While this significantly improves speed, it can limit the model’s ability to capture long-range dependencies if the sparsity pattern is not carefully designed.</p></li>
+<li><p><strong>Mathematical Explanation:</strong> The full attention mechanism computes attention weights for all pairs of tokens: <span class="math display">\[Attention(Q, K, V) = softmax(\frac{QK^T}{\sqrt{d_k}})V\]</span> where <span class="math inline">\(Q, K, V\)</span> are the query, key, and value matrices, and <span class="math inline">\(d_k\)</span> is the dimension of the keys. Sparse attention restricts the computation to a subset of token pairs, potentially missing critical relationships that span longer distances within the input sequence.</p></li>
+<li><p><strong>Real-World Scenario:</strong> In document summarization, missing long-range dependencies can result in summaries that lack coherence or fail to capture the overall context of the document. In time series analysis, it can hinder the model’s ability to identify long-term trends and predict future values accurately.</p></li>
+</ul>
+<p><strong>3. Introduction of Biases:</strong></p>
+<ul>
+<li><p><strong>Sparsity Assumptions:</strong> Sparse attention mechanisms often rely on heuristics or learned patterns to determine which tokens to attend to. These heuristics can introduce biases if they favor certain types of tokens or relationships over others. For instance, if the sparsity pattern is based on token frequency, less frequent but important tokens might be overlooked.</p></li>
+<li><p><strong>Quantization:</strong> Model quantization reduces the precision of weights and activations (e.g., from 32-bit floating point to 8-bit integer). This can introduce quantization errors that disproportionately affect certain parts of the model, leading to biased predictions, especially in areas of the input space where the model is already less confident.</p></li>
+<li><p><strong>Mathematical Representation:</strong> Quantization can be represented as: <span class="math display">\[Q(x) = round(x / scale) * scale\]</span> where <span class="math inline">\(x\)</span> is the original value, <span class="math inline">\(scale\)</span> is a scaling factor, and <span class="math inline">\(Q(x)\)</span> is the quantized value. The error introduced by quantization is <span class="math inline">\(x - Q(x)\)</span>, and the distribution of this error can be non-uniform, leading to biases.</p></li>
+</ul>
+<p><strong>4. Training Instability:</strong></p>
+<ul>
+<li><p><strong>Gradient Issues:</strong> Certain approximations, like mixed precision training or aggressive pruning, can lead to unstable training dynamics. Mixed precision, while speeding up computation, can cause gradient underflow or overflow issues, especially in deep models. Pruning, which removes connections from the network, can disrupt the flow of information and make the model harder to train.</p></li>
+<li><p><strong>Mitigation Techniques:</strong> Techniques like gradient clipping, learning rate warm-up, and careful initialization are essential to stabilize training when using aggressive efficiency measures.</p></li>
+</ul>
+<p><strong>5. Generalization Issues:</strong></p>
+<ul>
+<li><p><strong>Overfitting to Training Data:</strong> Models optimized for efficiency, especially those with significant parameter reduction or pruning, can be more prone to overfitting the training data. This is because the reduced model capacity might not be sufficient to generalize to unseen data effectively.</p></li>
+<li><p><strong>Domain Shift:</strong> If the training data does not fully represent the diversity of real-world data, efficient models with introduced biases might perform poorly when deployed in different domains.</p></li>
+</ul>
+<p><strong>Strategies to Mitigate Downsides:</strong></p>
+<ul>
+<li><strong>Hybrid Approaches:</strong> Combine efficient approximations with full attention mechanisms in different layers or parts of the model. For instance, use sparse attention in the lower layers and full attention in the higher layers to capture both local and global dependencies.</li>
+<li><strong>Empirical Calibration:</strong> Carefully evaluate the performance of efficient models on a validation set that is representative of the target deployment environment. Use calibration techniques to adjust the model’s output probabilities and reduce biases.</li>
+<li><strong>Knowledge Distillation:</strong> Train a smaller, efficient model to mimic the behavior of a larger, more accurate teacher model. This can help transfer the knowledge of the larger model to the smaller one without significant loss of accuracy.</li>
+<li><strong>Adaptive Sparsity:</strong> Dynamically adjust the sparsity pattern during training based on the importance of different connections. This allows the model to focus on the most relevant relationships while maintaining efficiency.</li>
+<li><strong>Regularization Techniques:</strong> Apply regularization techniques like dropout or weight decay to prevent overfitting, especially when using aggressive parameter reduction methods.</li>
+<li><strong>Fine-tuning:</strong> Fine-tune the efficient model on task-specific data after pre-training to adapt it to the specific requirements of the target application.</li>
+</ul>
+<p>In summary, while efficient Transformer models offer significant advantages in terms of speed and memory usage, it’s crucial to carefully consider the potential downsides, such as reduced accuracy, loss of long-range dependencies, introduction of biases, training instability, and generalization issues. By understanding these trade-offs and employing appropriate mitigation strategies, one can effectively deploy efficient Transformers in real-world applications without compromising performance.</p>
+<hr>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a step-by-step guide on how to articulate this answer in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with a High-Level Overview:</strong></p>
+<ul>
+<li>“Efficient Transformer models are essential for deploying these models in resource-constrained environments or with massive datasets. However, the speed/memory trade-offs can introduce downsides that need careful consideration.” (This sets the stage and shows you understand the importance of the topic).</li>
+</ul></li>
+<li><p><strong>Discuss Loss of Model Accuracy:</strong></p>
+<ul>
+<li>“One key downside is the potential loss of model accuracy. Approximations like low-rank approximations or kernel approximations inherently introduce error.”</li>
+<li>“For example, low-rank approximations of attention matrices can reduce the model’s ability to capture fine-grained relationships between tokens. Mathematically, we can represent this error using the Frobenius norm:<pause> <span class="math display">\[||A - \tilde{A}||_F\]</span> where <span class="math inline">\(A\)</span> is the original attention matrix and <span class="math inline">\(\tilde{A}\)</span> is the low-rank approximation. The goal is to keep this error small while still achieving computational gains.” (Speak clearly and slowly when presenting the equation. Mentioning the norm name demonstrates depth without overwhelming the interviewer).</pause></li>
+<li>“This accuracy loss can affect downstream tasks like translation or image classification performance.”</li>
+</ul></li>
+<li><p><strong>Explain Degradation in Capturing Long-Range Dependencies:</strong></p>
+<ul>
+<li>“Another issue is the potential for degradation in capturing long-range dependencies. Sparse attention mechanisms, such as those used in Longformer or BigBird, reduce computational complexity but can limit the model’s ability to capture relationships between distant tokens if the sparsity pattern is poorly designed.”</li>
+<li>“The full attention mechanism considers all token pairs. Sparse attention restricts computation and omits potentially important relationships across longer distances. In document summarization, this can lead to summaries lacking coherence.”</li>
+</ul></li>
+<li><p><strong>Address the Introduction of Biases:</strong></p>
+<ul>
+<li>“Efficient Transformers can also introduce biases. Sparsity assumptions or quantization can favor certain types of tokens or relationships over others.”</li>
+<li>“For example, if token frequency determines the sparsity pattern, less frequent but crucial tokens might be overlooked.”</li>
+<li>“Quantization, which reduces precision, can introduce quantization errors: <pause> <span class="math display">\[Q(x) = round(x / scale) * scale\]</span> where <span class="math inline">\(x\)</span> is the original value. These errors aren’t always uniform and can bias the model.”</pause></li>
+</ul></li>
+<li><p><strong>Discuss Training Instability and Generalization Issues (if time permits):</strong></p>
+<ul>
+<li>“Approximations can also lead to training instability, requiring techniques like gradient clipping or learning rate warm-up. Also, models optimized too aggressively for efficiency can overfit the training data and generalize poorly.”</li>
+</ul></li>
+<li><p><strong>Outline Mitigation Strategies:</strong></p>
+<ul>
+<li>“Fortunately, we have several strategies to mitigate these downsides. Hybrid approaches, empirical calibration, knowledge distillation, adaptive sparsity, regularization and fine-tuning can all help to balance efficiency with accuracy.”</li>
+<li>“For example, you can use hybrid approaches to implement a more computationally expensive full-attention on the last few layers in order to help recover performance on the long-range dependencies.”</li>
+</ul></li>
+<li><p><strong>Conclude with a Summary:</strong></p>
+<ul>
+<li>“In summary, while efficient Transformers offer significant advantages, it’s crucial to carefully consider and address the potential downsides. By understanding these trade-offs and employing appropriate mitigation strategies, we can effectively deploy efficient models without sacrificing performance.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush through the answer. Allow the interviewer time to process the information.</li>
+<li><strong>Use “Signposts”:</strong> Use phrases like “Another important point is…” or “In addition to that…” to guide the interviewer through your answer.</li>
+<li><strong>Pause After Equations:</strong> Give the interviewer time to digest the mathematical notations. Briefly explain what each symbol represents.</li>
+<li><strong>Encourage Questions:</strong> After each section, ask if the interviewer has any questions. This shows engagement and ensures they’re following along.</li>
+<li><strong>Adapt to the Interviewer’s Level:</strong> If the interviewer seems less familiar with the technical details, focus more on the high-level concepts and real-world implications. If they’re highly technical, you can delve deeper into the mathematical aspects.</li>
+<li><strong>Be Confident:</strong> Speak with confidence, even if you’re not 100% sure of every detail. Your overall understanding and ability to articulate the concepts are what matter most.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
