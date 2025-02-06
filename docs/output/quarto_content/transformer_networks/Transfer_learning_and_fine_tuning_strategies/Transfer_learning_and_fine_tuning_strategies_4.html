@@ -20,40 +20,6 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-/* CSS for syntax highlighting */
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-}
 </style>
 
 
@@ -100,6 +66,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -117,105 +112,103 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<div class="sourceCode" id="cb1"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">## Question: Discuss the concept of 'catastrophic forgetting' in the context of fine-tuning. How can one address this issue?</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>**Best Answer**</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>Catastrophic forgetting, also known as catastrophic interference, is a phenomenon in neural networks where training on a new task or dataset abruptly and severely degrades the network's performance on previously learned tasks. This is especially problematic in the context of fine-tuning, where a pre-trained model, which has acquired substantial knowledge from a large source dataset, is adapted to a new, often smaller, target dataset.</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>Let's delve deeper into why this happens and how to mitigate it:</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>**Why Catastrophic Forgetting Occurs During Fine-Tuning**</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>Neural networks learn by adjusting their weights. These weights encode the knowledge acquired from the training data. When fine-tuning, we update these weights based on the new target dataset.  If the target dataset is significantly different from the source dataset or the fine-tuning process is too aggressive, the weight updates can overwrite or significantly alter the previously learned representations, leading to the network "forgetting" what it learned before.</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>Mathematically, consider a model with parameters $\theta$. Let $L_1(\theta)$ be the loss function for the original task and $L_2(\theta)$ be the loss function for the new task. We start with parameters $\theta^*$ that minimize $L_1(\theta)$. Fine-tuning aims to find new parameters $\theta^{**}$ that minimize $L_2(\theta)$.  A naive approach would be to update $\theta^*$ with gradient descent:</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>$$\theta^{t+1} = \theta^t - \eta \nabla L_2(\theta^t)$$</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>Where $\eta$ is the learning rate.  The problem is that minimizing $L_2(\theta)$ might significantly increase $L_1(\theta)$, thus leading to catastrophic forgetting.  The update step changes the weights optimized for task 1, to better perform on task 2, which causes forgetting.</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>**Strategies to Address Catastrophic Forgetting**</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>Several strategies can be employed to mitigate catastrophic forgetting during fine-tuning:</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Regularization-Based Approaches:**</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="ss">   *   </span>**Elastic Weight Consolidation (EWC):** EWC aims to constrain the update of weights that are important for the original task. It adds a regularization term to the loss function that penalizes changes to these important weights.</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    The modified loss function is:</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    $$L(\theta) = L_2(\theta) + \lambda \sum_i F_i (\theta_i - \theta_i^*)^2$$</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="in">    Here, $L_2(\theta)$ is the loss on the new task, $\lambda$ is a hyperparameter controlling the strength of the regularization, $F_i$ is the Fisher information matrix's diagonal element for weight $i$ indicating the importance of the weight, $\theta_i$ is the current value of weight $i$, and $\theta_i^*$ is the value of weight $i$ after training on the original task. The Fisher Information Matrix measures how much the loss function changes when a parameter is perturbed.  A high Fisher value for a weight indicates that changes to this weight will have a large impact on the loss of the original task, which implies the weight is very important. EWC effectively creates "elastic constraints" on important weights, allowing the model to learn the new task without drastically forgetting the old one.</span></span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="ss">   *   </span>**Synaptic Intelligence (SI):** Similar to EWC, SI aims to protect important weights. However, instead of using the Fisher information, it estimates the importance of a weight based on its contribution to the change in the loss function over the course of learning the old task.  SI accumulates a running estimate of each weight's importance during the initial training phase.</span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Rehearsal-Based Approaches:**</span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a><span class="ss">   *   </span>**Replay Buffer:** Store a small subset of the original dataset and interleave it with the new dataset during fine-tuning. This helps the model retain knowledge of the original task while learning the new one.  The fundamental idea is to rehearse old data to retain previous learned knowledge while adopting new data.</span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="ss">   *   </span>**Pseudo-Rehearsal:** If access to the original dataset is limited or prohibited, generate "pseudo-samples" that resemble the original data. This can be done using generative models or by perturbing the existing data.</span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a><span class="ss">3.  </span>**Parameter Isolation**</span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>Progressive Neural Networks: This architecture freezes the weights of the pre-trained network and adds new "lateral" connections to new layers.  This allows the model to learn new tasks without modifying the weights crucial for previous tasks.</span>
-<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**Architectural Approaches:**</span>
-<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a><span class="ss">   *   </span>**Expand-and-Compress Networks:** Dynamically expand the network capacity by adding new neurons or layers when learning a new task, and then compress the network to remove redundant parameters. This allows the model to learn new information without overwriting existing knowledge.</span>
-<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**Fine-Tuning Strategies:**</span>
-<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a><span class="ss">   *   </span>**Gradual Unfreezing:** Instead of fine-tuning all layers at once, start by fine-tuning only the top layers of the network and gradually unfreeze lower layers as training progresses. This allows the model to adapt to the new task without drastically changing the core representations learned from the original dataset.  In practice, this involves training only the final classification layer with the pre-trained weights of the model frozen.  After some training epochs, we unfreeze a block of layers (say, the last two blocks of a ResNet), and continue training.  This process continues, gradually unfreezing all layers of the network.</span>
-<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a><span class="ss">   *   </span>**Lower Learning Rates:** Using a smaller learning rate during fine-tuning can help prevent drastic changes to the weights, reducing the risk of catastrophic forgetting. This is particularly important for the earlier layers of the network, which often encode more general and fundamental knowledge.</span>
-<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>**Continual Learning Techniques:**</span>
-<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a><span class="ss">   *   </span>Many advanced continual learning techniques address catastrophic forgetting in more complex scenarios where tasks are learned sequentially without access to data from previous tasks. These techniques often combine elements of regularization, rehearsal, and architectural approaches.</span>
-<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>**Real-World Considerations:**</span>
-<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a><span class="ss">*   </span>The choice of strategy depends on the specific task, the size of the target dataset, the similarity between the source and target datasets, and the computational resources available.</span>
-<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a><span class="ss">*   </span>EWC and SI require calculating or estimating the Fisher information matrix, which can be computationally expensive for large models.</span>
-<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a><span class="ss">*   </span>Rehearsal-based approaches require storing or generating data from the original task, which may not always be feasible.</span>
-<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a><span class="ss">*   </span>Careful hyperparameter tuning is crucial for all these techniques to achieve optimal performance.  For example, the regularization coefficient $\lambda$ in EWC needs to be carefully tuned to balance performance on the old and new tasks.</span>
-<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a><span class="ss">*   </span>In practice, a combination of techniques may be more effective than using a single technique alone.  For example, one might combine gradual unfreezing with EWC, or replay with a parameter isolation architecture.</span>
-<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>In summary, catastrophic forgetting is a significant challenge in fine-tuning, but various techniques can mitigate its effects.  By carefully considering the characteristics of the task and the available resources, one can select and implement the appropriate strategies to preserve previously learned knowledge while adapting the model to the new target dataset.</span>
-<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>---</span>
-<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>**How to Narrate**</span>
-<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>Here’s a suggested approach to discussing catastrophic forgetting in an interview:</span>
-<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a><span class="ss">1.  </span>**Start with the Definition:**</span>
-<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>"Catastrophic forgetting, also known as catastrophic interference, is the tendency of a neural network to abruptly forget previously learned tasks when learning a new task."</span>
-<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>"This is particularly relevant in fine-tuning, where we adapt a pre-trained model to a new dataset."</span>
-<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a><span class="ss">2.  </span>**Explain Why it Happens:**</span>
-<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>"Neural networks learn by adjusting their weights to encode knowledge. Fine-tuning updates these weights, and if done too aggressively or if the new data is very different, it can overwrite the old knowledge."</span>
-<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>You could mention the loss functions and the goal of minimizing the loss on the new task $L_2$ while increasing the loss on the old task $L_1$</span>
-<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a><span class="ss">3.  </span>**Introduce Mitigation Strategies (Choose 2-3 to Discuss in Detail):**</span>
-<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>"There are several techniques to address this, broadly categorized as regularization-based, rehearsal-based, or architectural approaches."</span>
-<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>"One common approach is Elastic Weight Consolidation (EWC), which adds a regularization term to the loss function that penalizes changes to important weights from the original task."  Explain the high level idea behind EWC.</span>
-<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a><span class="ss">        *   </span>If the interviewer seems interested, you can mention the Fisher information matrix. *However, be cautious and only bring it up if they prompt you or if you are very confident in your ability to explain it clearly.* "EWC estimates the importance of each weight using the Fisher information matrix, which measures how much the loss changes when a weight is perturbed."</span>
-<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>"Another approach is rehearsal, where we keep a small subset of the original data and interleave it with the new data during fine-tuning."</span>
-<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>"Gradual unfreezing is a simple but effective strategy where we start by fine-tuning only the top layers and gradually unfreeze lower layers."</span>
-<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a><span class="ss">4.  </span>**Discuss Real-World Considerations:**</span>
-<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>"The best approach depends on the specific problem and available resources. EWC can be computationally expensive, rehearsal requires access to old data, and all these techniques require careful hyperparameter tuning."</span>
-<span id="cb1-87"><a href="#cb1-87" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>"Often, a combination of techniques works best."</span>
-<span id="cb1-88"><a href="#cb1-88" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-89"><a href="#cb1-89" aria-hidden="true" tabindex="-1"></a><span class="ss">5.  </span>**Communication Tips:**</span>
-<span id="cb1-90"><a href="#cb1-90" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>**Pace:** Speak slowly and clearly, especially when explaining mathematical concepts.</span>
-<span id="cb1-91"><a href="#cb1-91" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>**Clarity:** Avoid jargon unless you are sure the interviewer understands it.</span>
-<span id="cb1-92"><a href="#cb1-92" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>**Check for Understanding:** Pause periodically and ask if the interviewer has any questions.</span>
-<span id="cb1-93"><a href="#cb1-93" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>**Adapt:** If the interviewer expresses interest in a particular technique, elaborate on that. If they seem less interested, move on to another topic.</span>
-<span id="cb1-94"><a href="#cb1-94" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>**Confidence:** Show confidence in your knowledge, but be honest about what you don't know. It's better to say "I'm not familiar with that specific technique, but I do know about..." than to try to bluff your way through.</span>
-<span id="cb1-95"><a href="#cb1-95" aria-hidden="true" tabindex="-1"></a><span class="ss">    *   </span>**Mathematics (Handle with Care):** Only introduce the equations if you are very comfortable explaining them and if the interviewer seems interested. If you do, break down the equation into smaller parts and explain the meaning of each symbol. Avoid overwhelming the interviewer with too much math.</span>
-<span id="cb1-96"><a href="#cb1-96" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-97"><a href="#cb1-97" aria-hidden="true" tabindex="-1"></a>By following these guidelines, you can effectively discuss catastrophic forgetting and demonstrate your understanding of the challenges and solutions in fine-tuning neural networks.</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="question-discuss-the-concept-of-catastrophic-forgetting-in-the-context-of-fine-tuning.-how-can-one-address-this-issue" class="level2">
+<h2 class="anchored" data-anchor-id="question-discuss-the-concept-of-catastrophic-forgetting-in-the-context-of-fine-tuning.-how-can-one-address-this-issue">Question: Discuss the concept of ‘catastrophic forgetting’ in the context of fine-tuning. How can one address this issue?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Catastrophic forgetting, also known as catastrophic interference, is a phenomenon in neural networks where training on a new task or dataset abruptly and severely degrades the network’s performance on previously learned tasks. This is especially problematic in the context of fine-tuning, where a pre-trained model, which has acquired substantial knowledge from a large source dataset, is adapted to a new, often smaller, target dataset.</p>
+<p>Let’s delve deeper into why this happens and how to mitigate it:</p>
+<p><strong>Why Catastrophic Forgetting Occurs During Fine-Tuning</strong></p>
+<p>Neural networks learn by adjusting their weights. These weights encode the knowledge acquired from the training data. When fine-tuning, we update these weights based on the new target dataset. If the target dataset is significantly different from the source dataset or the fine-tuning process is too aggressive, the weight updates can overwrite or significantly alter the previously learned representations, leading to the network “forgetting” what it learned before.</p>
+<p>Mathematically, consider a model with parameters <span class="math inline">\(\theta\)</span>. Let <span class="math inline">\(L_1(\theta)\)</span> be the loss function for the original task and <span class="math inline">\(L_2(\theta)\)</span> be the loss function for the new task. We start with parameters <span class="math inline">\(\theta^*\)</span> that minimize <span class="math inline">\(L_1(\theta)\)</span>. Fine-tuning aims to find new parameters <span class="math inline">\(\theta^{**}\)</span> that minimize <span class="math inline">\(L_2(\theta)\)</span>. A naive approach would be to update <span class="math inline">\(\theta^*\)</span> with gradient descent:</p>
+<p><span class="math display">\[\theta^{t+1} = \theta^t - \eta \nabla L_2(\theta^t)\]</span></p>
+<p>Where <span class="math inline">\(\eta\)</span> is the learning rate. The problem is that minimizing <span class="math inline">\(L_2(\theta)\)</span> might significantly increase <span class="math inline">\(L_1(\theta)\)</span>, thus leading to catastrophic forgetting. The update step changes the weights optimized for task 1, to better perform on task 2, which causes forgetting.</p>
+<p><strong>Strategies to Address Catastrophic Forgetting</strong></p>
+<p>Several strategies can be employed to mitigate catastrophic forgetting during fine-tuning:</p>
+<ol type="1">
+<li><p><strong>Regularization-Based Approaches:</strong></p>
+<ul>
+<li><strong>Elastic Weight Consolidation (EWC):</strong> EWC aims to constrain the update of weights that are important for the original task. It adds a regularization term to the loss function that penalizes changes to these important weights.</li>
+</ul>
+<p>The modified loss function is: <span class="math display">\[L(\theta) = L_2(\theta) + \lambda \sum_i F_i (\theta_i - \theta_i^*)^2\]</span></p>
+<p>Here, <span class="math inline">\(L_2(\theta)\)</span> is the loss on the new task, <span class="math inline">\(\lambda\)</span> is a hyperparameter controlling the strength of the regularization, <span class="math inline">\(F_i\)</span> is the Fisher information matrix’s diagonal element for weight <span class="math inline">\(i\)</span> indicating the importance of the weight, <span class="math inline">\(\theta_i\)</span> is the current value of weight <span class="math inline">\(i\)</span>, and <span class="math inline">\(\theta_i^*\)</span> is the value of weight <span class="math inline">\(i\)</span> after training on the original task. The Fisher Information Matrix measures how much the loss function changes when a parameter is perturbed. A high Fisher value for a weight indicates that changes to this weight will have a large impact on the loss of the original task, which implies the weight is very important. EWC effectively creates “elastic constraints” on important weights, allowing the model to learn the new task without drastically forgetting the old one.</p>
+<ul>
+<li><strong>Synaptic Intelligence (SI):</strong> Similar to EWC, SI aims to protect important weights. However, instead of using the Fisher information, it estimates the importance of a weight based on its contribution to the change in the loss function over the course of learning the old task. SI accumulates a running estimate of each weight’s importance during the initial training phase.</li>
+</ul></li>
+<li><p><strong>Rehearsal-Based Approaches:</strong></p>
+<ul>
+<li><strong>Replay Buffer:</strong> Store a small subset of the original dataset and interleave it with the new dataset during fine-tuning. This helps the model retain knowledge of the original task while learning the new one. The fundamental idea is to rehearse old data to retain previous learned knowledge while adopting new data.</li>
+<li><strong>Pseudo-Rehearsal:</strong> If access to the original dataset is limited or prohibited, generate “pseudo-samples” that resemble the original data. This can be done using generative models or by perturbing the existing data.</li>
+</ul></li>
+<li><p><strong>Parameter Isolation</strong></p>
+<ul>
+<li>Progressive Neural Networks: This architecture freezes the weights of the pre-trained network and adds new “lateral” connections to new layers. This allows the model to learn new tasks without modifying the weights crucial for previous tasks.</li>
+</ul></li>
+<li><p><strong>Architectural Approaches:</strong></p>
+<ul>
+<li><strong>Expand-and-Compress Networks:</strong> Dynamically expand the network capacity by adding new neurons or layers when learning a new task, and then compress the network to remove redundant parameters. This allows the model to learn new information without overwriting existing knowledge.</li>
+</ul></li>
+<li><p><strong>Fine-Tuning Strategies:</strong></p>
+<ul>
+<li><strong>Gradual Unfreezing:</strong> Instead of fine-tuning all layers at once, start by fine-tuning only the top layers of the network and gradually unfreeze lower layers as training progresses. This allows the model to adapt to the new task without drastically changing the core representations learned from the original dataset. In practice, this involves training only the final classification layer with the pre-trained weights of the model frozen. After some training epochs, we unfreeze a block of layers (say, the last two blocks of a ResNet), and continue training. This process continues, gradually unfreezing all layers of the network.</li>
+<li><strong>Lower Learning Rates:</strong> Using a smaller learning rate during fine-tuning can help prevent drastic changes to the weights, reducing the risk of catastrophic forgetting. This is particularly important for the earlier layers of the network, which often encode more general and fundamental knowledge.</li>
+</ul></li>
+<li><p><strong>Continual Learning Techniques:</strong></p>
+<ul>
+<li>Many advanced continual learning techniques address catastrophic forgetting in more complex scenarios where tasks are learned sequentially without access to data from previous tasks. These techniques often combine elements of regularization, rehearsal, and architectural approaches.</li>
+</ul></li>
+</ol>
+<p><strong>Real-World Considerations:</strong></p>
+<ul>
+<li>The choice of strategy depends on the specific task, the size of the target dataset, the similarity between the source and target datasets, and the computational resources available.</li>
+<li>EWC and SI require calculating or estimating the Fisher information matrix, which can be computationally expensive for large models.</li>
+<li>Rehearsal-based approaches require storing or generating data from the original task, which may not always be feasible.</li>
+<li>Careful hyperparameter tuning is crucial for all these techniques to achieve optimal performance. For example, the regularization coefficient <span class="math inline">\(\lambda\)</span> in EWC needs to be carefully tuned to balance performance on the old and new tasks.</li>
+<li>In practice, a combination of techniques may be more effective than using a single technique alone. For example, one might combine gradual unfreezing with EWC, or replay with a parameter isolation architecture.</li>
+</ul>
+<p>In summary, catastrophic forgetting is a significant challenge in fine-tuning, but various techniques can mitigate its effects. By carefully considering the characteristics of the task and the available resources, one can select and implement the appropriate strategies to preserve previously learned knowledge while adapting the model to the new target dataset.</p>
+<hr>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a suggested approach to discussing catastrophic forgetting in an interview:</p>
+<ol type="1">
+<li><strong>Start with the Definition:</strong>
+<ul>
+<li>“Catastrophic forgetting, also known as catastrophic interference, is the tendency of a neural network to abruptly forget previously learned tasks when learning a new task.”</li>
+<li>“This is particularly relevant in fine-tuning, where we adapt a pre-trained model to a new dataset.”</li>
+</ul></li>
+<li><strong>Explain Why it Happens:</strong>
+<ul>
+<li>“Neural networks learn by adjusting their weights to encode knowledge. Fine-tuning updates these weights, and if done too aggressively or if the new data is very different, it can overwrite the old knowledge.”</li>
+<li>You could mention the loss functions and the goal of minimizing the loss on the new task <span class="math inline">\(L_2\)</span> while increasing the loss on the old task <span class="math inline">\(L_1\)</span></li>
+</ul></li>
+<li><strong>Introduce Mitigation Strategies (Choose 2-3 to Discuss in Detail):</strong>
+<ul>
+<li>“There are several techniques to address this, broadly categorized as regularization-based, rehearsal-based, or architectural approaches.”</li>
+<li>“One common approach is Elastic Weight Consolidation (EWC), which adds a regularization term to the loss function that penalizes changes to important weights from the original task.” Explain the high level idea behind EWC.
+<ul>
+<li>If the interviewer seems interested, you can mention the Fisher information matrix. <em>However, be cautious and only bring it up if they prompt you or if you are very confident in your ability to explain it clearly.</em> “EWC estimates the importance of each weight using the Fisher information matrix, which measures how much the loss changes when a weight is perturbed.”</li>
+</ul></li>
+<li>“Another approach is rehearsal, where we keep a small subset of the original data and interleave it with the new data during fine-tuning.”</li>
+<li>“Gradual unfreezing is a simple but effective strategy where we start by fine-tuning only the top layers and gradually unfreeze lower layers.”</li>
+</ul></li>
+<li><strong>Discuss Real-World Considerations:</strong>
+<ul>
+<li>“The best approach depends on the specific problem and available resources. EWC can be computationally expensive, rehearsal requires access to old data, and all these techniques require careful hyperparameter tuning.”</li>
+<li>“Often, a combination of techniques works best.”</li>
+</ul></li>
+<li><strong>Communication Tips:</strong>
+<ul>
+<li><strong>Pace:</strong> Speak slowly and clearly, especially when explaining mathematical concepts.</li>
+<li><strong>Clarity:</strong> Avoid jargon unless you are sure the interviewer understands it.</li>
+<li><strong>Check for Understanding:</strong> Pause periodically and ask if the interviewer has any questions.</li>
+<li><strong>Adapt:</strong> If the interviewer expresses interest in a particular technique, elaborate on that. If they seem less interested, move on to another topic.</li>
+<li><strong>Confidence:</strong> Show confidence in your knowledge, but be honest about what you don’t know. It’s better to say “I’m not familiar with that specific technique, but I do know about…” than to try to bluff your way through.</li>
+<li><strong>Mathematics (Handle with Care):</strong> Only introduce the equations if you are very comfortable explaining them and if the interviewer seems interested. If you do, break down the equation into smaller parts and explain the meaning of each symbol. Avoid overwhelming the interviewer with too much math.</li>
+</ul></li>
+</ol>
+<p>By following these guidelines, you can effectively discuss catastrophic forgetting and demonstrate your understanding of the challenges and solutions in fine-tuning neural networks.</p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

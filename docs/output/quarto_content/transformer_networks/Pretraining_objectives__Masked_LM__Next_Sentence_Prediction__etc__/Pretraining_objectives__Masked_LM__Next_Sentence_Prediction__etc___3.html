@@ -20,40 +20,6 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-/* CSS for syntax highlighting */
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-}
 </style>
 
 
@@ -100,6 +66,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -117,99 +112,104 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<div class="sourceCode" id="cb1"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">## Question: 4. Discuss the mathematical formulation of the masked language modeling objective. How is the loss computed over the masked tokens, and why is this formulation effective?</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>**Best Answer**</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>Masked Language Modeling (MLM) is a pre-training objective where some percentage of the input tokens are masked, and the model is tasked with predicting the masked tokens based on the context provided by the unmasked tokens. This technique is particularly prominent in models like BERT. The mathematical formulation centers around minimizing a loss function that quantifies the difference between the model's predictions for the masked tokens and the actual masked tokens.</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>Here's a detailed breakdown:</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Input Preparation:**</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>Given an input sequence of tokens $X = (x_1, x_2, ..., x_n)$, we randomly select a subset of tokens to mask. Let $M$ be the set of indices of the masked tokens.</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>For tokens at indices $i \in M$, we replace them with a special <span class="in">`[MASK]`</span> token with probability 0.8. With probability 0.1, we replace them with a random token, and with probability 0.1, we leave them unchanged. This helps the model to be less sensitive to the <span class="in">`[MASK]`</span> token.</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Model Prediction:**</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>The masked input sequence $X'$ is fed into a transformer model (e.g., BERT).</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>The model outputs a sequence of contextualized token embeddings $H = (h_1, h_2, ..., h_n)$, where $h_i$ is the hidden representation for the $i$-th token.</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>For each masked token position $i \in M$, the corresponding hidden vector $h_i$ is passed through a classification layer (a linear layer followed by a softmax) to predict the probability distribution over the vocabulary.</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Loss Function:**</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>The objective is to minimize the negative log-likelihood of the correct tokens at the masked positions. This is equivalent to maximizing the probability of the correct tokens given the context.</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>Let $V$ be the vocabulary, and let $y_i$ be the true token at position $i$. The probability predicted by the model for token $v \in V$ at masked position $i$ is given by:</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>     $$</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>     p(x_i = v | X') = \frac{\exp(W_v^T h_i + b_v)}{\sum_{v' \in V} \exp(W_{v'}^T h_i + b_{v'})}</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>     $$</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>     where $W_v$ and $b_v$ are the weight vector and bias for token $v$ in the classification layer.</span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>The loss function $L$ is the average negative log-likelihood over all masked tokens:</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>     $$</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>     L = - \frac{1}{|M|} \sum_{i \in M} \log p(x_i = y_i | X')</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>     $$</span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>     where $|M|$ is the number of masked tokens.  Equivalently, we can express the loss as a cross-entropy loss:</span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>      $$</span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>     L = \frac{1}{|M|} \sum_{i \in M}  \text{CrossEntropy}(p(x_i | X'), y_i)</span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>     $$</span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**Optimization:**</span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>The model is trained by minimizing the loss function $L$ using gradient descent or a variant thereof (e.g., Adam).</span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>The gradients are computed with respect to the model parameters (weights and biases), and the parameters are updated iteratively.</span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>**Why is this formulation effective?**</span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Contextual Understanding:** By forcing the model to predict masked tokens based on the surrounding context, the model learns deep bidirectional representations. It must understand the relationships between tokens in both directions (left and right) to accurately predict the masked tokens.</span>
-<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Generalization:** The random masking strategy encourages the model to generalize well to unseen data. It cannot rely on specific tokens being present in specific positions and must learn to infer meaning from various contexts.</span>
-<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Transfer Learning:**  The pre-trained model can then be fine-tuned for various downstream tasks such as text classification, question answering, and named entity recognition. The pre-training provides a strong initialization that significantly improves the performance and reduces the amount of task-specific data needed for fine-tuning.</span>
-<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Handling Variable Masking:** The loss function is computed only over the masked tokens, which naturally handles the variability in the number and positions of masked tokens in different input sequences. Backpropagation is performed only on the relevant parts of the network, making it efficient.</span>
-<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Mitigating Pretrain-Finetune Discrepancy:** The deliberate modification of the original input (replacing tokens with <span class="co">[</span><span class="ot">MASK</span><span class="co">]</span>, random tokens, or leaving them unchanged) during pretraining helps to bridge the gap between the pretraining and finetuning stages. This reduces the model's reliance on seeing specific tokens in specific places, making it more adaptable to a wider range of downstream tasks.</span>
-<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>In summary, the mathematical formulation of the masked language modeling objective is effective because it encourages the model to learn deep contextual representations, generalize to unseen data, and transfer well to downstream tasks. The loss function, based on minimizing the negative log-likelihood of the correct tokens at the masked positions, provides a clear and efficient way to train the model.</span>
-<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>---</span>
-<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>**How to Narrate**</span>
-<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>Here's a step-by-step guide on how to articulate this to an interviewer:</span>
-<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Start with the basics:**</span>
-<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>"Masked Language Modeling (MLM) is a pre-training objective where a certain percentage of the input tokens are masked, and the model's task is to predict these masked tokens based on the surrounding unmasked tokens."</span>
-<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>"This technique is used in models like BERT to learn contextualized word representations."</span>
-<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Explain Input Preparation:**</span>
-<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>"Given an input sequence, we randomly select a subset of tokens to mask. Instead of directly replacing them with '<span class="co">[</span><span class="ot">MASK</span><span class="co">]</span>', we use a strategy where we replace with <span class="co">[</span><span class="ot">MASK</span><span class="co">]</span> 80% of the time, a random token 10% of the time, and keep the original token 10% of the time. This helps in better generalization."</span>
-<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Describe Model Prediction:**</span>
-<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>"The masked input is fed into a transformer model. The model outputs contextualized embeddings for each token."</span>
-<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>"For each masked token, the corresponding embedding is passed through a classification layer to predict a probability distribution over the vocabulary."</span>
-<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**Walk through the Loss Function:**</span>
-<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>"The objective is to minimize the negative log-likelihood of the correct tokens at the masked positions."</span>
-<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>"The probability predicted by the model is given by the softmax function: $&lt;equation&gt;p(x_i = v | X') = \frac{\exp(W_v^T h_i + b_v)}{\sum_{v' \in V} \exp(W_{v'}^T h_i + b_{v'})}&lt;/equation&gt;$."</span>
-<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>"The loss function L is then: $&lt;equation&gt;L = - \frac{1}{|M|} \sum_{i \in M} \log p(x_i = y_i | X')&lt;/equation&gt;$.  This is computed only over the masked tokens."</span>
-<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**Explain Optimization (Briefly):**</span>
-<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>"The model is trained by minimizing this loss function using gradient descent, updating the model parameters iteratively."</span>
-<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>**Emphasize the effectiveness:**</span>
-<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>"This formulation is effective because it forces the model to learn deep bidirectional representations by understanding the context around the masked tokens."</span>
-<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>"The random masking strategy encourages generalization and reduces reliance on specific tokens."</span>
-<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>"The pre-trained model can be fine-tuned for various downstream tasks, providing a strong initialization and improving performance."</span>
-<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>"Because the loss is only computed on masked tokens, this naturally handles different mask configurations, and the design also helps to mitigate pretrain-finetune discrepancies."</span>
-<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>**Handle Complex Sections:**</span>
-<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>When you reach the equations, say something like: "The math formalizes this idea.  The model predicts a probability for each word in the vocabulary, and we want to maximize the probability of the correct masked word."</span>
-<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>Don't rush through the equations. Explain the key components (e.g., "$W_v$ is the weight vector for token v").</span>
-<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a><span class="ss">   - </span>After presenting the loss function, summarize: "So, in essence, we're summing up the negative log-likelihoods for each masked token and averaging by the number of masked tokens to get the final loss."</span>
-<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>**Communication Tips:**</span>
-<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a><span class="ss">    - </span>Speak clearly and confidently.</span>
-<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a><span class="ss">    - </span>Use hand gestures to emphasize points.</span>
-<span id="cb1-87"><a href="#cb1-87" aria-hidden="true" tabindex="-1"></a><span class="ss">    - </span>Pause after each key point to allow the interviewer to process the information.</span>
-<span id="cb1-88"><a href="#cb1-88" aria-hidden="true" tabindex="-1"></a><span class="ss">    - </span>Invite questions from the interviewer to ensure they are following along. For example, "Does that make sense so far?" or "Any questions on that?"</span>
-<span id="cb1-89"><a href="#cb1-89" aria-hidden="true" tabindex="-1"></a><span class="ss">    - </span>Show enthusiasm for the topic.</span>
-<span id="cb1-90"><a href="#cb1-90" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-91"><a href="#cb1-91" aria-hidden="true" tabindex="-1"></a>By following this approach, you can effectively communicate your understanding of the masked language modeling objective and demonstrate your senior-level expertise.</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="question-4.-discuss-the-mathematical-formulation-of-the-masked-language-modeling-objective.-how-is-the-loss-computed-over-the-masked-tokens-and-why-is-this-formulation-effective" class="level2">
+<h2 class="anchored" data-anchor-id="question-4.-discuss-the-mathematical-formulation-of-the-masked-language-modeling-objective.-how-is-the-loss-computed-over-the-masked-tokens-and-why-is-this-formulation-effective">Question: 4. Discuss the mathematical formulation of the masked language modeling objective. How is the loss computed over the masked tokens, and why is this formulation effective?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Masked Language Modeling (MLM) is a pre-training objective where some percentage of the input tokens are masked, and the model is tasked with predicting the masked tokens based on the context provided by the unmasked tokens. This technique is particularly prominent in models like BERT. The mathematical formulation centers around minimizing a loss function that quantifies the difference between the model’s predictions for the masked tokens and the actual masked tokens.</p>
+<p>Here’s a detailed breakdown:</p>
+<ol type="1">
+<li><strong>Input Preparation:</strong>
+<ul>
+<li>Given an input sequence of tokens <span class="math inline">\(X = (x_1, x_2, ..., x_n)\)</span>, we randomly select a subset of tokens to mask. Let <span class="math inline">\(M\)</span> be the set of indices of the masked tokens.</li>
+<li>For tokens at indices <span class="math inline">\(i \in M\)</span>, we replace them with a special <code>[MASK]</code> token with probability 0.8. With probability 0.1, we replace them with a random token, and with probability 0.1, we leave them unchanged. This helps the model to be less sensitive to the <code>[MASK]</code> token.</li>
+</ul></li>
+<li><strong>Model Prediction:</strong>
+<ul>
+<li>The masked input sequence <span class="math inline">\(X'\)</span> is fed into a transformer model (e.g., BERT).</li>
+<li>The model outputs a sequence of contextualized token embeddings <span class="math inline">\(H = (h_1, h_2, ..., h_n)\)</span>, where <span class="math inline">\(h_i\)</span> is the hidden representation for the <span class="math inline">\(i\)</span>-th token.</li>
+<li>For each masked token position <span class="math inline">\(i \in M\)</span>, the corresponding hidden vector <span class="math inline">\(h_i\)</span> is passed through a classification layer (a linear layer followed by a softmax) to predict the probability distribution over the vocabulary.</li>
+</ul></li>
+<li><strong>Loss Function:</strong>
+<ul>
+<li><p>The objective is to minimize the negative log-likelihood of the correct tokens at the masked positions. This is equivalent to maximizing the probability of the correct tokens given the context.</p></li>
+<li><p>Let <span class="math inline">\(V\)</span> be the vocabulary, and let <span class="math inline">\(y_i\)</span> be the true token at position <span class="math inline">\(i\)</span>. The probability predicted by the model for token <span class="math inline">\(v \in V\)</span> at masked position <span class="math inline">\(i\)</span> is given by: <span class="math display">\[
+p(x_i = v | X') = \frac{\exp(W_v^T h_i + b_v)}{\sum_{v' \in V} \exp(W_{v'}^T h_i + b_{v'})}
+\]</span> where <span class="math inline">\(W_v\)</span> and <span class="math inline">\(b_v\)</span> are the weight vector and bias for token <span class="math inline">\(v\)</span> in the classification layer.</p></li>
+<li><p>The loss function <span class="math inline">\(L\)</span> is the average negative log-likelihood over all masked tokens: <span class="math display">\[
+L = - \frac{1}{|M|} \sum_{i \in M} \log p(x_i = y_i | X')
+\]</span> where <span class="math inline">\(|M|\)</span> is the number of masked tokens. Equivalently, we can express the loss as a cross-entropy loss: <span class="math display">\[
+L = \frac{1}{|M|} \sum_{i \in M}  \text{CrossEntropy}(p(x_i | X'), y_i)
+\]</span></p></li>
+</ul></li>
+<li><strong>Optimization:</strong>
+<ul>
+<li>The model is trained by minimizing the loss function <span class="math inline">\(L\)</span> using gradient descent or a variant thereof (e.g., Adam).</li>
+<li>The gradients are computed with respect to the model parameters (weights and biases), and the parameters are updated iteratively.</li>
+</ul></li>
+</ol>
+<p><strong>Why is this formulation effective?</strong></p>
+<ul>
+<li><strong>Contextual Understanding:</strong> By forcing the model to predict masked tokens based on the surrounding context, the model learns deep bidirectional representations. It must understand the relationships between tokens in both directions (left and right) to accurately predict the masked tokens.</li>
+<li><strong>Generalization:</strong> The random masking strategy encourages the model to generalize well to unseen data. It cannot rely on specific tokens being present in specific positions and must learn to infer meaning from various contexts.</li>
+<li><strong>Transfer Learning:</strong> The pre-trained model can then be fine-tuned for various downstream tasks such as text classification, question answering, and named entity recognition. The pre-training provides a strong initialization that significantly improves the performance and reduces the amount of task-specific data needed for fine-tuning.</li>
+<li><strong>Handling Variable Masking:</strong> The loss function is computed only over the masked tokens, which naturally handles the variability in the number and positions of masked tokens in different input sequences. Backpropagation is performed only on the relevant parts of the network, making it efficient.</li>
+<li><strong>Mitigating Pretrain-Finetune Discrepancy:</strong> The deliberate modification of the original input (replacing tokens with [MASK], random tokens, or leaving them unchanged) during pretraining helps to bridge the gap between the pretraining and finetuning stages. This reduces the model’s reliance on seeing specific tokens in specific places, making it more adaptable to a wider range of downstream tasks.</li>
+</ul>
+<p>In summary, the mathematical formulation of the masked language modeling objective is effective because it encourages the model to learn deep contextual representations, generalize to unseen data, and transfer well to downstream tasks. The loss function, based on minimizing the negative log-likelihood of the correct tokens at the masked positions, provides a clear and efficient way to train the model.</p>
+<hr>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a step-by-step guide on how to articulate this to an interviewer:</p>
+<ol type="1">
+<li><strong>Start with the basics:</strong>
+<ul>
+<li>“Masked Language Modeling (MLM) is a pre-training objective where a certain percentage of the input tokens are masked, and the model’s task is to predict these masked tokens based on the surrounding unmasked tokens.”</li>
+<li>“This technique is used in models like BERT to learn contextualized word representations.”</li>
+</ul></li>
+<li><strong>Explain Input Preparation:</strong>
+<ul>
+<li>“Given an input sequence, we randomly select a subset of tokens to mask. Instead of directly replacing them with ‘[MASK]’, we use a strategy where we replace with [MASK] 80% of the time, a random token 10% of the time, and keep the original token 10% of the time. This helps in better generalization.”</li>
+</ul></li>
+<li><strong>Describe Model Prediction:</strong>
+<ul>
+<li>“The masked input is fed into a transformer model. The model outputs contextualized embeddings for each token.”</li>
+<li>“For each masked token, the corresponding embedding is passed through a classification layer to predict a probability distribution over the vocabulary.”</li>
+</ul></li>
+<li><strong>Walk through the Loss Function:</strong>
+<ul>
+<li>“The objective is to minimize the negative log-likelihood of the correct tokens at the masked positions.”</li>
+<li>“The probability predicted by the model is given by the softmax function: <span class="math inline">\(&lt;equation&gt;p(x_i = v | X') = \frac{\exp(W_v^T h_i + b_v)}{\sum_{v' \in V} \exp(W_{v'}^T h_i + b_{v'})}&lt;/equation&gt;\)</span>.”</li>
+<li>“The loss function L is then: <span class="math inline">\(&lt;equation&gt;L = - \frac{1}{|M|} \sum_{i \in M} \log p(x_i = y_i | X')&lt;/equation&gt;\)</span>. This is computed only over the masked tokens.”</li>
+</ul></li>
+<li><strong>Explain Optimization (Briefly):</strong>
+<ul>
+<li>“The model is trained by minimizing this loss function using gradient descent, updating the model parameters iteratively.”</li>
+</ul></li>
+<li><strong>Emphasize the effectiveness:</strong>
+<ul>
+<li>“This formulation is effective because it forces the model to learn deep bidirectional representations by understanding the context around the masked tokens.”</li>
+<li>“The random masking strategy encourages generalization and reduces reliance on specific tokens.”</li>
+<li>“The pre-trained model can be fine-tuned for various downstream tasks, providing a strong initialization and improving performance.”</li>
+<li>“Because the loss is only computed on masked tokens, this naturally handles different mask configurations, and the design also helps to mitigate pretrain-finetune discrepancies.”</li>
+</ul></li>
+<li><strong>Handle Complex Sections:</strong>
+<ul>
+<li>When you reach the equations, say something like: “The math formalizes this idea. The model predicts a probability for each word in the vocabulary, and we want to maximize the probability of the correct masked word.”</li>
+<li>Don’t rush through the equations. Explain the key components (e.g., “<span class="math inline">\(W_v\)</span> is the weight vector for token v”).</li>
+<li>After presenting the loss function, summarize: “So, in essence, we’re summing up the negative log-likelihoods for each masked token and averaging by the number of masked tokens to get the final loss.”</li>
+</ul></li>
+<li><strong>Communication Tips:</strong>
+<ul>
+<li>Speak clearly and confidently.</li>
+<li>Use hand gestures to emphasize points.</li>
+<li>Pause after each key point to allow the interviewer to process the information.</li>
+<li>Invite questions from the interviewer to ensure they are following along. For example, “Does that make sense so far?” or “Any questions on that?”</li>
+<li>Show enthusiasm for the topic.</li>
+</ul></li>
+</ol>
+<p>By following this approach, you can effectively communicate your understanding of the masked language modeling objective and demonstrate your senior-level expertise.</p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
