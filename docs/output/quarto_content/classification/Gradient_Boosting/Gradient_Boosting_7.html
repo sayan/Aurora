@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>gradient_boosting_7</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-8.-in-the-context-of-gradient-boosting-how-are-residuals-computed-and-why-are-they-important-in-the-update-steps" class="level2">
+<h2 class="anchored" data-anchor-id="question-8.-in-the-context-of-gradient-boosting-how-are-residuals-computed-and-why-are-they-important-in-the-update-steps">Question: 8. In the context of gradient boosting, how are residuals computed and why are they important in the update steps?</h2>
+<p><strong>Best Answer</strong></p>
+<p>In gradient boosting, residuals play a crucial role in iteratively improving the model’s predictions. They represent the errors made by the current ensemble of models and guide the addition of new models to correct those errors. More formally, residuals are related to the negative gradient of the loss function with respect to the model’s predictions.</p>
+<p>Here’s a breakdown:</p>
+<ol type="1">
+<li><strong>Loss Function:</strong>
+<ul>
+<li>Gradient boosting aims to minimize a loss function <span class="math inline">\(L(y, F(x))\)</span>, where <span class="math inline">\(y\)</span> is the true target, and <span class="math inline">\(F(x)\)</span> is the prediction of the ensemble model for input <span class="math inline">\(x\)</span>. Common loss functions include:
+<ul>
+<li>Mean Squared Error (MSE): <span class="math inline">\(L(y, F(x)) = \frac{1}{2}(y - F(x))^2\)</span></li>
+<li>Mean Absolute Error (MAE): <span class="math inline">\(L(y, F(x)) = |y - F(x)|\)</span></li>
+<li>Log Loss (for classification): <span class="math inline">\(L(y, F(x)) = y \log(F(x)) + (1-y) \log(1 - F(x))\)</span></li>
+</ul></li>
+</ul></li>
+<li><strong>Residuals as Negative Gradients:</strong>
+<ul>
+<li>The residual, <span class="math inline">\(r_{i,m}\)</span>, for instance <span class="math inline">\(i\)</span> at boosting iteration <span class="math inline">\(m\)</span> is computed as the negative gradient of the loss function with respect to the prediction <span class="math inline">\(F_{m-1}(x_i)\)</span> of the <em>previous</em> ensemble: <span class="math display">\[r_{i,m} = -\left[\frac{\partial L(y_i, F(x_i))}{\partial F(x_i)}\right]_{F(x) = F_{m-1}(x_i)}\]</span></li>
+<li>For MSE loss, the residual simplifies to: <span class="math display">\[r_{i,m} = y_i - F_{m-1}(x_i)\]</span> This shows that with MSE, the residual is simply the difference between the true value and the prediction. However, it’s crucial to understand the gradient perspective because gradient boosting can work with <em>any</em> differentiable loss function, not just MSE.</li>
+<li>For other loss functions, the residual will be a different function of <span class="math inline">\(y_i\)</span> and <span class="math inline">\(F_{m-1}(x_i)\)</span>.</li>
+</ul></li>
+<li><strong>Why Negative Gradient?</strong>
+<ul>
+<li>We use the <em>negative</em> gradient because the gradient points in the direction of <em>steepest ascent</em> of the loss function. We want to <em>minimize</em> the loss, so we move in the <em>opposite</em> direction, i.e., along the negative gradient.</li>
+</ul></li>
+<li><strong>Fitting the Base Learner to Residuals:</strong>
+<ul>
+<li>At each iteration <span class="math inline">\(m\)</span>, a new base learner <span class="math inline">\(h_m(x)\)</span> (typically a decision tree) is trained to predict the residuals <span class="math inline">\(r_{i,m}\)</span>. This is done by minimizing a loss function that measures how well <span class="math inline">\(h_m(x)\)</span> approximates the residuals: <span class="math display">\[h_m = \arg\min_{h} \sum_{i=1}^{N} \left[h(x_i) - r_{i,m}\right]^2\]</span></li>
+<li>In essence, the base learner learns to predict the errors made by the current ensemble.</li>
+</ul></li>
+<li><strong>Updating the Ensemble:</strong>
+<ul>
+<li>The new base learner is then added to the ensemble, with a learning rate (shrinkage) <span class="math inline">\(\eta\)</span> to control the step size: <span class="math display">\[F_m(x) = F_{m-1}(x) + \eta \cdot h_m(x)\]</span></li>
+<li>The learning rate <span class="math inline">\(\eta\)</span> is a crucial hyperparameter. A smaller learning rate generally leads to better generalization (less overfitting) but requires more boosting iterations. A larger learning rate converges faster, but risks overfitting or not converging fully.</li>
+</ul></li>
+<li><strong>Importance of Residuals in Update Steps:</strong>
+<ul>
+<li><strong>Error Correction:</strong> The residuals represent the “errors” that the current ensemble is making. By fitting the next base learner to these residuals, we are directly addressing the shortcomings of the current model.</li>
+<li><strong>Gradient Descent in Function Space:</strong> Gradient boosting can be viewed as a gradient descent algorithm in function space. We are iteratively updating the ensemble model by moving in the direction of the negative gradient of the loss function. The residuals provide the information about this direction.</li>
+<li><strong>Flexibility:</strong> Using residuals allows gradient boosting to be applied to a wide range of loss functions and, therefore, to various types of problems (regression, classification, ranking, etc.). The algorithm adapts to the specific loss function through the residual calculation.</li>
+</ul></li>
+<li><strong>Mathematical Detail</strong>:
+<ul>
+<li>The algorithm iteratively builds the model <span class="math display">\[F(x)\]</span> by adding new base learners <span class="math display">\[h_m(x)\]</span> at each step: <span class="math display">\[F_m(x) = F_{m-1}(x) + \eta \cdot h_m(x)\]</span>.</li>
+<li>The residuals <span class="math display">\[r_{i,m}\]</span> are computed as the negative gradient of the loss function <span class="math display">\[L(y, F(x))\]</span>: <span class="math display">\[r_{i,m} = -\left[\frac{\partial L(y_i, F(x_i))}{\partial F(x_i)}\right]_{F(x) = F_{m-1}(x_i)}\]</span></li>
+<li>The base learner <span class="math display">\[h_m(x)\]</span> is trained to predict these residuals, and the model is updated using the learning rate <span class="math display">\[\eta\]</span> to control the update’s magnitude.</li>
+</ul></li>
+</ol>
+<p>In summary, residuals are the driving force behind gradient boosting. They are the errors that the algorithm attempts to correct at each iteration, and they are computed as the negative gradient of the loss function. This gradient-based approach provides a flexible and powerful framework for building accurate predictive models.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a step-by-step guide on how to articulate this answer in an interview:</p>
+<ol type="1">
+<li><strong>Start with the Basics:</strong>
+<ul>
+<li>“In gradient boosting, residuals represent the errors that the current model is making. They’re crucial for iteratively improving the model’s predictions.”</li>
+</ul></li>
+<li><strong>Introduce the Loss Function (High-Level):</strong>
+<ul>
+<li>“The goal is to minimize a loss function. Examples include Mean Squared Error for regression or Log Loss for classification. The residuals are directly related to this loss function.”</li>
+</ul></li>
+<li><strong>Explain Residuals as Negative Gradients:</strong>
+<ul>
+<li>“More precisely, residuals are the <em>negative gradient</em> of the loss function with respect to the model’s predictions. For instance, with Mean Squared Error, the residual is simply the difference between the true value and the prediction.”</li>
+<li><em>Pause here. This is the core concept. Gauge the interviewer’s reaction. If they seem comfortable, continue. If not, simplify.</em></li>
+<li><em>(If simplifying):</em> “Think of it as the direction we need to move the prediction to get closer to the true value. The negative gradient tells us that direction.”</li>
+</ul></li>
+<li><strong>MSE Example (Most Interviewers will appreciate this):</strong>
+<ul>
+<li>“If we are using Mean Square Error, then our loss function can be written as <span class="math display">\[L(y, F(x)) = \frac{1}{2}(y - F(x))^2\]</span>. Using this, we can compute residuals, which are the negative gradient of the loss function, as <span class="math display">\[r_{i,m} = y_i - F_{m-1}(x_i)\]</span>. The residual is the different between the true value and the prediction.”</li>
+</ul></li>
+<li><strong>Explain Fitting the Base Learner:</strong>
+<ul>
+<li>“At each step, we train a new base learner, usually a decision tree, to predict these residuals. The base learner learns to approximate the errors.”</li>
+</ul></li>
+<li><strong>Explain Updating the Ensemble:</strong>
+<ul>
+<li>“Then, we add the base learner to the ensemble, but we scale it down by a learning rate. This learning rate controls how much we correct the model at each step. Smaller learning rate is generally better but takes more time.” <span class="math display">\[F_m(x) = F_{m-1}(x) + \eta \cdot h_m(x)\]</span></li>
+</ul></li>
+<li><strong>Emphasize Importance:</strong>
+<ul>
+<li>“The key is that by focusing on the residuals, we’re directly addressing the errors of the current model. Gradient boosting is like a gradient descent algorithm in ‘function space,’ and the residuals are telling us the direction to move.”</li>
+</ul></li>
+<li><strong>Mention Flexibility (If Time Allows):</strong>
+<ul>
+<li>“A major benefit is its flexibility. Because we’re working with gradients, we can use different loss functions, allowing us to tackle various problems—regression, classification, ranking—with the same core algorithm.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush the explanation, especially when discussing the negative gradient.</li>
+<li><strong>Visual Aids (If Possible):</strong> If you’re in person, consider drawing a simple diagram illustrating the loss function and the gradient.</li>
+<li><strong>Check for Understanding:</strong> Pause periodically and ask, “Does that make sense?” or “Are you familiar with the concept of gradients?”</li>
+<li><strong>Tailor to the Interviewer:</strong> Adjust the level of detail based on the interviewer’s background. If they’re very technical, you can go deeper into the mathematical details. If they’re more business-oriented, focus on the conceptual understanding and the benefits.</li>
+<li><strong>Be Confident:</strong> You know this stuff. Project confidence in your understanding. Even if you stumble slightly, recover gracefully and keep going.</li>
+</ul>
+<p>By following these steps, you can effectively explain residuals in gradient boosting and demonstrate your understanding of this important concept.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

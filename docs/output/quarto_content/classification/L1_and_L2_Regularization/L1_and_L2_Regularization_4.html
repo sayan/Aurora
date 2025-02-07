@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>l1_and_l2_regularization_4</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-5.-gradient-computation-derive-the-gradient-for-a-loss-function-augmented-with-l2-regularization-for-a-simple-linear-regression-model.-how-does-this-differ-from-the-unregularized-gradient" class="level2">
+<h2 class="anchored" data-anchor-id="question-5.-gradient-computation-derive-the-gradient-for-a-loss-function-augmented-with-l2-regularization-for-a-simple-linear-regression-model.-how-does-this-differ-from-the-unregularized-gradient">Question: 5. Gradient Computation: Derive the gradient for a loss function augmented with L2 regularization for a simple linear regression model. How does this differ from the unregularized gradient?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Let’s consider a simple linear regression model. Our goal is to predict a target variable <span class="math inline">\(y\)</span> using a single feature <span class="math inline">\(x\)</span>. The model is given by:</p>
+<p><span class="math display">\[
+\hat{y} = w x + b
+\]</span></p>
+<p>where: - <span class="math inline">\(\hat{y}\)</span> is the predicted value. - <span class="math inline">\(x\)</span> is the input feature. - <span class="math inline">\(w\)</span> is the weight (slope). - <span class="math inline">\(b\)</span> is the bias (intercept).</p>
+<p>Our loss function will be the Mean Squared Error (MSE), augmented with L2 regularization. L2 regularization adds a penalty term to the loss function, proportional to the square of the magnitude of the weights. The L2 regularized loss function <span class="math inline">\(J\)</span> is given by:</p>
+<p><span class="math display">\[
+J(w, b) = \frac{1}{2N} \sum_{i=1}^{N} (\hat{y}_i - y_i)^2 + \frac{\lambda}{2} w^2
+\]</span></p>
+<p>where: - <span class="math inline">\(N\)</span> is the number of data points. - <span class="math inline">\(y_i\)</span> is the actual target value for the <span class="math inline">\(i\)</span>-th data point. - <span class="math inline">\(\lambda\)</span> is the regularization parameter (controls the strength of the regularization).</p>
+<p>Let’s break this down further: <span class="math display">\[
+J(w, b) = \frac{1}{2N} \sum_{i=1}^{N} (w x_i + b - y_i)^2 + \frac{\lambda}{2} w^2
+\]</span></p>
+<p>Now, we need to compute the gradients of <span class="math inline">\(J\)</span> with respect to <span class="math inline">\(w\)</span> and <span class="math inline">\(b\)</span>.</p>
+<p><strong>1. Gradient with respect to <span class="math inline">\(w\)</span> (<span class="math inline">\(\frac{\partial J}{\partial w}\)</span>):</strong></p>
+<p><span class="math display">\[
+\frac{\partial J}{\partial w} = \frac{1}{2N} \sum_{i=1}^{N} 2 (w x_i + b - y_i) x_i + \lambda w
+\]</span></p>
+<p>Simplifying:</p>
+<p><span class="math display">\[
+\frac{\partial J}{\partial w} = \frac{1}{N} \sum_{i=1}^{N} (w x_i + b - y_i) x_i + \lambda w
+\]</span></p>
+<p>We can rewrite the summation part:</p>
+<p><span class="math display">\[
+\frac{\partial J}{\partial w} = \frac{1}{N} \sum_{i=1}^{N} (w x_i^2 + b x_i - y_i x_i) + \lambda w
+\]</span></p>
+<p><strong>2. Gradient with respect to <span class="math inline">\(b\)</span> (<span class="math inline">\(\frac{\partial J}{\partial b}\)</span>):</strong></p>
+<p><span class="math display">\[
+\frac{\partial J}{\partial b} = \frac{1}{2N} \sum_{i=1}^{N} 2 (w x_i + b - y_i)
+\]</span></p>
+<p>Simplifying:</p>
+<p><span class="math display">\[
+\frac{\partial J}{\partial b} = \frac{1}{N} \sum_{i=1}^{N} (w x_i + b - y_i)
+\]</span></p>
+<p><strong>Comparison with Unregularized Gradient:</strong></p>
+<p>Now, let’s consider the unregularized loss function, <span class="math inline">\(J_{unreg}\)</span>:</p>
+<p><span class="math display">\[
+J_{unreg}(w, b) = \frac{1}{2N} \sum_{i=1}^{N} (w x_i + b - y_i)^2
+\]</span></p>
+<p>The gradients for the unregularized loss function are:</p>
+<p><span class="math display">\[
+\frac{\partial J_{unreg}}{\partial w} = \frac{1}{N} \sum_{i=1}^{N} (w x_i + b - y_i) x_i
+\]</span></p>
+<p><span class="math display">\[
+\frac{\partial J_{unreg}}{\partial b} = \frac{1}{N} \sum_{i=1}^{N} (w x_i + b - y_i)
+\]</span></p>
+<p>Comparing the regularized and unregularized gradients, we see the following differences:</p>
+<ul>
+<li><strong>For <span class="math inline">\(w\)</span>:</strong> The gradient of the regularized loss function has an additional term <span class="math inline">\(\lambda w\)</span>. This term penalizes large values of <span class="math inline">\(w\)</span>, effectively shrinking the weights.</li>
+<li><strong>For <span class="math inline">\(b\)</span>:</strong> The gradient with respect to <span class="math inline">\(b\)</span> remains the same in both the regularized and unregularized cases. This is because we typically do not regularize the bias term. The bias term represents the model’s inherent offset and regularizing it can sometimes lead to underfitting. Regularization is applied to weights to prevent overfitting by discouraging complex relationships between features and target.</li>
+</ul>
+<p>In summary, L2 regularization modifies the gradient descent update rule for the weights by adding a term proportional to the weight itself. This encourages the model to have smaller weights, leading to a simpler and more generalizable model. The update rules during gradient descent become:</p>
+<p>For regularized loss: <span class="math display">\[
+w := w - \eta (\frac{1}{N} \sum_{i=1}^{N} (w x_i + b - y_i) x_i + \lambda w)
+\]</span> <span class="math display">\[
+b := b - \eta (\frac{1}{N} \sum_{i=1}^{N} (w x_i + b - y_i))
+\]</span> where <span class="math inline">\(\eta\)</span> is the learning rate.</p>
+<p>For unregularized loss: <span class="math display">\[
+w := w - \eta (\frac{1}{N} \sum_{i=1}^{N} (w x_i + b - y_i) x_i )
+\]</span> <span class="math display">\[
+b := b - \eta (\frac{1}{N} \sum_{i=1}^{N} (w x_i + b - y_i))
+\]</span></p>
+<p><strong>Importance and Considerations:</strong></p>
+<ul>
+<li><strong>Overfitting:</strong> L2 regularization is crucial for preventing overfitting, especially when the model is complex or the dataset is small.</li>
+<li><strong>Weight Decay:</strong> The <span class="math inline">\(\lambda w\)</span> term in the gradient is often referred to as “weight decay” because it causes the weights to decay towards zero during training.</li>
+<li><strong>Choice of <span class="math inline">\(\lambda\)</span>:</strong> The regularization parameter <span class="math inline">\(\lambda\)</span> needs to be carefully tuned. A large <span class="math inline">\(\lambda\)</span> can lead to underfitting (high bias), while a small <span class="math inline">\(\lambda\)</span> may not effectively prevent overfitting (high variance). Techniques like cross-validation are used to find an optimal value for <span class="math inline">\(\lambda\)</span>.</li>
+<li><strong>Implementation:</strong> In practice, L2 regularization is straightforward to implement in most machine learning libraries. It’s often a built-in option in optimization algorithms like Adam or SGD.</li>
+<li><strong>Other Regularization Techniques:</strong> L1 regularization is also commonly used, which adds a penalty proportional to the absolute value of the weights (<span class="math inline">\(|w|\)</span>). L1 regularization can lead to sparsity in the weights, effectively performing feature selection. Elastic Net combines both L1 and L2 regularization.</li>
+</ul>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s how you could articulate this answer in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with the basics:</strong> “Let’s consider a simple linear regression model where we predict a target variable based on a single feature. I’ll use Mean Squared Error as the loss function and augment it with L2 regularization to prevent overfitting.”</p></li>
+<li><p><strong>Define the model and loss function:</strong> “The model is <span class="math inline">\(\hat{y} = wx + b\)</span>, and the L2 regularized loss function is <span class="math inline">\(J(w, b) = \frac{1}{2N} \sum_{i=1}^{N} (\hat{y}_i - y_i)^2 + \frac{\lambda}{2} w^2\)</span>, where <span class="math inline">\(\lambda\)</span> is the regularization parameter.” Write these down for the interviewer if you’re in person or share your screen if remote.</p></li>
+<li><p><strong>Explain the goal:</strong> “The goal is to find the gradients of this loss function with respect to the weights <span class="math inline">\(w\)</span> and bias <span class="math inline">\(b\)</span>, which will allow us to update these parameters during training.”</p></li>
+<li><p><strong>Derive the gradient for w:</strong> “Let’s start with the gradient with respect to <span class="math inline">\(w\)</span>. Using the chain rule, we get <span class="math inline">\(\frac{\partial J}{\partial w} = \frac{1}{N} \sum_{i=1}^{N} (w x_i + b - y_i) x_i + \lambda w\)</span>.” Walk through each step concisely.</p></li>
+<li><p><strong>Derive the gradient for b:</strong> “Similarly, the gradient with respect to <span class="math inline">\(b\)</span> is <span class="math inline">\(\frac{\partial J}{\partial b} = \frac{1}{N} \sum_{i=1}^{N} (w x_i + b - y_i)\)</span>.”</p></li>
+<li><p><strong>Compare with the unregularized case:</strong> “Now, if we didn’t have L2 regularization, the gradients would be <span class="math inline">\(\frac{\partial J_{unreg}}{\partial w} = \frac{1}{N} \sum_{i=1}^{N} (w x_i + b - y_i) x_i\)</span> and <span class="math inline">\(\frac{\partial J_{unreg}}{\partial b} = \frac{1}{N} \sum_{i=1}^{N} (w x_i + b - y_i)\)</span>. The key difference is the <span class="math inline">\(\lambda w\)</span> term in the regularized gradient for <span class="math inline">\(w\)</span>.”</p></li>
+<li><p><strong>Explain the implications:</strong> “This <span class="math inline">\(\lambda w\)</span> term penalizes large weights, causing them to ‘decay’ towards zero during training. This helps to prevent overfitting and improves the model’s generalization ability.”</p></li>
+<li><p><strong>Discuss the impact on update rules (optional):</strong> “Consequently, the gradient descent update rule for <span class="math inline">\(w\)</span> now includes a term that shrinks the weight at each iteration (<span class="math inline">\(w := w - \eta (\frac{1}{N} \sum_{i=1}^{N} (w x_i + b - y_i) x_i + \lambda w)\)</span>), while the update rule for <span class="math inline">\(b\)</span> remains the same because we typically don’t regularize the bias.”</p></li>
+<li><p><strong>Address important considerations:</strong> “The choice of <span class="math inline">\(\lambda\)</span> is crucial and is typically tuned using cross-validation. Too much regularization can lead to underfitting, while too little may not prevent overfitting.”</p></li>
+<li><p><strong>Mention other techniques (optional):</strong> “L1 regularization is another common technique that can lead to sparse weights and feature selection. Elastic Net combines both L1 and L2 regularization for situations where you need both.”</p></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace yourself:</strong> Don’t rush through the derivation. Explain each step clearly.</li>
+<li><strong>Use visuals (if possible):</strong> If you’re in a virtual interview, consider using a whiteboard or screen sharing to illustrate the equations. If in-person, ask for a whiteboard.</li>
+<li><strong>Check for understanding:</strong> Pause occasionally and ask if the interviewer has any questions.</li>
+<li><strong>Emphasize the “why”:</strong> Don’t just present the math; explain <em>why</em> L2 regularization works and <em>how</em> it affects the training process.</li>
+<li><strong>Tailor to the audience:</strong> If the interviewer is less technical, you can skip some of the detailed derivation and focus on the high-level concepts and implications.</li>
+<li><strong>Be prepared for follow-up questions:</strong> The interviewer may ask about the choice of <span class="math inline">\(\lambda\)</span>, the differences between L1 and L2 regularization, or other related topics.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

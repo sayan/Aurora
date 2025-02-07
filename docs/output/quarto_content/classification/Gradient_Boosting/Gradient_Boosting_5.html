@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>gradient_boosting_5</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-6.-what-is-the-role-of-shrinkage-learning-rate-and-subsampling-in-gradient-boosting-and-how-do-these-techniques-improve-model-performance" class="level2">
+<h2 class="anchored" data-anchor-id="question-6.-what-is-the-role-of-shrinkage-learning-rate-and-subsampling-in-gradient-boosting-and-how-do-these-techniques-improve-model-performance">Question: 6. What is the role of shrinkage (learning rate) and subsampling in gradient boosting, and how do these techniques improve model performance?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Gradient boosting is a powerful ensemble learning method that combines multiple weak learners, typically decision trees, to create a strong learner. Shrinkage (learning rate) and subsampling are two crucial regularization techniques used in gradient boosting to prevent overfitting and improve model performance.</p>
+<p><strong>1. Shrinkage (Learning Rate)</strong></p>
+<ul>
+<li><p><strong>Definition:</strong> Shrinkage, often referred to as the learning rate (<span class="math inline">\(\eta\)</span>), scales the contribution of each tree added to the ensemble. It is a hyperparameter that controls the step size at each iteration during the gradient descent optimization process. Instead of fully incorporating the prediction of each tree, we only add a fraction of it.</p></li>
+<li><p><strong>Mathematical Formulation:</strong> In gradient boosting, the model is built iteratively. At each iteration <span class="math inline">\(t\)</span>, a new tree <span class="math inline">\(h_t(x)\)</span> is trained to predict the residuals (the difference between the actual values and the current prediction). The model is then updated as follows:</p>
+<p><span class="math display">\[
+F_t(x) = F_{t-1}(x) + \eta \cdot h_t(x)
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(F_t(x)\)</span> is the prediction of the ensemble at iteration <span class="math inline">\(t\)</span>.</li>
+<li><span class="math inline">\(F_{t-1}(x)\)</span> is the prediction of the ensemble at the previous iteration <span class="math inline">\(t-1\)</span>.</li>
+<li><span class="math inline">\(\eta\)</span> is the learning rate (shrinkage factor), where <span class="math inline">\(0 &lt; \eta \le 1\)</span>.</li>
+<li><span class="math inline">\(h_t(x)\)</span> is the prediction of the newly added tree.</li>
+</ul></li>
+<li><p><strong>Impact on Model Performance:</strong></p>
+<ul>
+<li><strong>Regularization:</strong> A smaller learning rate reduces the impact of each individual tree, preventing the model from fitting the training data too closely. This is a form of regularization.</li>
+<li><strong>Smoother Convergence:</strong> Small steps in the gradient descent process lead to more stable and smoother convergence. It helps the algorithm navigate the loss landscape more carefully.</li>
+<li><strong>Reduced Overfitting:</strong> By shrinking the contribution of each tree, the model becomes more robust to noise and outliers in the training data, leading to better generalization performance on unseen data.</li>
+<li><strong>Increased Robustness</strong>: Helps to prevent over-reliance on any single tree.</li>
+</ul></li>
+<li><p><strong>Trade-offs:</strong></p>
+<ul>
+<li>Smaller learning rates typically require more trees (iterations) to achieve optimal performance. This increases the computational cost of training. There is a tradeoff between learning rate and the number of estimators.</li>
+<li>It often requires tuning in conjunction with the number of trees. It’s common to use techniques like cross-validation to find the optimal combination of learning rate and the number of trees.</li>
+</ul></li>
+</ul>
+<p><strong>2. Subsampling (Stochastic Gradient Boosting)</strong></p>
+<ul>
+<li><p><strong>Definition:</strong> Subsampling, also known as stochastic gradient boosting, involves training each tree on a random subset of the training data. It’s akin to bagging but applied within the gradient boosting framework.</p></li>
+<li><p><strong>Mechanism:</strong> At each iteration, a random sample of the training data (without replacement) is selected. A new tree is then trained using this subset. The size of the subset is controlled by a hyperparameter, often expressed as a fraction of the total training data (e.g., <code>subsample = 0.8</code> means 80% of the data is used for each tree).</p></li>
+<li><p><strong>Impact on Model Performance:</strong></p>
+<ul>
+<li><strong>Variance Reduction:</strong> By training each tree on a different subset of the data, subsampling introduces randomness into the training process. This reduces the correlation between the trees in the ensemble, leading to a reduction in variance and improved generalization.</li>
+<li><strong>Regularization:</strong> Subsampling acts as a regularizer by preventing the model from memorizing the entire training dataset.</li>
+<li><strong>Speedup:</strong> Training on smaller subsets of data can significantly speed up the training process, especially for large datasets.</li>
+<li><strong>Out-of-Bag Estimates:</strong> The samples not included in the subset (out-of-bag samples) can be used for validation during training. This provides an estimate of the model’s performance on unseen data without the need for a separate validation set.</li>
+</ul></li>
+<li><p><strong>Benefits derived from Randomness:</strong> The injected randomness helps the ensemble to explore different parts of the feature space and reduces overfitting, much like in Random Forests.</p></li>
+<li><p><strong>Mathematical Justification (Informal):</strong> Consider a simplified scenario where the error can be decomposed into bias and variance:</p>
+<p><span class="math display">\[
+\text{Error} = \text{Bias}^2 + \text{Variance} + \text{Irreducible Error}
+\]</span></p>
+<p>Subsampling primarily aims to reduce the variance component, leading to a lower overall error. Gradient boosting already addresses bias by sequentially correcting errors. Subsampling complements this by controlling variance.</p></li>
+</ul>
+<p><strong>3. Interaction of Shrinkage and Subsampling</strong></p>
+<ul>
+<li>Shrinkage and subsampling are often used together to achieve optimal model performance.</li>
+<li>The learning rate controls the magnitude of each update, while subsampling adds randomness to the selection of training data.</li>
+<li>These parameters are often tuned together, using cross-validation or other optimization techniques, to find the best balance between bias and variance.</li>
+<li>Using a smaller learning rate often allows for more aggressive subsampling, which can further improve generalization.</li>
+</ul>
+<p><strong>4. Real-World Considerations and Practical Implementation</strong></p>
+<ul>
+<li><strong>Hyperparameter Tuning:</strong> The optimal values for the learning rate and subsample fraction depend on the specific dataset and problem. Techniques like grid search, random search, or Bayesian optimization are commonly used to tune these hyperparameters.</li>
+<li><strong>Computational Cost:</strong> Smaller learning rates require more trees, increasing the computational cost. Subsampling can help to mitigate this cost by reducing the training time per tree.</li>
+<li><strong>Early Stopping:</strong> Monitoring the performance on a validation set and stopping training when the performance starts to degrade (early stopping) is crucial to prevent overfitting, especially when using a small learning rate and a large number of trees.</li>
+<li><strong>Implementation Details:</strong> Most gradient boosting libraries (e.g., XGBoost, LightGBM, scikit-learn) provide efficient implementations of shrinkage and subsampling. These libraries often include advanced features like regularized tree learning and parallel processing to further improve performance and scalability.</li>
+</ul>
+<p>In summary, shrinkage and subsampling are essential regularization techniques in gradient boosting that help to improve model performance by preventing overfitting and reducing variance. They control the complexity of the model and promote better generalization to unseen data. Careful tuning of these hyperparameters is crucial for achieving optimal results.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s how to present this information in an interview, striking a balance between detail and clarity:</p>
+<ol type="1">
+<li><strong>Start with the Big Picture:</strong>
+<ul>
+<li>“Gradient boosting is an ensemble method that combines weak learners, typically decision trees. To prevent overfitting and improve generalization, we use techniques like shrinkage, also known as the learning rate, and subsampling.”</li>
+</ul></li>
+<li><strong>Explain Shrinkage (Learning Rate):</strong>
+<ul>
+<li>“Shrinkage, or the learning rate, scales the contribution of each tree. Mathematically, the update rule is <span class="math inline">\(F_t(x) = F_{t-1}(x) + \eta \cdot h_t(x)\)</span>, where <span class="math inline">\(\eta\)</span> is the learning rate, typically a small value like 0.01 or 0.1.” (Write the formula on the whiteboard if possible).</li>
+<li>“A smaller learning rate means each tree has less influence on the final prediction. This has a regularizing effect, preventing the model from fitting the training data too closely and leading to smoother convergence.”</li>
+<li>“The downside is that a smaller learning rate often requires more trees, which increases computational cost. So, there’s a trade-off.”</li>
+</ul></li>
+<li><strong>Explain Subsampling:</strong>
+<ul>
+<li>“Subsampling involves training each tree on a random subset of the training data. It’s like bagging within gradient boosting.”</li>
+<li>“This introduces randomness, which reduces the correlation between the trees and lowers the variance of the ensemble. It also acts as a regularizer, preventing the model from memorizing the training data.”</li>
+<li>“Additionally, training on smaller subsets speeds up the training process.”</li>
+</ul></li>
+<li><strong>Discuss the Interaction:</strong>
+<ul>
+<li>“Shrinkage and subsampling are often used together. The learning rate controls the step size, while subsampling adds randomness. We typically tune them together using cross-validation to find the best balance between bias and variance.”</li>
+<li>“You often find that a smaller learning rate lets you be more aggressive with subsampling, leading to even better generalization.”</li>
+</ul></li>
+<li><strong>Mention Real-World Considerations:</strong>
+<ul>
+<li>“In practice, we use techniques like grid search or Bayesian optimization to tune these hyperparameters. Early stopping, where we monitor performance on a validation set and stop training when it degrades, is also crucial to prevent overfitting.”</li>
+<li>“Libraries like XGBoost and LightGBM provide efficient implementations and advanced features for gradient boosting, including parallel processing and regularized tree learning.”</li>
+</ul></li>
+<li><strong>Address Potential Follow-Up Questions:</strong>
+<ul>
+<li>Be prepared to discuss how to choose appropriate values for the learning rate and subsample fraction, and how these parameters interact with other hyperparameters like the maximum tree depth.</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush through the explanation. Give the interviewer time to process the information.</li>
+<li><strong>Use Visual Aids:</strong> If possible, use a whiteboard to draw diagrams or write down equations.</li>
+<li><strong>Check for Understanding:</strong> Pause periodically and ask the interviewer if they have any questions.</li>
+<li><strong>Be Prepared to Elaborate:</strong> The interviewer may ask you to delve deeper into specific aspects of shrinkage or subsampling.</li>
+<li><strong>Connect to Practical Experience:</strong> If you have experience tuning these hyperparameters in real-world projects, mention it.</li>
+<li><strong>Highlight the Benefits:</strong> Emphasize how these techniques improve model performance, prevent overfitting, and lead to better generalization.</li>
+<li><strong>Mathematical Sections:</strong> When discussing the equation, explain each term clearly and emphasize the intuition behind it. Avoid overwhelming the interviewer with excessive mathematical detail. Keep it concise and focused on the key concepts.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
