@@ -48,6 +48,7 @@ def structure_to_markdown(structure: dict, parent_path: str = "", level: int = 2
     
     # If there are files at this level, list them
     if "_files" in structure:
+        md_lines.append('\n\n')  
         # Create a heading for this directory if parent_path is not empty
         # or if you specifically want a heading even at the root.
         if parent_path:
@@ -60,7 +61,7 @@ def structure_to_markdown(structure: dict, parent_path: str = "", level: int = 2
             link_text = fname.replace(".qmd", "")
             md_lines.append(f"- [{link_text}]({full_path})")
         
-        md_lines.append("")  # blank line
+        md_lines.append("\n\n")  # blank line
 
     # Handle subdirectories
     for dkey in subdirs:
@@ -93,13 +94,13 @@ def create_index_qmd(root_dir="/workspaces/codespaces-jupyter"):
     # Prepare the front matter
     content_lines = [
         "---",
-        "title: \"Index\"",
+        "title: \"Questions to Practice\"",
         "format:",
         "  html:",
         "    toc: true",
         "---",
         "",
-        "# Site Index\n"
+        "# Index \n"
     ]
 
     # Generate the markdown from the substructure

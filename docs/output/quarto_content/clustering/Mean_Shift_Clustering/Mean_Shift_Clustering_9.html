@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>mean_shift_clustering_9</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-10.-compare-mean-shift-clustering-with-density-based-clustering-methods-like-dbscan.-what-are-the-strengths-and-weaknesses-of-each-particularly-in-terms-of-detecting-clusters-of-arbitrary-shapes" class="level2">
+<h2 class="anchored" data-anchor-id="question-10.-compare-mean-shift-clustering-with-density-based-clustering-methods-like-dbscan.-what-are-the-strengths-and-weaknesses-of-each-particularly-in-terms-of-detecting-clusters-of-arbitrary-shapes">Question: 10. Compare Mean-Shift Clustering with density-based clustering methods like DBSCAN. What are the strengths and weaknesses of each, particularly in terms of detecting clusters of arbitrary shapes?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Mean-Shift clustering and DBSCAN (Density-Based Spatial Clustering of Applications with Noise) are both unsupervised machine learning algorithms used for clustering data points. They differ significantly in their approach and, consequently, in their strengths and weaknesses, especially when dealing with clusters of arbitrary shapes.</p>
+<p><strong>Mean-Shift Clustering</strong></p>
+<ul>
+<li><p><strong>Concept:</strong> Mean-Shift is a centroid-based clustering algorithm. It works by iteratively shifting data points towards the mode (highest density) in their neighborhood. The algorithm starts with each data point as a potential cluster center and then updates the cluster center by averaging the points within a defined radius (bandwidth). This process continues until the cluster center converges.</p></li>
+<li><p><strong>Algorithm:</strong></p>
+<ol type="1">
+<li><strong>Initialization:</strong> Assign each data point as a potential cluster center.</li>
+<li><strong>Iteration:</strong> For each data point <span class="math inline">\(x_i\)</span>:
+<ul>
+<li>Define a neighborhood <span class="math inline">\(S_i\)</span> around <span class="math inline">\(x_i\)</span> using a kernel function <span class="math inline">\(K(x)\)</span> and bandwidth <span class="math inline">\(h\)</span>. Typically, a Gaussian kernel is used: <span class="math display">\[K(x) = \frac{1}{(2\pi)^{d/2}h^d} e^{-\frac{||x||^2}{2h^2}}\]</span> where <span class="math inline">\(d\)</span> is the dimensionality of the data.</li>
+<li>Calculate the weighted mean (shift vector) <span class="math inline">\(m(x_i)\)</span>: <span class="math display">\[m(x_i) = \frac{\sum_{x_j \in S_i} x_j K(x_i - x_j)}{\sum_{x_j \in S_i} K(x_i - x_j)}\]</span></li>
+<li>Update the cluster center: <span class="math inline">\(x_i \leftarrow x_i + m(x_i)\)</span></li>
+</ul></li>
+<li><strong>Convergence:</strong> Repeat the iteration until the cluster centers converge (i.e., the shift vector <span class="math inline">\(m(x_i)\)</span> becomes smaller than a threshold).</li>
+<li><strong>Post-processing:</strong> Merge clusters that are within a certain distance of each other.</li>
+</ol></li>
+<li><p><strong>Strengths:</strong></p>
+<ul>
+<li><strong>No assumption on cluster shape:</strong> Mean-Shift can detect clusters of arbitrary shapes because it relies on the density of data points rather than assuming a specific geometric shape.</li>
+<li><strong>Automatic number of clusters:</strong> The algorithm automatically determines the number of clusters based on the data distribution, without requiring the user to predefine the number of clusters.</li>
+<li><strong>Robust to outliers:</strong> Outliers have less influence on the cluster centers because of the averaging process.</li>
+</ul></li>
+<li><p><strong>Weaknesses:</strong></p>
+<ul>
+<li><strong>Bandwidth sensitivity:</strong> The choice of bandwidth (<span class="math inline">\(h\)</span>) is crucial and significantly impacts the clustering results. Selecting an appropriate bandwidth can be challenging. If <span class="math inline">\(h\)</span> is too small, it can lead to overfitting, creating many small clusters. If <span class="math inline">\(h\)</span> is too large, it can lead to underfitting, merging distinct clusters.</li>
+<li><strong>Computational complexity:</strong> The algorithm can be computationally expensive, especially for large datasets, as it requires calculating the distance between each data point and all other data points. The complexity is approximately <span class="math inline">\(O(n^2)\)</span>, where <span class="math inline">\(n\)</span> is the number of data points.</li>
+<li><strong>Uniform bandwidth:</strong> Using a uniform bandwidth for the entire dataset might not be optimal if the data has varying densities.</li>
+<li><strong>Scalability Issues</strong>: Not well-suited for high-dimensional data due to the “curse of dimensionality,” as the density estimation becomes less reliable in high-dimensional spaces.</li>
+</ul></li>
+</ul>
+<p><strong>DBSCAN (Density-Based Spatial Clustering of Applications with Noise)</strong></p>
+<ul>
+<li><p><strong>Concept:</strong> DBSCAN groups together data points that are closely packed together, marking as outliers points that lie alone in low-density regions. It relies on two parameters: <span class="math inline">\(\epsilon\)</span> (epsilon), which defines the radius of the neighborhood around a data point, and <span class="math inline">\(MinPts\)</span>, which defines the minimum number of data points required within the <span class="math inline">\(\epsilon\)</span>-neighborhood for a point to be considered a core point.</p></li>
+<li><p><strong>Algorithm:</strong></p>
+<ol type="1">
+<li><strong>Initialization:</strong> Mark all data points as unvisited.</li>
+<li><strong>Iteration:</strong> For each unvisited data point <span class="math inline">\(x_i\)</span>:
+<ul>
+<li>Mark <span class="math inline">\(x_i\)</span> as visited.</li>
+<li>Find all neighbors of <span class="math inline">\(x_i\)</span> within a radius <span class="math inline">\(\epsilon\)</span>.</li>
+<li>If the number of neighbors is less than <span class="math inline">\(MinPts\)</span>, mark <span class="math inline">\(x_i\)</span> as noise.</li>
+<li>If the number of neighbors is greater than or equal to <span class="math inline">\(MinPts\)</span>, <span class="math inline">\(x_i\)</span> is a core point. Create a new cluster and add <span class="math inline">\(x_i\)</span> to the cluster. Then, recursively find all density-reachable points from <span class="math inline">\(x_i\)</span> and add them to the same cluster. A point <span class="math inline">\(x_j\)</span> is directly density-reachable from <span class="math inline">\(x_i\)</span> if <span class="math inline">\(x_j\)</span> is within the <span class="math inline">\(\epsilon\)</span>-neighborhood of <span class="math inline">\(x_i\)</span> and <span class="math inline">\(x_i\)</span> is a core point. A point <span class="math inline">\(x_k\)</span> is density-reachable from <span class="math inline">\(x_i\)</span> if there is a chain of directly density-reachable points from <span class="math inline">\(x_i\)</span> to <span class="math inline">\(x_k\)</span>.</li>
+</ul></li>
+<li><strong>Repeat:</strong> Repeat the iteration until all data points have been visited.</li>
+</ol></li>
+<li><p><strong>Strengths:</strong></p>
+<ul>
+<li><strong>Detects arbitrary shapes:</strong> DBSCAN is excellent at discovering clusters with arbitrary shapes because it defines clusters based on density connectivity rather than assuming a specific shape.</li>
+<li><strong>Robust to noise:</strong> DBSCAN can identify and isolate noise points (outliers) effectively.</li>
+<li><strong>Parameter interpretability:</strong> The parameters <span class="math inline">\(\epsilon\)</span> and <span class="math inline">\(MinPts\)</span> have clear interpretations, making it relatively easier to tune them.</li>
+<li><strong>No need to specify number of clusters</strong>: Similar to Mean Shift, DBSCAN automatically determines the number of clusters.</li>
+</ul></li>
+<li><p><strong>Weaknesses:</strong></p>
+<ul>
+<li><strong>Parameter sensitivity:</strong> The choice of <span class="math inline">\(\epsilon\)</span> and <span class="math inline">\(MinPts\)</span> can significantly impact the clustering results. Finding appropriate values can be challenging, especially when the data has varying densities.</li>
+<li><strong>Density variation:</strong> DBSCAN struggles when clusters have significant variations in density. It may not be able to identify clusters correctly if some clusters are much denser than others.</li>
+<li><strong>High-dimensional data:</strong> Like Mean Shift, DBSCAN suffers from the curse of dimensionality, and its performance degrades in high-dimensional spaces.</li>
+<li><strong>Boundary points</strong>: Boundary points that are reachable from two or more clusters may be assigned to either cluster depending on the order in which the data is processed.</li>
+</ul></li>
+</ul>
+<p><strong>Comparison Table</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 35%">
+<col style="width: 38%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Feature</th>
+<th>Mean-Shift</th>
+<th>DBSCAN</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Cluster Shape Assumption</td>
+<td>No assumption</td>
+<td>No assumption</td>
+</tr>
+<tr class="even">
+<td>Number of Clusters</td>
+<td>Automatic</td>
+<td>Automatic</td>
+</tr>
+<tr class="odd">
+<td>Parameter Sensitivity</td>
+<td>Bandwidth (<span class="math inline">\(h\)</span>)</td>
+<td><span class="math inline">\(\epsilon\)</span>, <span class="math inline">\(MinPts\)</span></td>
+</tr>
+<tr class="even">
+<td>Density Variation</td>
+<td>Can struggle with varying densities</td>
+<td>Struggles significantly with varying densities</td>
+</tr>
+<tr class="odd">
+<td>Noise Handling</td>
+<td>Robust, but less explicit</td>
+<td>Excellent at identifying noise</td>
+</tr>
+<tr class="even">
+<td>Computational Complexity</td>
+<td><span class="math inline">\(O(n^2)\)</span></td>
+<td><span class="math inline">\(O(n \log n)\)</span> (with spatial index)</td>
+</tr>
+<tr class="odd">
+<td>High-Dimensional Data</td>
+<td>Performance degrades</td>
+<td>Performance degrades</td>
+</tr>
+<tr class="even">
+<td>Parameter Interpretation</td>
+<td>Bandwidth can be less intuitive</td>
+<td><span class="math inline">\(\epsilon\)</span> and <span class="math inline">\(MinPts\)</span> are interpretable</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Detecting Clusters of Arbitrary Shapes</strong></p>
+<p>Both Mean-Shift and DBSCAN excel at detecting clusters of arbitrary shapes because they do not assume any specific shape for the clusters, unlike algorithms like K-means, which assume clusters are spherical. However, their suitability depends on the specific characteristics of the data.</p>
+<ul>
+<li><p><strong>Mean-Shift:</strong> Suitable when the data has relatively uniform density across clusters and the primary goal is to find the modes of the data distribution. The bandwidth parameter must be chosen carefully to avoid over or under-segmentation.</p></li>
+<li><p><strong>DBSCAN:</strong> Better suited when clusters have varying densities and the goal is to identify noise points explicitly. The <span class="math inline">\(\epsilon\)</span> and <span class="math inline">\(MinPts\)</span> parameters must be chosen carefully to balance the detection of clusters and the identification of noise.</p></li>
+</ul>
+<p><strong>Real-world Considerations</strong></p>
+<ul>
+<li><strong>Implementation Details:</strong>
+<ul>
+<li><strong>Mean-Shift:</strong> Implementations often use techniques like ball trees or KD-trees to speed up the neighborhood search. Adaptive bandwidth selection techniques can also improve performance in datasets with varying densities.</li>
+<li><strong>DBSCAN:</strong> Spatial indexing techniques (e.g., R-trees, KD-trees) are crucial for improving the efficiency of neighborhood queries, especially for large datasets. Variations like OPTICS (Ordering Points To Identify the Clustering Structure) address the sensitivity to the <span class="math inline">\(\epsilon\)</span> parameter by creating a reachability plot.</li>
+</ul></li>
+<li><strong>Corner Cases:</strong>
+<ul>
+<li><strong>Mean-Shift:</strong> If the bandwidth is chosen poorly, all data points may converge to a single cluster, or the algorithm may create many small, insignificant clusters.</li>
+<li><strong>DBSCAN:</strong> If the density of clusters varies significantly, it may be impossible to find a single set of <span class="math inline">\(\epsilon\)</span> and <span class="math inline">\(MinPts\)</span> values that works well for all clusters. In such cases, hierarchical DBSCAN variants (e.g., HDBSCAN) can be used.</li>
+</ul></li>
+</ul>
+<p>In summary, Mean-Shift and DBSCAN are powerful clustering algorithms capable of detecting clusters of arbitrary shapes. Mean-Shift is a mode-seeking algorithm that automatically determines the number of clusters, while DBSCAN is a density-based algorithm that excels at identifying noise. The choice between the two depends on the specific characteristics of the data and the goals of the analysis. Both suffer performance degradation in high dimensions due to the “curse of dimensionality.”</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a guide on how to articulate this answer in an interview:</p>
+<ol type="1">
+<li><strong>Start with a high-level comparison:</strong>
+<ul>
+<li>“Mean-Shift and DBSCAN are both unsupervised clustering algorithms that can handle arbitrary cluster shapes, unlike K-means which assumes spherical clusters. However, they achieve this in different ways and have different strengths and weaknesses.”</li>
+</ul></li>
+<li><strong>Explain Mean-Shift Clustering:</strong>
+<ul>
+<li>“Mean-Shift is a centroid-based algorithm that iteratively shifts data points toward the mode in their neighborhood. It starts with each data point as a potential cluster center and updates the cluster center by calculating the weighted mean of points within a certain bandwidth. This is like climbing a density hill until you reach the peak.”</li>
+<li>“Mathematically, for each data point <span class="math inline">\(x_i\)</span>, we calculate the shift vector <span class="math inline">\(m(x_i)\)</span> using a kernel function <span class="math inline">\(K(x)\)</span> and bandwidth <span class="math inline">\(h\)</span>: <span class="math display">\[m(x_i) = \frac{\sum_{x_j \in S_i} x_j K(x_i - x_j)}{\sum_{x_j \in S_i} K(x_i - x_j)}\]</span> where <span class="math inline">\(S_i\)</span> is the neighborhood around <span class="math inline">\(x_i\)</span>.” (Present this equation if the interviewer seems mathematically inclined; otherwise, describe the concept without the formula.)</li>
+<li>“The bandwidth is a critical parameter. A small bandwidth can lead to overfitting, while a large bandwidth can lead to underfitting.”</li>
+<li>“The main advantage is that Mean-Shift automatically determines the number of clusters. The main disadvantage is its <span class="math inline">\(O(n^2)\)</span> computational complexity and the sensitivity to the bandwidth parameter.”</li>
+</ul></li>
+<li><strong>Explain DBSCAN Clustering:</strong>
+<ul>
+<li>“DBSCAN, on the other hand, is a density-based algorithm that groups together closely packed points, marking outliers as noise. It uses two key parameters: epsilon, which is the radius of the neighborhood, and MinPts, which is the minimum number of points within that radius for a point to be considered a core point.”</li>
+<li>“DBSCAN defines clusters as contiguous regions of high density. Points are categorized as core points, border points, or noise points based on their neighborhood density.”</li>
+<li>“DBSCAN is excellent at identifying clusters of arbitrary shapes and handling noise. However, it struggles when clusters have significant variations in density.”</li>
+<li>“While the parameters epsilon and MinPts are more interpretable than Mean-Shift’s bandwidth, they still require careful tuning.”</li>
+</ul></li>
+<li><strong>Compare Strengths and Weaknesses:</strong>
+<ul>
+<li>“Both algorithms can detect arbitrary cluster shapes. Mean-Shift is good for finding modes, while DBSCAN is excellent at identifying noise. Mean-Shift’s primary weakness is the bandwidth sensitivity and computational cost. DBSCAN’s weakness is its sensitivity to parameters when densities vary significantly across clusters.”</li>
+<li>“In terms of scalability, both methods struggle with high-dimensional data due to the curse of dimensionality, but DBSCAN has better time complexity when spatial indexing can be used.”</li>
+<li>“In summary (referring to the table)</li>
+</ul></li>
+</ol>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 35%">
+<col style="width: 38%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Feature</th>
+<th>Mean-Shift</th>
+<th>DBSCAN</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Cluster Shape Assumption</td>
+<td>No assumption</td>
+<td>No assumption</td>
+</tr>
+<tr class="even">
+<td>Number of Clusters</td>
+<td>Automatic</td>
+<td>Automatic</td>
+</tr>
+<tr class="odd">
+<td>Parameter Sensitivity</td>
+<td>Bandwidth (<span class="math inline">\(h\)</span>)</td>
+<td><span class="math inline">\(\epsilon\)</span>, <span class="math inline">\(MinPts\)</span></td>
+</tr>
+<tr class="even">
+<td>Density Variation</td>
+<td>Can struggle with varying densities</td>
+<td>Struggles significantly with varying densities</td>
+</tr>
+<tr class="odd">
+<td>Noise Handling</td>
+<td>Robust, but less explicit</td>
+<td>Excellent at identifying noise</td>
+</tr>
+<tr class="even">
+<td>Computational Complexity</td>
+<td><span class="math inline">\(O(n^2)\)</span></td>
+<td><span class="math inline">\(O(n \log n)\)</span> (with spatial index)</td>
+</tr>
+<tr class="odd">
+<td>High-Dimensional Data</td>
+<td>Performance degrades</td>
+<td>Performance degrades</td>
+</tr>
+<tr class="even">
+<td>Parameter Interpretation</td>
+<td>Bandwidth can be less intuitive</td>
+<td><span class="math inline">\(\epsilon\)</span> and <span class="math inline">\(MinPts\)</span> are interpretable</td>
+</tr>
+</tbody>
+</table>
+<ol start="5" type="1">
+<li><strong>Discuss Real-World Considerations:</strong>
+<ul>
+<li>“In practice, for Mean-Shift, you might use techniques like ball trees to speed up the neighborhood search or adaptive bandwidth selection to handle varying densities. For DBSCAN, spatial indexing is crucial for performance on large datasets.”</li>
+<li>“It’s important to remember that the best algorithm depends on the specific data and the goals of the analysis. If the data has relatively uniform density and the goal is to find the modes, Mean-Shift might be a good choice. If the data has varying densities and the goal is to identify noise, DBSCAN might be better.”</li>
+</ul></li>
+<li><strong>Engage the Interviewer:</strong>
+<ul>
+<li>“Does that make sense? Would you like me to elaborate on any specific aspect, such as the parameter tuning or the computational complexity?”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace yourself:</strong> Don’t rush through the explanation.</li>
+<li><strong>Use visuals (if available):</strong> If you’re in a virtual interview, consider sharing your screen with a simple diagram or the table above. If not, describe the concepts vividly.</li>
+<li><strong>Check for understanding:</strong> Pause periodically to ask if the interviewer has any questions.</li>
+<li><strong>Tailor your response:</strong> Adjust the level of detail based on the interviewer’s background and interest.</li>
+<li><strong>Be confident:</strong> You know your stuff! Present your knowledge with assurance.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

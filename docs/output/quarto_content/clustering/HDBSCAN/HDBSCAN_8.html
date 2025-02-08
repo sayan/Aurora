@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>hdbscan_8</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-9.-suppose-you-are-scaling-hdbscan-to-a-very-large-dataset-and-notice-performance-bottlenecks.-what-strategies-can-you-employ-to-improve-scalability-and-computational-efficiency" class="level2">
+<h2 class="anchored" data-anchor-id="question-9.-suppose-you-are-scaling-hdbscan-to-a-very-large-dataset-and-notice-performance-bottlenecks.-what-strategies-can-you-employ-to-improve-scalability-and-computational-efficiency">Question: 9. Suppose you are scaling HDBSCAN to a very large dataset and notice performance bottlenecks. What strategies can you employ to improve scalability and computational efficiency?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Scaling HDBSCAN (Hierarchical Density-Based Spatial Clustering of Applications with Noise) to very large datasets presents significant computational challenges. The algorithm’s complexity stems from its hierarchical clustering approach and the need to compute mutual reachability distances, construct minimum spanning trees, and extract clusters. Here’s a detailed breakdown of strategies to improve scalability and computational efficiency:</p>
+<p><strong>1. Algorithmic Optimizations:</strong></p>
+<ul>
+<li><p><strong>Approximate Nearest Neighbor Search:</strong> HDBSCAN relies heavily on nearest neighbor computations. Using exact nearest neighbor searches (e.g., k-d trees, ball trees) becomes prohibitively expensive for high-dimensional data and large <span class="math inline">\(n\)</span>. Approximate Nearest Neighbor (ANN) search algorithms, like those provided by libraries such as Annoy, FAISS, or NMSLIB, can significantly reduce the computation time, albeit with a trade-off in accuracy.</p>
+<ul>
+<li><p>The core idea is to sacrifice some precision in finding the <em>exact</em> nearest neighbors for a much faster approximate search. Let <span class="math inline">\(NN_k(x)\)</span> be the set of k-nearest neighbors of point <span class="math inline">\(x\)</span> and <span class="math inline">\(\hat{NN}_k(x)\)</span> be the approximate k-nearest neighbors. We aim to minimize the error:</p>
+<p><span class="math display">\[
+\mathbb{E}[d(x, NN_k(x)) - d(x, \hat{NN}_k(x))]
+\]</span></p>
+<p>where <span class="math inline">\(d(.,.)\)</span> is a distance metric (e.g., Euclidean distance).</p></li>
+<li><p>Libraries like FAISS often use techniques like product quantization to compress vector representations, enabling faster distance computations.</p></li>
+</ul></li>
+<li><p><strong>Subsampling:</strong></p>
+<ul>
+<li><p>If the dataset is extremely large, consider subsampling a representative subset for initial clustering. This can dramatically reduce the computational burden of the initial hierarchical clustering step. The clustering results from the subsample can then be extended to the entire dataset using techniques like prediction or relabeling.</p></li>
+<li><p>The number of data points to subsample, <span class="math inline">\(n_s\)</span>, needs careful consideration. It should be large enough to preserve the data’s density structure. A rule of thumb might be:</p>
+<p><span class="math display">\[
+n_s = min(n,  \alpha \sqrt{n})
+\]</span></p>
+<p>Where <span class="math inline">\(\alpha\)</span> is a constant chosen based on the dataset’s characteristics, and <span class="math inline">\(n\)</span> is the original dataset size. Cross-validation or empirical testing helps fine-tune <span class="math inline">\(\alpha\)</span>.</p></li>
+</ul></li>
+<li><p><strong>Core Distance Approximation</strong>:</p>
+<ul>
+<li>HDBSCAN calculates core distances which determines how dense an area around a data point is. Approximating the core distance is important.</li>
+<li>You can approximate it by limiting the number of neighbors to consider or using some form of sampling. The true core distance for point <span class="math inline">\(x_i\)</span> with parameter <span class="math inline">\(k\)</span> is: <span class="math display">\[
+core_k(x_i) = dist(x_i, x_k)
+\]</span> Where <span class="math inline">\(x_k\)</span> is the <span class="math inline">\(k\)</span>-th nearest neighbor of <span class="math inline">\(x_i\)</span>.</li>
+</ul></li>
+</ul>
+<p><strong>2. Parallelization and Distributed Computing:</strong></p>
+<ul>
+<li><p><strong>Parallel Implementation</strong>: HDBSCAN offers opportunities for parallelization. The computation of pairwise distances or mutual reachability distances can be parallelized across multiple CPU cores using libraries like <code>joblib</code> in Python. The construction of the minimum spanning tree can also be parallelized to some extent.</p></li>
+<li><p><strong>Distributed Computing</strong>: For extremely large datasets that exceed the memory capacity of a single machine, consider using a distributed computing framework like Spark or Dask.</p>
+<ul>
+<li><p><strong>Spark</strong>: Partition the data across multiple worker nodes. Compute local distance matrices and minimum spanning trees on each partition, then merge these into a global MST. Libraries like <code>spark-sklearn</code> can facilitate the integration of HDBSCAN with Spark.</p></li>
+<li><p><strong>Dask</strong>: Dask allows out-of-core computation, where data that doesn’t fit into memory is stored on disk and processed in chunks. Dask’s parallel processing capabilities can be applied to the distance computations and MST construction.</p></li>
+</ul></li>
+<li><p><strong>Considerations for Distributed HDBSCAN</strong>:</p>
+<ul>
+<li>Communication overhead becomes a major concern in distributed computing. Minimize data shuffling between nodes.</li>
+<li>Load balancing is crucial. Uneven data distribution across partitions can lead to straggler nodes, impacting overall performance.</li>
+</ul></li>
+</ul>
+<p><strong>3. Hardware Acceleration:</strong></p>
+<ul>
+<li><p><strong>GPU Acceleration:</strong> While HDBSCAN is not natively designed for GPU acceleration, certain components, such as distance computations, can be offloaded to GPUs using libraries like CUDA or OpenCL. This requires significant code modification and optimization but can yield substantial speedups. Especially, consider the RAPIDS cuML implementation of HDBSCAN.</p></li>
+<li><p><strong>Specialized Hardware:</strong> Consider using specialized hardware like FPGAs (Field-Programmable Gate Arrays) for distance computations. FPGAs can be programmed to perform these computations with high efficiency.</p></li>
+</ul>
+<p><strong>4. Data Reduction Techniques:</strong></p>
+<ul>
+<li><p><strong>Dimensionality Reduction:</strong> High-dimensional data can significantly slow down HDBSCAN. Apply dimensionality reduction techniques like PCA (Principal Component Analysis), t-SNE (t-distributed Stochastic Neighbor Embedding), or UMAP (Uniform Manifold Approximation and Projection) before clustering. PCA can reduce dimensionality while preserving variance, and t-SNE/UMAP can help reveal underlying cluster structures.</p>
+<ul>
+<li><p>If <span class="math inline">\(X\)</span> is the original data matrix (<span class="math inline">\(n \times d\)</span>), PCA aims to find a lower-dimensional representation <span class="math inline">\(Y\)</span> (<span class="math inline">\(n \times k\)</span>, where <span class="math inline">\(k &lt; d\)</span>) such that:</p>
+<p><span class="math display">\[
+Y = XW
+\]</span></p>
+<p>Where <span class="math inline">\(W\)</span> is the projection matrix obtained from the eigenvectors corresponding to the top <span class="math inline">\(k\)</span> eigenvalues of the covariance matrix of <span class="math inline">\(X\)</span>.</p></li>
+</ul></li>
+<li><p><strong>Feature Selection:</strong> Identify and remove irrelevant or redundant features that do not contribute to the clustering structure. This reduces the computational cost and can also improve the quality of the clustering.</p></li>
+</ul>
+<p><strong>5. Parameter Tuning and Heuristics:</strong></p>
+<ul>
+<li><p><strong>Minimum Cluster Size:</strong> The <code>min_cluster_size</code> parameter significantly impacts the runtime. Larger values can reduce the complexity of the hierarchy but might merge smaller, distinct clusters. Experiment with different values to find a balance.</p></li>
+<li><p><strong>Minimum Samples:</strong> The <code>min_samples</code> parameter affects the robustness of the core distance calculations. Adjusting this parameter can influence the algorithm’s sensitivity to noise and the density of identified clusters.</p></li>
+<li><p><strong>Early Stopping</strong>: Implement early stopping criteria during the hierarchical clustering or cluster extraction steps. If the dendrogram shows no significant cluster structure emerging after a certain number of merges, terminate the process.</p></li>
+</ul>
+<p><strong>6. Implementation Details and Considerations:</strong></p>
+<ul>
+<li><p><strong>Memory Management</strong>: HDBSCAN can be memory-intensive, especially when dealing with large distance matrices. Use sparse matrix representations where appropriate (e.g., if most distances are above a certain threshold). Consider using memory-mapping techniques to store distance matrices on disk and access them as needed.</p></li>
+<li><p><strong>Code Optimization</strong>: Profile the code to identify bottlenecks and optimize critical sections. Use efficient data structures and algorithms for distance computations and MST construction. Cython can be used to optimize performance-critical Python code.</p></li>
+</ul>
+<p><strong>Trade-offs and Considerations:</strong></p>
+<ul>
+<li><p><strong>Accuracy vs.&nbsp;Performance:</strong> Many of the techniques described above involve trade-offs between clustering accuracy and computational performance. For example, ANN search sacrifices some accuracy for speed. Carefully evaluate the impact of these trade-offs on the specific application.</p></li>
+<li><p><strong>Data Characteristics:</strong> The choice of optimization strategy depends on the characteristics of the dataset, such as its size, dimensionality, density distribution, and the presence of noise.</p></li>
+<li><p><strong>Computational Resources:</strong> The available computational resources (e.g., number of CPU cores, GPU availability, memory capacity) also influence the selection of optimization techniques.</p></li>
+</ul>
+<p>By combining these algorithmic optimizations, parallelization strategies, hardware acceleration, and data reduction techniques, it’s possible to scale HDBSCAN to very large datasets while maintaining acceptable performance. The key is to carefully analyze the specific bottlenecks and tailor the approach to the characteristics of the data and available resources.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s how you could present this information in an interview, structuring your answer for clarity and impact:</p>
+<ol type="1">
+<li><p><strong>Start with a High-Level Overview:</strong></p>
+<ul>
+<li>“Scaling HDBSCAN to very large datasets requires a multi-faceted approach, as the algorithm’s complexity increases significantly with data size. The primary challenges arise from distance computations and hierarchical clustering.”</li>
+</ul></li>
+<li><p><strong>Discuss Algorithmic Optimizations (Emphasize this section):</strong></p>
+<ul>
+<li>“One crucial area is algorithmic optimization. The nearest neighbor search is a major bottleneck. We can use approximate nearest neighbor search (ANN) algorithms like FAISS or Annoy, which trade off some accuracy for a substantial speed increase.”</li>
+<li><em>Describe ANN</em>: “ANN algorithms work by finding <em>almost</em> the closest neighbors very fast, which involves a carefully selected trade-off. Let me give a simple example. If we want to find <span class="math inline">\(NN_k(x)\)</span>, and use ANN to obtain <span class="math inline">\(\hat{NN}_k(x)\)</span>, then we are trying to minimize <span class="math inline">\(\mathbb{E}[d(x, NN_k(x)) - d(x, \hat{NN}_k(x))]\)</span>.”</li>
+<li>“Subsampling can also be used to initially cluster on a representative subset, and then extrapolate the results to the entire dataset.”</li>
+<li><em>Describe Subsampling</em>: “With subsampling, one of the core issues is to sample enough data points. So we can use the following formula to sample <span class="math inline">\(n_s = min(n,  \alpha \sqrt{n})\)</span>. The coefficient can then be fine tuned with cross-validation.”</li>
+</ul></li>
+<li><p><strong>Move on to Parallelization and Distributed Computing:</strong></p>
+<ul>
+<li>“Another important strategy is parallelization. Since HDBSCAN involves many independent computations, we can leverage multi-core CPUs using libraries like <code>joblib</code>.”</li>
+<li>“For datasets that exceed single-machine memory, distributed computing frameworks like Spark or Dask become essential.”</li>
+<li><em>Describe Spark/Dask Usage</em>: “With Spark, we can partition the data across multiple nodes and compute local MSTs before merging them. Dask allows out-of-core computation, processing data in chunks that don’t fit in memory.” Briefly mention considerations like communication overhead and load balancing.</li>
+</ul></li>
+<li><p><strong>Mention Hardware Acceleration (If Relevant):</strong></p>
+<ul>
+<li>“While not always straightforward, GPU acceleration can be beneficial for distance computations, potentially using libraries like CUDA or cuML from RAPIDS.”</li>
+<li>“Specialized hardware like FPGAs can also be used to accelerate distance calculations.”</li>
+</ul></li>
+<li><p><strong>Discuss Data Reduction Techniques:</strong></p>
+<ul>
+<li>“Dimensionality reduction using PCA, t-SNE, or UMAP can significantly reduce the computational burden by reducing the number of features.”</li>
+<li>“Also, feature selection helps eliminate irrelevant features, leading to faster and more accurate clustering.” <em>Describe PCA</em> “If we use PCA, we reduce the original <span class="math inline">\(X\)</span> matrix to <span class="math inline">\(Y\)</span> with <span class="math inline">\(Y = XW\)</span>. We are trying to reduce the dimentionality while preserving variance.”</li>
+</ul></li>
+<li><p><strong>Address Parameter Tuning and Heuristics:</strong></p>
+<ul>
+<li>“The <code>min_cluster_size</code> and <code>min_samples</code> parameters have a substantial impact on performance. Tuning these parameters appropriately can reduce complexity without significantly affecting clustering quality.”</li>
+<li>“Early stopping criteria can also be implemented to terminate the process if no significant cluster structure emerges.”</li>
+</ul></li>
+<li><p><strong>Concluding Remarks:</strong></p>
+<ul>
+<li>“In summary, scaling HDBSCAN involves a combination of algorithmic optimizations, parallelization, hardware acceleration, and data reduction techniques. The best approach depends on the specific data characteristics and available resources, always keeping in mind the trade-off between accuracy and performance.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself</strong>: Don’t rush through the explanation. Speak clearly and deliberately.</li>
+<li><strong>Check for Understanding</strong>: After explaining a complex concept (e.g., ANN or distributed computing), pause and ask, “Does that make sense?” or “Would you like me to elaborate on that point?”</li>
+<li><strong>Use Visual Aids (If Possible)</strong>: If you’re in a virtual interview, consider sharing your screen and showing relevant diagrams or code snippets.</li>
+<li><strong>Be Honest About Limitations</strong>: If you’re unsure about a specific detail, acknowledge it and offer to follow up with more information later.</li>
+<li><strong>Maintain Eye Contact</strong>: Even in a virtual interview, try to maintain eye contact with the interviewer.</li>
+<li><strong>Enthusiasm</strong>: Showing genuine enthusiasm for the topic will make your answer more engaging and memorable.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

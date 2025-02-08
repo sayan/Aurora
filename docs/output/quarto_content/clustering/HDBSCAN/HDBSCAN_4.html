@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>hdbscan_4</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-5.-in-hdbscan-how-are-noise-points-handled-what-considerations-should-be-taken-when-interpreting-noise-and-what-are-potential-pitfalls-in-noisy-datasets" class="level2">
+<h2 class="anchored" data-anchor-id="question-5.-in-hdbscan-how-are-noise-points-handled-what-considerations-should-be-taken-when-interpreting-noise-and-what-are-potential-pitfalls-in-noisy-datasets">Question: 5. In HDBSCAN, how are noise points handled? What considerations should be taken when interpreting noise, and what are potential pitfalls in noisy datasets?</h2>
+<p><strong>Best Answer</strong></p>
+<p>HDBSCAN (Hierarchical Density-Based Spatial Clustering of Applications with Noise) is a density-based clustering algorithm that extends DBSCAN by converting it into a hierarchical clustering algorithm and then using a cluster stability measure to extract the best clusters from the hierarchy. A crucial aspect of HDBSCAN is how it handles noise points.</p>
+<p><strong>How HDBSCAN Handles Noise Points</strong></p>
+<p>In HDBSCAN, noise points are essentially defined as points that do not belong to any significantly stable cluster. Here’s a breakdown:</p>
+<ol type="1">
+<li><p><strong>Hierarchical Clustering:</strong> HDBSCAN starts by transforming the space according to the density of points. It uses a mutual reachability distance, which is the maximum of the distance between two points and the core distances of each point. The core distance of a point <span class="math inline">\(p\)</span>, denoted as <span class="math inline">\(core\_distance_k(p)\)</span>, is the distance to its <span class="math inline">\(k\)</span>-th nearest neighbor.</p>
+<p>The mutual reachability distance <span class="math inline">\(d_{mr}(a, b)\)</span> between points <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span> is defined as:</p>
+<p><span class="math display">\[
+d_{mr}(a, b) = max\{core\_distance_k(a), core\_distance_k(b), d(a, b)\}
+\]</span></p>
+<p>where <span class="math inline">\(d(a, b)\)</span> is the original distance between <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span>.</p></li>
+<li><p><strong>Minimum Spanning Tree (MST):</strong> HDBSCAN constructs a minimum spanning tree (MST) on the transformed space defined by the mutual reachability distances. The MST connects all points such that the total edge weight (i.e., the sum of mutual reachability distances) is minimized.</p></li>
+<li><p><strong>Hierarchy of Clusters:</strong> The MST is then converted into a hierarchy of clusters by iteratively removing the longest edge in the MST. Each split represents a potential cluster separation. This process results in a dendrogram representing the nested cluster structure.</p></li>
+<li><p><strong>Condensing the Cluster Tree:</strong> The dendrogram is then condensed to create a simplified tree structure where each node represents a cluster. Each cluster is characterized by a “birth” point (when it appears), a “death” point (when it splits), and the points it contains.</p></li>
+<li><p><strong>Cluster Stability:</strong> The key innovation of HDBSCAN is the concept of cluster stability. For each cluster, HDBSCAN calculates a stability score based on the lifespan of the cluster in the condensed tree. A cluster’s stability is related to how long it persists without changing significantly as the distance threshold varies. HDBSCAN uses the concept of <span class="math inline">\(\lambda\)</span> values which are the inverse of the distance scales at which splits occur. The stability of a cluster <span class="math inline">\(C\)</span> can be defined as:</p>
+<p><span class="math display">\[
+Stability(C) = \sum_{p \in C} \lambda_p - \sum_{child \in Children(C)} Stability(child)
+\]</span></p>
+<p>where <span class="math inline">\(\lambda_p\)</span> represents the value at which point p leaves the cluster, and <span class="math inline">\(Children(C)\)</span> denotes the direct child clusters of <span class="math inline">\(C\)</span> in the hierarchy.</p></li>
+<li><p><strong>Noise Identification:</strong> Points that are not part of any significantly stable cluster are labeled as noise. Essentially, if a point “falls out” of clusters early in the hierarchy (i.e., at low density levels, or high <span class="math inline">\(\lambda\)</span> values), and is not absorbed into a more stable cluster, it is considered noise.</p></li>
+</ol>
+<p><strong>Considerations When Interpreting Noise</strong></p>
+<ol type="1">
+<li><p><strong>Parameter Sensitivity:</strong> The <code>min_cluster_size</code> parameter significantly influences how HDBSCAN identifies noise. A larger <code>min_cluster_size</code> will lead to more points being labeled as noise because clusters need to have a certain minimum size to be considered stable. Conversely, a smaller <code>min_cluster_size</code> might lead to smaller, less significant clusters being formed, potentially reducing the number of noise points. The <code>min_samples</code> parameter (equivalent to the <code>k</code> in core distance) also affects the density estimation and can influence noise identification.</p></li>
+<li><p><strong>Density Variations:</strong> HDBSCAN is designed to handle varying densities. However, in regions with extreme density variations, borderline points might be misclassified as noise. Points in sparser regions that are genuinely part of a larger cluster spanning multiple densities might be incorrectly flagged if the density difference is too high.</p></li>
+<li><p><strong>Domain Knowledge:</strong> Always use domain knowledge when interpreting noise points. What might appear as noise from a purely algorithmic perspective could be meaningful outliers or anomalies in the context of the data. For example, in fraud detection, noise points might represent unusual but valid transactions.</p></li>
+<li><p><strong>Borderline Cases:</strong> Be cautious when interpreting borderline noise cases. These are points that are just barely classified as noise and might be close to being included in a stable cluster. Small changes in the parameters or data could shift their classification.</p></li>
+</ol>
+<p><strong>Potential Pitfalls in Noisy Datasets</strong></p>
+<ol type="1">
+<li><p><strong>Over-Aggressive Noise Removal:</strong> HDBSCAN might aggressively classify points as noise, especially with high <code>min_cluster_size</code> values. This can lead to a loss of potentially valuable information. If the noise contains important signals (e.g., rare events), this could be detrimental.</p></li>
+<li><p><strong>Misinterpretation of Noise Clusters:</strong> In some cases, collections of noise points can form their own “noise clusters”. These are not true clusters in the sense of meaningful groupings, but rather aggregates of points that don’t fit into any defined cluster. Interpreting these as distinct clusters would be a mistake. Always examine the characteristics of the points labeled as noise to determine if they exhibit any patterns or are truly random.</p></li>
+<li><p><strong>Hyperparameter Tuning Challenges:</strong> Tuning hyperparameters like <code>min_cluster_size</code> and <code>min_samples</code> can be challenging in highly noisy datasets. The optimal values might be very sensitive to the specific noise distribution, requiring careful experimentation and validation. Consider using techniques like silhouette scores or visual inspection of the clustering results to guide hyperparameter selection.</p></li>
+<li><p><strong>Computational Cost:</strong> HDBSCAN has a higher computational complexity compared to simpler algorithms like k-means, especially on very large datasets. Building the MST and condensing the cluster tree can be time-consuming. The presence of significant noise can further increase the computational burden, as the algorithm needs to process more points and consider a wider range of potential cluster configurations.</p></li>
+</ol>
+<p>In summary, while HDBSCAN is powerful in handling noisy data by identifying and labeling noise points, careful consideration must be given to the selection of hyperparameters, the interpretation of noise, and the potential impact of noise on the overall clustering results.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s how to effectively narrate this answer in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with a High-Level Overview:</strong> Begin by stating that HDBSCAN handles noise by identifying points that don’t belong to any stable cluster. Emphasize that it’s a key feature of the algorithm for dealing with real-world data.</p></li>
+<li><p><strong>Walk Through the Algorithm’s Steps:</strong></p>
+<ul>
+<li>Briefly explain the main steps of HDBSCAN: transformation of space using mutual reachability, MST construction, creation of the cluster hierarchy, and condensation of the tree. Don’t get bogged down in every detail, but highlight the key concepts.</li>
+</ul></li>
+<li><p><strong>Explain Noise Identification:</strong> Clearly explain how HDBSCAN uses cluster stability to identify noise. Mention that points falling out of clusters early in the hierarchy and not being absorbed into more stable ones are labeled as noise.</p></li>
+<li><p><strong>Discuss Considerations for Interpreting Noise:</strong></p>
+<ul>
+<li>Highlight the importance of <code>min_cluster_size</code> parameter. Explain that increasing it increases the number of noise points.</li>
+<li>Mention the impact of density variations and how borderline points might be misclassified.</li>
+<li>Emphasize the crucial role of domain knowledge. Give a fraud detection example.</li>
+<li>Caution about interpreting borderline noise cases.</li>
+</ul></li>
+<li><p><strong>Address Potential Pitfalls:</strong></p>
+<ul>
+<li>Explain how HDBSCAN might over-aggressively remove noise.</li>
+<li>Explain the misinterpretation of noise clusters.</li>
+<li>Discuss the challenges in hyperparameter tuning and the need for careful validation.</li>
+<li>Mention the potential increase in computational cost due to noise.</li>
+</ul></li>
+<li><p><strong>Highlight Practical Implications:</strong> Connect the concepts to real-world scenarios. For example, mention the need to be cautious when dealing with noisy sensor data or financial transactions.</p></li>
+<li><p><strong>Use Visual Aids (If Possible):</strong> If you have the option to use a whiteboard or share your screen, drawing a simple dendrogram and showing how clusters are formed and split can be very helpful.</p></li>
+<li><p><strong>Handle Mathematical Sections Carefully:</strong> When explaining the mutual reachability distance or stability score formulas, write them down clearly. Explain each component in plain language. For example, “The mutual reachability distance is the maximum of the distance between two points and their core distances. This helps smooth out density variations.” After introducing the stability equation, emphasize the intuition rather than getting stuck in mathematical rigor. For example, “This formula essentially measures how long a cluster persists. The longer it exists, the more stable it is.”</p></li>
+<li><p><strong>Encourage Questions:</strong> Periodically ask if the interviewer has any questions or if they would like you to elaborate on any specific point. This shows that you are engaged and want to ensure they understand your explanation.</p></li>
+</ol>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

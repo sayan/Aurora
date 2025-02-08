@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>gaussian_mixture_models__gmm__4</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-5.-how-does-the-initialization-of-parameters-in-a-gmm-influence-the-convergence-of-the-em-algorithm-what-strategies-do-you-recommend-for-initialization" class="level2">
+<h2 class="anchored" data-anchor-id="question-5.-how-does-the-initialization-of-parameters-in-a-gmm-influence-the-convergence-of-the-em-algorithm-what-strategies-do-you-recommend-for-initialization">Question: 5. How does the initialization of parameters in a GMM influence the convergence of the EM algorithm? What strategies do you recommend for initialization?</h2>
+<p><strong>Best Answer</strong></p>
+<p>The Expectation-Maximization (EM) algorithm is commonly used to estimate the parameters of a Gaussian Mixture Model (GMM). However, the EM algorithm is sensitive to the initial values assigned to the GMM’s parameters. This sensitivity arises because the EM algorithm is guaranteed to converge only to a local optimum of the likelihood function, not necessarily the global optimum. Therefore, the starting point significantly influences the final parameter estimates.</p>
+<p>Here’s a detailed breakdown:</p>
+<ul>
+<li><p><strong>Local Optima:</strong> The likelihood surface for GMMs is generally non-convex, meaning it contains multiple local optima. Different initializations can lead the EM algorithm to converge to different local optima, resulting in varying degrees of model fit. A poor initialization might lead to a suboptimal solution with low likelihood and poor clustering performance.</p></li>
+<li><p><strong>Empty Clusters:</strong> A particularly problematic scenario occurs when, due to poor initialization, one or more Gaussian components are assigned very few data points initially. This can cause the covariance matrix of these components to collapse (become singular), leading to numerical instability and a degenerate solution. This is often manifested as a component with extremely small variance capturing only a tiny fraction of the data.</p></li>
+<li><p><strong>Component Swapping:</strong> Another issue is <em>component swapping</em>, where the EM algorithm converges to a solution where the components have simply switched their roles (i.e., their means and covariances are permuted). While this doesn’t necessarily affect the overall likelihood, it can make interpretation of the individual components difficult.</p></li>
+</ul>
+<p>Let’s consider a GMM with <span class="math inline">\(K\)</span> components, where each component <span class="math inline">\(k\)</span> has a mean <span class="math inline">\(\mu_k\)</span>, covariance matrix <span class="math inline">\(\Sigma_k\)</span>, and mixing coefficient <span class="math inline">\(\pi_k\)</span>. The probability density function of the GMM is given by:</p>
+<p><span class="math display">\[p(\mathbf{x}|\Theta) = \sum_{k=1}^{K} \pi_k \mathcal{N}(\mathbf{x}|\mu_k, \Sigma_k)\]</span></p>
+<p>where <span class="math inline">\(\mathbf{x}\)</span> is a data point, <span class="math inline">\(\Theta = \{\pi_k, \mu_k, \Sigma_k\}_{k=1}^{K}\)</span> represents the set of all parameters, and <span class="math inline">\(\mathcal{N}(\mathbf{x}|\mu_k, \Sigma_k)\)</span> is the Gaussian distribution with mean <span class="math inline">\(\mu_k\)</span> and covariance <span class="math inline">\(\Sigma_k\)</span>.</p>
+<p>The EM algorithm iteratively updates the parameters <span class="math inline">\(\Theta\)</span> until convergence. Let <span class="math inline">\(\Theta^{(t)}\)</span> denote the parameters at iteration <span class="math inline">\(t\)</span>. The algorithm alternates between the Expectation (E) and Maximization (M) steps:</p>
+<ul>
+<li><p><strong>E-step:</strong> Calculate the responsibility of component <span class="math inline">\(k\)</span> for data point <span class="math inline">\(\mathbf{x}_i\)</span>:</p>
+<p><span class="math display">\[\gamma_{ik} = \frac{\pi_k^{(t)} \mathcal{N}(\mathbf{x}_i|\mu_k^{(t)}, \Sigma_k^{(t)})}{\sum_{j=1}^{K} \pi_j^{(t)} \mathcal{N}(\mathbf{x}_i|\mu_j^{(t)}, \Sigma_j^{(t)})}\]</span></p></li>
+<li><p><strong>M-step:</strong> Update the parameters using the responsibilities:</p>
+<p><span class="math display">\[\mu_k^{(t+1)} = \frac{\sum_{i=1}^{N} \gamma_{ik} \mathbf{x}_i}{\sum_{i=1}^{N} \gamma_{ik}}\]</span></p>
+<p><span class="math display">\[\Sigma_k^{(t+1)} = \frac{\sum_{i=1}^{N} \gamma_{ik} (\mathbf{x}_i - \mu_k^{(t+1)})(\mathbf{x}_i - \mu_k^{(t+1)})^T}{\sum_{i=1}^{N} \gamma_{ik}}\]</span></p>
+<p><span class="math display">\[\pi_k^{(t+1)} = \frac{\sum_{i=1}^{N} \gamma_{ik}}{N}\]</span></p></li>
+</ul>
+<p>The sensitivity to initialization becomes apparent because the algorithm optimizes the parameters locally based on these iterative updates.</p>
+<p>To mitigate the impact of poor initialization, several strategies can be employed:</p>
+<ol type="1">
+<li><p><strong>Multiple Random Initializations:</strong></p>
+<ul>
+<li>This is a common and relatively simple approach. The EM algorithm is run multiple times with different random initializations of the parameters (<span class="math inline">\(\mu_k\)</span>, <span class="math inline">\(\Sigma_k\)</span>, and <span class="math inline">\(\pi_k\)</span>).</li>
+<li>The initialization of means, <span class="math inline">\(\mu_k\)</span>, can be drawn from a uniform distribution within the range of the data or from a standard normal distribution scaled appropriately. Covariance matrices, <span class="math inline">\(\Sigma_k\)</span>, can be initialized as multiples of the identity matrix or randomly generated positive definite matrices. The mixing coefficients, <span class="math inline">\(\pi_k\)</span>, are typically initialized uniformly such that <span class="math inline">\(\sum_{k=1}^{K} \pi_k = 1\)</span>.</li>
+<li>After each run, the log-likelihood of the data given the estimated parameters is calculated. The solution that yields the highest log-likelihood is selected as the final result. This helps to increase the chance of finding a better (though not necessarily global) optimum.</li>
+<li><em>Implementation Note:</em> In scikit-learn, this is controlled by the <code>n_init</code> parameter. Higher values of <code>n_init</code> will result in a longer training time.</li>
+</ul></li>
+<li><p><strong>K-means Initialization:</strong></p>
+<ul>
+<li>A more informed approach is to use the results of k-means clustering to initialize the GMM parameters. K-means is less susceptible to poor initializations than EM for GMMs, making it a good starting point.</li>
+<li>First, k-means is run on the data with <span class="math inline">\(K\)</span> clusters. The cluster means are used as the initial means (<span class="math inline">\(\mu_k\)</span>) for the GMM components. The covariance matrices (<span class="math inline">\(\Sigma_k\)</span>) are initialized using the sample covariance of the data points within each k-means cluster. The mixing coefficients (<span class="math inline">\(\pi_k\)</span>) are initialized proportionally to the number of data points in each k-means cluster.</li>
+<li>This approach leverages the fact that k-means provides a reasonable partitioning of the data, guiding the EM algorithm towards a more sensible region of the parameter space.</li>
+</ul></li>
+<li><p><strong>Prior Domain Knowledge:</strong></p>
+<ul>
+<li>If domain knowledge is available about the data, it can be used to inform the initialization of the GMM parameters. For example, if it’s known that certain clusters are likely to have specific characteristics (e.g., specific ranges for means or variances), this information can be incorporated into the initialization.</li>
+<li>This approach is particularly useful when dealing with complex datasets where random or k-means initializations may not be sufficient to guide the EM algorithm towards a meaningful solution.</li>
+</ul></li>
+<li><p><strong>Regularization:</strong></p>
+<ul>
+<li>Adding regularization terms to the covariance matrix or the mixing coefficients can stabilize the training and prevent the collapsing of clusters to empty regions. A common approach is to add a small positive constant to the diagonal of the covariance matrices, ensuring they remain positive definite and well-conditioned. This can be formalized as: <span class="math display">\[
+\Sigma_k^{(t+1)} = \frac{\sum_{i=1}^{N} \gamma_{ik} (\mathbf{x}_i - \mu_k^{(t+1)})(\mathbf{x}_i - \mu_k^{(t+1)})^T}{\sum_{i=1}^{N} \gamma_{ik}} + \lambda \mathbf{I}
+\]</span> where <span class="math inline">\(\lambda\)</span> is a small regularization parameter and <span class="math inline">\(\mathbf{I}\)</span> is the identity matrix.</li>
+</ul></li>
+<li><p><strong>Initialization using a Hierarchical Approach:</strong></p>
+<ul>
+<li>Start with a small number of components (e.g., <span class="math inline">\(K=2\)</span> or <span class="math inline">\(K=3\)</span>) and run the EM algorithm. Then, split the component with the largest variance or the one that captures the most data points into two new components. Re-run the EM algorithm with this increased number of components. Repeat the splitting and EM steps until the desired number of components is reached. This can help the EM algorithm to gradually refine the model and avoid getting stuck in poor local optima.</li>
+</ul></li>
+</ol>
+<p>In summary, the initialization of GMM parameters significantly affects the convergence of the EM algorithm. Strategies such as multiple random initializations, k-means initialization, using prior domain knowledge, regularization, and hierarchical approaches can help to mitigate the sensitivity to initialization and improve the quality of the GMM estimation. Choosing the right initialization strategy often involves experimentation and depends on the characteristics of the specific dataset.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a suggested way to present this information in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with the Core Issue:</strong> “The EM algorithm, used to train GMMs, is highly sensitive to the initial parameter values. This is because EM is only guaranteed to find a <em>local</em> optimum, not necessarily the <em>global</em> optimum of the likelihood function.”</p></li>
+<li><p><strong>Explain the Implications:</strong> “This sensitivity can lead to several problems: converging to suboptimal solutions with low likelihood, the creation of empty clusters due to poor initial assignments, and component swapping, where the roles of components are simply permuted.”</p></li>
+<li><p><strong>Introduce the Math (Selectively):</strong> “To illustrate, the GMM probability density function is given by the following equation…” <em>[Write the GMM equation on a whiteboard if available. If not, briefly mention it.]</em></p>
+<p><span class="math display">\[p(\mathbf{x}|\Theta) = \sum_{k=1}^{K} \pi_k \mathcal{N}(\mathbf{x}|\mu_k, \Sigma_k)\]</span></p>
+<p>“And the EM algorithm iteratively updates the parameters based on E and M steps, which involve calculating responsibilities and updating means, covariances, and mixing coefficients. We can show the update of the parameters in the M step given below.”</p>
+<p><span class="math display">\[\mu_k^{(t+1)} = \frac{\sum_{i=1}^{N} \gamma_{ik} \mathbf{x}_i}{\sum_{i=1}^{N} \gamma_{ik}}\]</span></p>
+<p><span class="math display">\[\Sigma_k^{(t+1)} = \frac{\sum_{i=1}^{N} \gamma_{ik} (\mathbf{x}_i - \mu_k^{(t+1)})(\mathbf{x}_i - \mu_k^{(t+1)})^T}{\sum_{i=1}^{N} \gamma_{ik}}\]</span></p>
+<p><span class="math display">\[\pi_k^{(t+1)} = \frac{\sum_{i=1}^{N} \gamma_{ik}}{N}\]</span></p>
+<p>“The local nature of these updates makes the initial values very important.” <em>[Avoid diving too deep into the equation derivations unless prompted.]</em></p></li>
+<li><p><strong>Detail Initialization Strategies:</strong> “To address this sensitivity, several initialization strategies can be used. The most common are:”</p>
+<ul>
+<li>“<strong>Multiple Random Initializations:</strong> Run the EM algorithm multiple times with different random starting points and choose the solution with the highest likelihood. In scikit-learn, the <code>n_init</code> parameter controls this.”</li>
+<li>“<strong>K-means Initialization:</strong> Use the results of k-means clustering to initialize the means, covariances, and mixing coefficients of the GMM. This provides a more informed starting point, and the means are initialized with data point cluster locations instead of random initialization.</li>
+<li>“<strong>Prior Domain Knowledge:</strong> Incorporate any available knowledge about the data to set reasonable initial values.”</li>
+</ul></li>
+<li><p><strong>Advanced Points (If Time/Interest):</strong> “More advanced techniques also involve regularization, such as adding a small constant to the diagonals of covariance matrices. Additionally, a hierarchical approach, starting with a small number of components and gradually splitting them, can also be effective. Regularization can be formalized as:” <span class="math display">\[
+\Sigma_k^{(t+1)} = \frac{\sum_{i=1}^{N} \gamma_{ik} (\mathbf{x}_i - \mu_k^{(t+1)})(\mathbf{x}_i - \mu_k^{(t+1)})^T}{\sum_{i=1}^{N} \gamma_{ik}} + \lambda \mathbf{I}
+\]</span></p></li>
+<li><p><strong>Concluding Summary:</strong> “In summary, good initialization is crucial for obtaining a well-fitted GMM. The best approach often depends on the dataset and requires some experimentation, but techniques like k-means initialization and multiple random starts are generally a good starting point.”</p></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush through the explanation. Give the interviewer time to process the information.</li>
+<li><strong>Check for Understanding:</strong> Pause periodically and ask if the interviewer has any questions or would like you to elaborate on a particular point.</li>
+<li><strong>Focus on Intuition:</strong> When discussing the equations, emphasize the intuition behind them rather than getting bogged down in the mathematical details.</li>
+<li><strong>Be Practical:</strong> Highlight the practical implications of the concepts and how they relate to real-world applications.</li>
+<li><strong>Show Confidence:</strong> Speak clearly and confidently, demonstrating your expertise in the subject matter. If there are elements that need clarification, state it clearly and move on.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

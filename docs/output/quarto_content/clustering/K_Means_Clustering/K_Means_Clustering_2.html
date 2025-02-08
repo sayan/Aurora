@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>k_means_clustering_2</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-3.-how-do-initial-centroid-selections-affect-the-performance-of-k-means-and-what-is-the-purpose-of-techniques-like-k-means" class="level2">
+<h2 class="anchored" data-anchor-id="question-3.-how-do-initial-centroid-selections-affect-the-performance-of-k-means-and-what-is-the-purpose-of-techniques-like-k-means">Question: 3. How do initial centroid selections affect the performance of K-Means, and what is the purpose of techniques like K-Means++?</h2>
+<p><strong>Best Answer</strong></p>
+<p>The K-Means algorithm is notoriously sensitive to the initial placement of centroids. This sensitivity stems from the core optimization process of K-Means, which aims to minimize the within-cluster sum of squares (WCSS), also known as inertia.</p>
+<p>Let <span class="math inline">\(X = \{x_1, x_2, ..., x_n\}\)</span> be the set of <span class="math inline">\(n\)</span> data points, and <span class="math inline">\(C = \{c_1, c_2, ..., c_k\}\)</span> be the set of <span class="math inline">\(k\)</span> centroids. K-Means aims to solve:</p>
+<p><span class="math display">\[
+\arg \min_{C} \sum_{i=1}^{n} \min_{c_j \in C} ||x_i - c_j||^2
+\]</span></p>
+<p>where <span class="math inline">\(||x_i - c_j||^2\)</span> represents the squared Euclidean distance between data point <span class="math inline">\(x_i\)</span> and centroid <span class="math inline">\(c_j\)</span>.</p>
+<p>Here’s a detailed breakdown of the impact and K-Means++:</p>
+<ul>
+<li><p><strong>Impact of Initial Centroid Selection:</strong></p>
+<ul>
+<li><p><strong>Convergence to Local Minima:</strong> K-Means is guaranteed to converge, but not necessarily to the global minimum. The objective function (WCSS) is non-convex. Poor initialization can lead the algorithm to converge to a suboptimal local minimum. This means that the resulting clusters may not be the most natural or representative groupings of the data.</p></li>
+<li><p><strong>Empty Clusters:</strong> If initial centroids are poorly placed, some may end up with no assigned data points. This results in an empty cluster, requiring a re-initialization strategy (e.g., randomly re-assigning a centroid or splitting a large cluster).</p></li>
+<li><p><strong>Inconsistent Results:</strong> Due to the sensitivity to initialization, running K-Means multiple times with different random initializations can yield significantly different clustering results, making it difficult to obtain a stable and reliable clustering solution.</p></li>
+<li><p><strong>Computational Cost:</strong> Poor initializations can also lead to slower convergence, requiring more iterations to reach a stable solution.</p></li>
+</ul></li>
+<li><p><strong>K-Means++: Smart Initialization</strong></p>
+<p>K-Means++ addresses the initialization problem by intelligently selecting initial centroids that are well-separated. The algorithm aims to improve both the quality and the speed of convergence. The K-Means++ initialization procedure is as follows:</p>
+<ol type="1">
+<li><p><strong>Choose the first centroid <span class="math inline">\(c_1\)</span> uniformly at random from <span class="math inline">\(X\)</span>.</strong></p></li>
+<li><p><strong>For each data point <span class="math inline">\(x_i\)</span> in <span class="math inline">\(X\)</span>, compute <span class="math inline">\(D(x_i)\)</span>, the distance between <span class="math inline">\(x_i\)</span> and the nearest centroid that has already been chosen.</strong> <span class="math display">\[
+D(x_i) = \min_{c_j \in C} ||x_i - c_j||^2
+\]</span></p></li>
+<li><p><strong>Choose one new data point as a new centroid, using a weighted probability distribution where each point <span class="math inline">\(x_i\)</span> is chosen with probability proportional to <span class="math inline">\(D(x_i)\)</span>. More formally, choose <span class="math inline">\(x_i\)</span> with probability <span class="math inline">\(\frac{D(x_i)}{\sum_{x \in X} D(x)}\)</span>.</strong></p></li>
+<li><p><strong>Repeat steps 2 and 3 until <span class="math inline">\(k\)</span> centroids have been chosen.</strong></p></li>
+<li><p><strong>Run standard K-Means using these initial centroids.</strong></p></li>
+</ol></li>
+<li><p><strong>Why K-Means++ Works</strong></p>
+<ul>
+<li><p><strong>Better Spread:</strong> By choosing initial centroids that are far apart, K-Means++ reduces the likelihood of converging to poor local minima. It encourages exploration of different regions of the data space.</p></li>
+<li><p><strong>Improved Convergence:</strong> Empirical evidence and theoretical analysis suggest that K-Means++ generally leads to faster convergence and better clustering results compared to random initialization. Specifically, it can provide an <span class="math inline">\(O(log k)\)</span> approximation to the optimal K-Means clustering (Arthur &amp; Vassilvitskii, 2007).</p></li>
+</ul></li>
+<li><p><strong>Limitations and Considerations</strong></p>
+<ul>
+<li><p><strong>Deterministic Given Seed:</strong> While significantly better than random initialization, K-Means++ is still a randomized algorithm. The initial random selection of the first centroid can influence the subsequent centroid choices. Setting a random seed ensures reproducibility.</p></li>
+<li><p><strong>Computational Overhead:</strong> K-Means++ has a slightly higher computational cost during the initialization phase compared to random initialization, as it requires calculating distances between each data point and existing centroids. However, this overhead is usually outweighed by the faster convergence and improved clustering quality in the subsequent K-Means iterations.</p></li>
+<li><p><strong>Not a Silver Bullet:</strong> K-Means++ improves initialization, but it doesn’t solve all the problems of K-Means. The algorithm is still sensitive to the choice of <span class="math inline">\(k\)</span>, the number of clusters, and may not perform well on data with complex, non-convex cluster shapes.</p></li>
+</ul></li>
+</ul>
+<p>In summary, initial centroid selection is crucial for the performance of K-Means. Poor initializations can lead to suboptimal clustering results, empty clusters, and inconsistent solutions. K-Means++ addresses this issue by intelligently selecting initial centroids that are well-separated, promoting better convergence and improved clustering quality. Although K-Means++ has a slightly higher computational cost during initialization, the benefits generally outweigh the overhead, making it a preferred initialization method in practice.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a step-by-step guide on how to deliver this answer verbally in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with the Core Problem (Sensitivity):</strong></p>
+<ul>
+<li>“K-Means is quite sensitive to the initial placement of centroids. This is because K-Means aims to minimize the within-cluster sum of squares, or inertia, and that objective function is non-convex.”</li>
+</ul></li>
+<li><p><strong>Explain the Objective Function (Optional - Gauge Interviewer’s Interest):</strong></p>
+<ul>
+<li>“Formally, we’re trying to solve this optimization problem…”</li>
+<li>“(Write down the equation for WCSS if the interviewer seems mathematically inclined) <span class="math display">\[ \arg \min_{C} \sum_{i=1}^{n} \min_{c_j \in C} ||x_i - c_j||^2 \]</span> where <span class="math inline">\(X\)</span> are data points and <span class="math inline">\(C\)</span> are centroids”</li>
+<li>“But the key point is that bad starting points can easily lead to a local, but not global, optimal clustering.”</li>
+</ul></li>
+<li><p><strong>Describe the Consequences of Poor Initialization:</strong></p>
+<ul>
+<li>“Poor initializations can lead to several problems. First, the algorithm can converge to a suboptimal local minimum, resulting in poor clustering. Second, you can end up with empty clusters, which requires some kind of re-initialization strategy. Third, because of the sensitivity, running K-Means multiple times with random initializations can give you very different results, making it hard to get a stable solution.”</li>
+</ul></li>
+<li><p><strong>Introduce K-Means++ as a Solution:</strong></p>
+<ul>
+<li>“That’s where K-Means++ comes in. It’s a smart initialization technique designed to pick initial centroids that are well-separated from each other. This helps to avoid those bad local minima.”</li>
+</ul></li>
+<li><p><strong>Walk Through the K-Means++ Algorithm (Simplified):</strong></p>
+<ul>
+<li>“The basic idea of K-Means++ is to iteratively select centroids, giving preference to points that are far away from the centroids we’ve already chosen. We start by picking one centroid randomly. Then, for each remaining point, we calculate its distance to the closest centroid we’ve already selected. We then pick the next centroid with a probability proportional to that squared distance.”</li>
+<li>“This continues until we have ‘k’ initial centroids.”</li>
+<li><strong>(Optional - Highlight Key Step with Equation):</strong> “Formally the distance calculation looks like this: <span class="math inline">\(D(x_i) = \min_{c_j \in C} ||x_i - c_j||^2\)</span> and the probability of choosing a point is <span class="math inline">\(\frac{D(x_i)}{\sum_{x \in X} D(x)}\)</span>. But the idea is we want points that are far away from our existing centroids.”</li>
+</ul></li>
+<li><p><strong>Explain Why K-Means++ is Effective:</strong></p>
+<ul>
+<li>“Because K-Means++ tries to spread out the initial centroids, it’s less likely to get stuck in a poor local minimum. Studies have shown it can offer logarithmic approximation to the optimal K-Means clustering.”</li>
+</ul></li>
+<li><p><strong>Address Limitations and Considerations:</strong></p>
+<ul>
+<li>“It’s important to note that K-Means++ isn’t a perfect solution. It’s still a randomized algorithm, so the initial random selection can influence the outcome. Setting a random seed is essential for reproducibility. Also, while it adds some computational overhead to the initialization, the faster convergence and better results usually make it worthwhile. Finally, K-Means++ doesn’t solve all the problems with K-Means. You still need to choose the right number of clusters ‘k’, and K-Means may not be the best choice for data with very complex shapes.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush through the explanation. Give the interviewer time to digest the information.</li>
+<li><strong>Check for Understanding:</strong> Pause periodically and ask if the interviewer has any questions. “Does that make sense?” or “Any questions about that step?”</li>
+<li><strong>Avoid Jargon:</strong> Use clear and concise language. Define any technical terms you use.</li>
+<li><strong>Focus on the “Why”:</strong> Explain not just <em>what</em> K-Means++ does, but <em>why</em> it’s designed that way.</li>
+<li><strong>Mathematical Notation:</strong> Be prepared to write down the key equation(s) if the interviewer is mathematically inclined. However, don’t overwhelm them with unnecessary details. Judge their level of interest and tailor your response accordingly. Clearly explain each component if writing the equations.</li>
+<li><strong>Real-World Context:</strong> If possible, relate the topic to real-world scenarios or applications where K-Means++ is particularly beneficial.</li>
+<li><strong>Confidence:</strong> Speak confidently and clearly. Demonstrate your expertise by showing a deep understanding of the topic.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
