@@ -1,212 +1,182 @@
 # Taylor Series Approximation and Its Applications in Machine Learning
+# Taylor Series: From Theory to ML Applications
 
-Taylor series approximations let us represent complex functions as polynomials that are “local” approximations around a specific point. In machine learning (ML), these approximations are invaluable for simplifying optimization problems—whether we’re taking gradient descent steps to minimize a loss function or building decision trees that rely on second-order (curvature) information, as in XGBoost.
+## 1. Theoretical Foundation
 
----
+### 1.1 Classical Definition
+For a function $f(x)$ infinitely differentiable at point $a$, the Taylor series expansion is:
 
-## 1. Taylor Series Approximation Basics
+$$f(x) = \sum_{n=0}^{\infty} \frac{f^{(n)}(a)}{n!}(x-a)^n$$
 
-For a function \( f(x) \) that is infinitely differentiable at a point \( a \), its Taylor series expansion around \( a \) is
+### 1.2 Local Approximations
+Up to second order:
+$$f(x) \approx f(a) + f'(a)(x-a) + \frac{f''(a)}{2}(x-a)^2$$
 
-\[
-f(x) = f(a) + f'(a)(x-a) + \frac{f''(a)}{2!}(x-a)^2 + \frac{f'''(a)}{3!}(x-a)^3 + \cdots
-\]
+Key intuitions:
+- $f(a)$: Current position
+- $f'(a)$: Direction of steepest change
+- $f''(a)$: Local curvature information
 
-### Intuitive Breakdown
+## 2. Multivariate Extension for ML
 
-- **Constant Term \( f(a) \):** Represents the function’s value at the expansion point.
-- **Linear Term \( f'(a)(x-a) \):** Provides the slope (or gradient) at \( a \), indicating the immediate rate of change.
-- **Quadratic Term \( \frac{f''(a)}{2}(x-a)^2 \):** Encodes the curvature of the function around \( a \).
+### 2.1 Vector Form
+For $\mathbf{x}, \mathbf{a} \in \mathbb{R}^n$:
+$$f(\mathbf{x}) \approx f(\mathbf{a}) + \nabla f(\mathbf{a})^T(\mathbf{x}-\mathbf{a}) + \frac{1}{2}(\mathbf{x}-\mathbf{a})^T\mathbf{H}(\mathbf{a})(\mathbf{x}-\mathbf{a})$$
 
-For a small deviation \( h = x-a \), the function can be approximated by a quadratic polynomial:
-
-\[
-f(x) \approx f(a) + f'(a)h + \frac{f''(a)}{2}h^2
-\]
-
----
-
-## 2. Deriving Coefficients Up to the Quadratic Term
-
-Let’s derive the coefficients for the quadratic approximation of \( f(x) \) about \( x=a \). We express the approximation as:
-
-\[
-P(h) = f(a) + b\,h + c\,h^2 \quad \text{with } h = x-a.
-\]
-
-1. **Zeroth Order (Constant Term):**
-
-   When \( h = 0 \):
-   \[
-   P(0) = f(a) + b\cdot0 + c\cdot0^2 = f(a).
-   \]
-   So, the constant term is \( f(a) \).
-
-2. **First Order (Linear Term):**
-
-   Differentiate \( P(h) \) with respect to \( h \):
-   \[
-   P'(h) = b + 2c\,h.
-   \]
-   Evaluating at \( h=0 \):
-   \[
-   P'(0) = b = f'(a).
-   \]
-   Hence, the linear coefficient is \( f'(a) \).
-
-3. **Second Order (Quadratic Term):**
-
-   Differentiate \( P'(h) \) again:
-   \[
-   P''(h) = 2c.
-   \]
-   At \( h=0 \):
-   \[
-   P''(0) = 2c = f''(a),
-   \]
-   which gives \( c = \frac{f''(a)}{2} \).
-
-Thus, the quadratic Taylor approximation of \( f(x) \) around \( a \) is:
-
-\[
-f(x) \approx f(a) + f'(a)(x-a) + \frac{f''(a)}{2}(x-a)^2.
-\]
-
----
-
-## 3. Relevance in Machine Learning
-
-Taylor series approximations are not just mathematical curiosities—they underpin many ML algorithms. Below, we discuss two key applications.
-
-### 3.1. Gradient Descent Update Equation
-
-In gradient descent, we aim to minimize a loss function \( f(\theta) \) with respect to the parameters \( \theta \). Consider a small update \( \Delta \theta \) around the current parameter value \( \theta \). We can approximate the loss function using a second-order Taylor expansion:
-
-\[
-f(\theta + \Delta \theta) \approx f(\theta) + \nabla f(\theta)^T \Delta \theta + \frac{1}{2} \Delta \theta^T H(\theta) \Delta \theta,
-\]
 where:
-- \( \nabla f(\theta) \) is the gradient vector.
-- \( H(\theta) \) is the Hessian matrix (the matrix of second derivatives).
+- $\nabla f(\mathbf{a})$: Gradient vector
+- $\mathbf{H}(\mathbf{a})$: Hessian matrix
 
-#### Deriving the Update
-To find the update \( \Delta \theta \) that minimizes this approximation, we differentiate with respect to \( \Delta \theta \) and set the derivative to zero:
+## 3. Optimization Algorithms
 
-\[
-\frac{\partial}{\partial \Delta \theta} \left( f(\theta) + \nabla f(\theta)^T \Delta \theta + \frac{1}{2} \Delta \theta^T H(\theta) \Delta \theta \right) = \nabla f(\theta) + H(\theta) \Delta \theta = 0.
-\]
+### 3.1 Gradient Descent
+Starting from Taylor approximation:
+$$f(\theta + \Delta\theta) \approx f(\theta) + \nabla f(\theta)^T\Delta\theta$$
 
-Solving for \( \Delta \theta \):
+Minimizing this leads to the update rule:
+$$\theta^{(t+1)} = \theta^{(t)} - \eta\nabla f(\theta^{(t)})$$
 
-\[
-\Delta \theta = - H(\theta)^{-1} \nabla f(\theta).
-\]
+### 3.2 Newton's Method
+Using second-order information:
+$$\Delta\theta = -\mathbf{H}(\theta)^{-1}\nabla f(\theta)$$
 
-- **Newton’s Method:** This is the update equation in Newton’s method, which uses both gradient and curvature information.
-- **Gradient Descent (First-order):** In standard gradient descent, one typically ignores the Hessian and updates as
-  \[
-  \theta^{(t+1)} = \theta^{(t)} - \eta \nabla f(\theta^{(t)}),
-  \]
-  where \( \eta \) is the learning rate. Here, the update is based solely on the first-order (linear) approximation.
+Update rule:
+$$\theta^{(t+1)} = \theta^{(t)} - \mathbf{H}(\theta^{(t)})^{-1}\nabla f(\theta^{(t)})$$
 
-### 3.2. XGBoost and Second-Order Approximations
+## 4. XGBoost's Second-Order Learning
 
-XGBoost is a powerful gradient boosting framework that builds an ensemble of decision trees. Its optimization process relies on a second-order Taylor expansion of the objective function.
+### 4.1 Objective Function
+For iteration $t$:
+$$\text{Obj}^{(t)} = \sum_{i=1}^{n} l(y_i, \hat{y}_i^{(t-1)} + f_t(x_i)) + \Omega(f_t)$$
 
-#### The Objective Function in XGBoost
+### 4.2 Taylor Expansion of Loss
+For each sample $i$:
+$$l(y_i, \hat{y}_i^{(t-1)} + f_t(x_i)) \approx l(y_i, \hat{y}_i^{(t-1)}) + g_if_t(x_i) + \frac{1}{2}h_i(f_t(x_i))^2$$
 
-Suppose at iteration \( t \), the prediction for sample \( i \) is updated as:
-
-\[
-\hat{y}_i^{(t)} = \hat{y}_i^{(t-1)} + f_t(x_i),
-\]
-where \( f_t \) is the function (tree) added at step \( t \).
-
-The overall objective is:
-
-\[
-\text{Obj}^{(t)} = \sum_{i=1}^{n} l\bigl(y_i, \hat{y}_i^{(t-1)} + f_t(x_i)\bigr) + \Omega(f_t),
-\]
 where:
-- \( l \) is the loss function.
-- \( \Omega(f_t) \) is a regularization term that penalizes the complexity of \( f_t \).
+- $g_i = \frac{\partial l(y_i, \hat{y}_i^{(t-1)})}{\partial \hat{y}_i^{(t-1)}}$
+- $h_i = \frac{\partial^2 l(y_i, \hat{y}_i^{(t-1)})}{\partial (\hat{y}_i^{(t-1)})^2}$
 
-#### Taylor Expansion of the Loss
+### 4.3 Optimal Leaf Weight
+For leaf $j$:
+$$w_j^* = -\frac{\sum_{i \in I_j} g_i}{\sum_{i \in I_j} h_i + \lambda}$$
 
-We approximate the loss for each sample \( i \) using a second-order Taylor expansion around \( \hat{y}_i^{(t-1)} \):
+### 4.4 Split Finding
+Gain for splitting leaf $L$ into $L_1$ and $L_2$:
+$$\text{Gain} = \frac{G_{L_1}^2}{H_{L_1} + \lambda} + \frac{G_{L_2}^2}{H_{L_2} + \lambda} - \frac{G_L^2}{H_L + \lambda} - \gamma$$
 
-\[
-l\bigl(y_i, \hat{y}_i^{(t-1)} + f_t(x_i)\bigr) \approx l\bigl(y_i, \hat{y}_i^{(t-1)}\bigr) + g_i\,f_t(x_i) + \frac{1}{2} h_i\,\bigl(f_t(x_i)\bigr)^2,
-\]
-with:
-- \( g_i = \frac{\partial l\bigl(y_i, \hat{y}_i^{(t-1)}\bigr)}{\partial \hat{y}_i^{(t-1)}} \) (first derivative or gradient),
-- \( h_i = \frac{\partial^2 l\bigl(y_i, \hat{y}_i^{(t-1)}\bigr)}{\partial \hat{y}_i^{(t-1)2}} \) (second derivative or Hessian).
+## 5. Error Analysis
 
-Thus, the approximated objective becomes:
+### 5.1 Lagrange Error Bound
+For n-th order approximation:
+$$R_n(x) = \frac{f^{(n+1)}(\xi)}{(n+1)!}(x-a)^{n+1}$$
+where $\xi$ lies between $a$ and $x$.
 
-\[
-\text{Obj}^{(t)} \approx \sum_{i=1}^{n} \left[ l\bigl(y_i, \hat{y}_i^{(t-1)}\bigr) + g_i\,f_t(x_i) + \frac{1}{2} h_i\,\bigl(f_t(x_i)\bigr)^2 \right] + \Omega(f_t).
-\]
+### 5.2 Practical Implications
+- First-order methods: Error $O(||x-a||^2)$
+- Second-order methods: Error $O(||x-a||^3)$
 
-#### Optimizing the Tree Structure
 
-In XGBoost, the new function \( f_t \) is a decision tree. For any given leaf \( j \), the tree assigns a constant score \( w_j \) to every sample \( i \) in that leaf. Let \( I_j \) denote the set of indices of samples in leaf \( j \). Then for all \( i \in I_j \):
 
-\[
-f_t(x_i) = w_j.
-\]
 
-The objective for leaf \( j \) becomes:
 
-\[
-\sum_{i \in I_j} \left[ g_i\,w_j + \frac{1}{2} h_i\,w_j^2 \right] + \frac{1}{2} \lambda w_j^2,
-\]
-where \( \lambda \) is a regularization parameter that penalizes large weights.
 
-Define:
-- \( G_j = \sum_{i \in I_j} g_i \) (sum of gradients),
-- \( H_j = \sum_{i \in I_j} h_i \) (sum of Hessians).
+-------------
 
-Then, summing over all \( T \) leaves and including an additional regularization term \( \gamma \) for each leaf, the total objective can be written as:
 
-\[
-\text{Obj}^{(t)} \approx \sum_{j=1}^{T} \left[ G_j\,w_j + \frac{1}{2} \left( H_j + \lambda \right) w_j^2 \right] + \gamma T.
-\]
+## Appendix. Understanding Local Approximation
 
-#### Deriving the Optimal Weight for a Leaf
+### 1.1 Geometric Interpretation
+Consider a function $f(x)$ at point $a$. The local approximation provides increasingly accurate information about:
 
-To find the optimal \( w_j \) for each leaf, differentiate the leaf’s contribution with respect to \( w_j \) and set the derivative to zero:
+1. Position: $f(a)$ - The actual value
+2. Velocity: $f'(a)$ - Rate of change
+3. Acceleration: $f''(a)$ - Change in rate of change
+4. Higher-order dynamics: $f^{(n)}(a)$ - n-th order behavior
 
-\[
-\frac{\partial}{\partial w_j} \left( G_j\,w_j + \frac{1}{2} \left( H_j + \lambda \right) w_j^2 \right) = G_j + \left( H_j + \lambda \right) w_j = 0.
-\]
+### 1.2 Error Decay
+As we add more terms, the approximation becomes more accurate in a neighborhood of $a$:
+- Linear term captures error $O(|x-a|)$
+- Quadratic term reduces error to $O(|x-a|^2)$
+- n-th order term gives error $O(|x-a|^n)$
 
-Solving for \( w_j \):
+## 2. Rigorous Derivation of Coefficients
 
-\[
-w_j^* = -\frac{G_j}{H_j + \lambda}.
-\]
+### 2.1 Setup
+Let's construct a power series approximation:
+$$P(x) = c_0 + c_1(x-a) + c_2(x-a)^2 + c_3(x-a)^3 + ...$$
 
-This equation provides the update for the leaf weight in the decision tree, striking a balance between the gradient (first-order term) and the Hessian (second-order term), along with regularization.
+We want $P^{(n)}(a) = f^{(n)}(a)$ for all $n ≥ 0$.
 
----
+### 2.2 Deriving Each Term
 
-## 4. Summary
+#### Zero-th Order Term ($c_0$)
+Evaluate at $x = a$:
+$$P(a) = c_0 = f(a)$$
+Therefore, $c_0 = f(a)$
 
-- **Taylor Series Essentials:** A Taylor series locally approximates a function using its derivatives at a point. Up to the quadratic term, the approximation is
-  \[
-  f(x) \approx f(a) + f'(a)(x-a) + \frac{f''(a)}{2}(x-a)^2.
-  \]
-- **Gradient Descent:** By Taylor expanding the loss function, we derive update rules. Newton’s method uses the second-order information to update
-  \[
-  \Delta \theta = - H^{-1} \nabla f(\theta),
-  \]
-  while standard gradient descent relies on the first-order term.
-- **XGBoost:** The algorithm uses a second-order Taylor expansion of the loss to optimize tree splits. For each tree leaf, the optimal weight is given by
-  \[
-  w_j^* = -\frac{\sum_{i \in I_j} g_i}{\sum_{i \in I_j} h_i + \lambda},
-  \]
-  ensuring that both the gradient and curvature of the loss function are taken into account.
+#### First Order Term ($c_1$)
+Take first derivative:
+$$P'(x) = c_1 + 2c_2(x-a) + 3c_3(x-a)^2 + ...$$
+At $x = a$:
+$$P'(a) = c_1 = f'(a)$$
 
-By understanding these derivations, you not only grasp how local approximations work but also see their practical implementations in modern machine learning algorithms.
+#### Second Order Term ($c_2$)
+Take second derivative:
+$$P''(x) = 2c_2 + 6c_3(x-a) + 12c_4(x-a)^2 + ...$$
+At $x = a$:
+$$P''(a) = 2c_2 = f''(a)$$
+Therefore, $c_2 = \frac{f''(a)}{2!}$
 
+#### Third Order Term ($c_3$)
+Take third derivative:
+$$P'''(x) = 6c_3 + 24c_4(x-a) + ...$$
+At $x = a$:
+$$P'''(a) = 6c_3 = f'''(a)$$
+Therefore, $c_3 = \frac{f'''(a)}{3!}$
+
+### 2.3 General Pattern
+For the n-th derivative:
+$$P^{(n)}(x) = n!c_n + \text{terms involving }(x-a)$$
+At $x = a$:
+$$P^{(n)}(a) = n!c_n = f^{(n)}(a)$$
+Therefore, $c_n = \frac{f^{(n)}(a)}{n!}$
+
+## 3. Local Approximation in Different Orders
+
+### 3.1 First-Order Approximation
+$$f(x) \approx f(a) + f'(a)(x-a)$$
+
+Properties:
+- Linear approximation
+- Tangent line at point $a$
+- Accurate when $|x-a|$ is very small
+- Error term: $O(|x-a|^2)$
+
+### 3.2 Second-Order Approximation
+$$f(x) \approx f(a) + f'(a)(x-a) + \frac{f''(a)}{2!}(x-a)^2$$
+
+Properties:
+- Quadratic approximation
+- Captures local curvature
+- More accurate than linear for same neighborhood
+- Error term: $O(|x-a|^3)$
+
+### 3.3 n-th Order Approximation
+$$f(x) \approx \sum_{k=0}^{n} \frac{f^{(k)}(a)}{k!}(x-a)^k$$
+
+Properties:
+- Polynomial approximation of degree n
+- Captures higher-order behavior
+- Error term: $O(|x-a|^{n+1})$
+
+## 4. Error Analysis Through Taylor's Theorem
+
+### 4.1 Lagrange Form of Remainder
+For n-th order approximation:
+$$R_n(x) = \frac{f^{(n+1)}(\xi)}{(n+1)!}(x-a)^{n+1}$$
+where $\xi$ lies between $a$ and $x$.
+
+### 4.2 Error Bound
+$$|R_n(x)| \leq \frac{M}{(n+1)!}|x-a|^{n+1}$$
+where $M = \max_{t \in [a,x]} |f^{(n+1)}(t)|$
