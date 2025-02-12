@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>xgboost_5</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-what-hyperparameters-in-xgboost-are-critical-for-tuning-and-how-do-they-affect-the-model-performance-can-you-provide-examples-of-trade-offs-when-adjusting-these-parameters" class="level2">
+<h2 class="anchored" data-anchor-id="question-what-hyperparameters-in-xgboost-are-critical-for-tuning-and-how-do-they-affect-the-model-performance-can-you-provide-examples-of-trade-offs-when-adjusting-these-parameters">Question: What hyperparameters in XGBoost are critical for tuning and how do they affect the model performance? Can you provide examples of trade-offs when adjusting these parameters?</h2>
+<p><strong>Best Answer</strong></p>
+<p>XGBoost (Extreme Gradient Boosting) is a powerful gradient boosting algorithm widely used in machine learning. Its performance heavily relies on the proper tuning of several key hyperparameters. These hyperparameters control various aspects of the model, including the complexity of individual trees, the learning rate, regularization, and the sampling strategy. Understanding these hyperparameters and their interactions is crucial for optimizing XGBoost models.</p>
+<p>Here’s a breakdown of some critical hyperparameters and their impact:</p>
+<p><strong>1. Learning Rate (<code>eta</code> or <code>learning_rate</code>)</strong></p>
+<ul>
+<li><p><strong>Definition:</strong> The learning rate shrinks the contribution of each tree by <code>eta</code>. It prevents overfitting by making the model more robust to individual tree errors.</p></li>
+<li><p><strong>Mathematical Interpretation:</strong> Each tree’s prediction is multiplied by the learning rate before being added to the ensemble’s prediction:</p>
+<p><span class="math display">\[
+\hat{y}_i^{(t)} = \hat{y}_i^{(t-1)} + \eta f_t(x_i)
+\]</span></p>
+<p>where <span class="math inline">\(\hat{y}_i^{(t)}\)</span> is the prediction for instance <em>i</em> at iteration <em>t</em>, and <span class="math inline">\(f_t(x_i)\)</span> is the prediction of the <em>t</em>-th tree.</p></li>
+<li><p><strong>Impact:</strong> A smaller learning rate typically requires more trees (<code>n_estimators</code>) to achieve the same level of performance.</p></li>
+<li><p><strong>Trade-off:</strong></p>
+<ul>
+<li><em>Small <code>eta</code>:</em> Reduces overfitting, leads to more robust models, but requires more boosting rounds (higher computational cost). The model learns slowly and more accurately.</li>
+<li><em>Large <code>eta</code>:</em> Can lead to faster training, but may cause overfitting or prevent convergence. The model learns quickly and potentially less accurately.</li>
+</ul></li>
+</ul>
+<p><strong>2. Maximum Depth of a Tree (<code>max_depth</code>)</strong></p>
+<ul>
+<li><strong>Definition:</strong> Controls the maximum depth of each tree. A deeper tree allows the model to learn more complex relationships in the data.</li>
+<li><strong>Impact:</strong> Increasing <code>max_depth</code> makes the model more complex and prone to overfitting if not carefully controlled.</li>
+<li><strong>Trade-off:</strong>
+<ul>
+<li><em>Small <code>max_depth</code>:</em> Prevents overfitting, resulting in a simpler model that might underfit the data.</li>
+<li><em>Large <code>max_depth</code>:</em> Allows the model to capture intricate patterns, potentially leading to overfitting, especially with noisy data. Computationally more expensive.</li>
+</ul></li>
+</ul>
+<p><strong>3. Minimum Sum of Instance Weight (Hessian) Needed in a Child (<code>min_child_weight</code>)</strong></p>
+<ul>
+<li><strong>Definition:</strong> Defines the minimum sum of weights of all observations required in a child. This parameter is used to control overfitting. When a leaf node partition results in a leaf node with the sum of instance weights less than <code>min_child_weight</code>, then the building process will give up further partitioning.</li>
+<li><strong>Mathematical Interpretation:</strong> This parameter relates to the second-order derivative (Hessian) of the loss function. In gradient boosting, the weights are related to the gradients and Hessians.</li>
+<li><strong>Impact:</strong> A larger <code>min_child_weight</code> prevents the tree from creating partitions that are too specific to the training data.</li>
+<li><strong>Trade-off:</strong>
+<ul>
+<li><em>Small <code>min_child_weight</code>:</em> Allows the model to create more granular partitions, which can lead to overfitting.</li>
+<li><em>Large <code>min_child_weight</code>:</em> Restricts the model from creating too specific partitions, preventing overfitting but potentially underfitting.</li>
+</ul></li>
+</ul>
+<p><strong>4. Minimum Loss Reduction Required to Make a Further Partition (<code>gamma</code>)</strong></p>
+<ul>
+<li><strong>Definition:</strong> Specifies the minimum loss reduction required to make a split. A split will only occur if it results in a decrease in the loss function greater than or equal to <code>gamma</code>. Also known as the “complexity penalty.”</li>
+<li><strong>Mathematical Interpretation:</strong> <code>Gamma</code> directly influences the tree’s complexity by pruning splits that do not significantly improve the model’s performance. The loss reduction <span class="math inline">\(\Delta Loss\)</span> must satisfy: <span class="math display">\[
+\Delta Loss &gt; \gamma
+\]</span></li>
+<li><strong>Impact:</strong> Increasing <code>gamma</code> makes the algorithm more conservative and prevents overfitting.</li>
+<li><strong>Trade-off:</strong>
+<ul>
+<li><em>Small <code>gamma</code>:</em> Allows more splits, potentially leading to overfitting.</li>
+<li><em>Large <code>gamma</code>:</em> Fewer splits, preventing overfitting but potentially underfitting.</li>
+</ul></li>
+</ul>
+<p><strong>5. Subsample Ratio of the Training Instance (<code>subsample</code>)</strong></p>
+<ul>
+<li><strong>Definition:</strong> Represents the fraction of the training data to be sampled for each boosting round.</li>
+<li><strong>Impact:</strong> Reducing <code>subsample</code> introduces randomness and reduces overfitting. It’s similar to bagging in Random Forests.</li>
+<li><strong>Trade-off:</strong>
+<ul>
+<li><em>Small <code>subsample</code>:</em> Reduces variance (overfitting), but can increase bias (underfitting) and may slow down training because each tree learns from a smaller subset of the data.</li>
+<li><em>Large <code>subsample</code>:</em> Can lead to overfitting if set to 1, especially when combined with a large <code>max_depth</code>.</li>
+</ul></li>
+</ul>
+<p><strong>6. Subsample Ratio of Columns When Constructing Each Tree (<code>colsample_bytree</code>)</strong></p>
+<ul>
+<li><strong>Definition:</strong> Represents the fraction of features (columns) to be randomly sampled for each tree.</li>
+<li><strong>Impact:</strong> Similar to <code>subsample</code>, <code>colsample_bytree</code> introduces randomness and reduces overfitting.</li>
+<li><strong>Trade-off:</strong>
+<ul>
+<li><em>Small <code>colsample_bytree</code>:</em> Reduces overfitting by considering fewer features for each tree. However, it can increase bias and might prevent the model from capturing important relationships involving certain features.</li>
+<li><em>Large <code>colsample_bytree</code>:</em> Can lead to overfitting if set to 1, as all features are considered for each tree.</li>
+</ul></li>
+</ul>
+<p><strong>7. Regularization Terms (<code>lambda</code> and <code>alpha</code>)</strong></p>
+<ul>
+<li><strong>Definition:</strong> <code>lambda</code> (L2 regularization) adds a penalty to the magnitude of weights, while <code>alpha</code> (L1 regularization) adds a penalty to the absolute value of weights.</li>
+<li><strong>Mathematical Interpretation:</strong> The objective function in XGBoost is modified by these regularization terms. For example, with L2 regularization: <span class="math display">\[
+Obj = \sum_{i=1}^n L(y_i, \hat{y}_i) + \lambda \sum_{j=1}^T w_j^2
+\]</span> where <span class="math inline">\(L\)</span> is the loss function, <span class="math inline">\(w_j\)</span> are the weights of the leaves, and <span class="math inline">\(T\)</span> is the number of leaves. A similar term is added for L1 regularization using the absolute value of the leaf weights.</li>
+<li><strong>Impact:</strong> Both <code>lambda</code> and <code>alpha</code> help to prevent overfitting by shrinking the weights of the leaves.</li>
+<li><strong>Trade-off:</strong>
+<ul>
+<li><em>Small <code>lambda</code> or <code>alpha</code>:</em> Minimal regularization, model can overfit</li>
+<li><em>Large <code>lambda</code> or <code>alpha</code>:</em> Strong regularization, model can underfit. L1 regularization can also lead to feature selection by setting some weights to zero.</li>
+</ul></li>
+</ul>
+<p><strong>Real-World Considerations:</strong></p>
+<ul>
+<li><strong>Grid Search/Randomized Search:</strong> Hyperparameter tuning often involves searching through a grid or random distribution of hyperparameter values using techniques like cross-validation to evaluate performance.</li>
+<li><strong>Bayesian Optimization:</strong> More advanced techniques such as Bayesian optimization can be used to efficiently search the hyperparameter space.</li>
+<li><strong>Early Stopping:</strong> Monitor the performance on a validation set and stop training when the performance starts to degrade. This helps to prevent overfitting and reduce computational cost.</li>
+<li><strong>Hardware limitations</strong>: The resources available to train the model will affect the potential for tuning certain hyperparameters like <code>max_depth</code>.</li>
+</ul>
+<p><strong>In summary,</strong> tuning XGBoost hyperparameters requires a careful balancing act. Understanding the effect of each parameter, the trade-offs involved, and using appropriate search strategies are key to building high-performance models.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a guide on how to deliver this answer effectively:</p>
+<ol type="1">
+<li><p><strong>Start with a brief overview:</strong> “XGBoost’s performance is heavily dependent on hyperparameter tuning. These parameters control the complexity, learning rate, and regularization of the model, affecting the bias-variance trade-off.”</p></li>
+<li><p><strong>Introduce the most critical parameters:</strong> “Some of the most critical hyperparameters include the learning rate, maximum depth of trees, minimum child weight, gamma, subsample, and column sample.”</p></li>
+<li><p><strong>Explain each parameter systematically:</strong></p>
+<ul>
+<li><strong>For each parameter:</strong>
+<ul>
+<li>“Let’s start with the learning rate (or eta). It shrinks the contribution of each tree…”</li>
+<li>Provide the definition in simple terms.</li>
+<li>Explain the impact on the model’s learning process.</li>
+<li>Describe the trade-off (e.g., “A smaller learning rate requires more trees, preventing overfitting, but increasing computational cost”).</li>
+<li>Provide the equation to give a mathematical intuition of how this works.</li>
+<li>“The equation for learning rate is <span class="math inline">\(\hat{y}_i^{(t)} = \hat{y}_i^{(t-1)} + \eta f_t(x_i)\)</span>. This shows how the learning rate <span class="math inline">\(\eta\)</span> scales each tree’s contribution <span class="math inline">\(f_t(x_i)\)</span>.”</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Discuss regularization techniques (lambda and alpha):</strong> “XGBoost also has regularization parameters, <code>lambda</code> and <code>alpha</code>, which control L2 and L1 regularization, respectively. These parameters add penalties to the weights, preventing overfitting.”</p></li>
+<li><p><strong>Address Real-World Considerations:</strong> “In practice, we use techniques like grid search, randomized search, or Bayesian optimization to find the optimal hyperparameter values. We also leverage early stopping to prevent overfitting and reduce training time.”</p></li>
+<li><p><strong>Summarize:</strong> “In summary, tuning XGBoost hyperparameters requires careful consideration of each parameter’s impact and the trade-offs involved. Techniques like cross-validation and early stopping are essential for building robust and high-performing models.”</p></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace yourself:</strong> Don’t rush through the explanation. Allow the interviewer time to digest the information.</li>
+<li><strong>Use clear and concise language:</strong> Avoid jargon unless necessary.</li>
+<li><strong>Check for understanding:</strong> Periodically ask the interviewer if they have any questions (e.g., “Does that make sense?”).</li>
+<li><strong>Visual aids:</strong> If possible, use a whiteboard or share your screen to illustrate the concepts and equations.</li>
+<li><strong>Be prepared to go deeper:</strong> The interviewer may ask follow-up questions about specific parameters or techniques.</li>
+<li><strong>For Mathematical Sections:</strong>
+<ul>
+<li>“To give you some more insight, the update can be written as…”</li>
+<li>Write out the equation clearly on the board.</li>
+<li>Explain what each term represents and why it’s important.</li>
+<li>“So, as you can see, increasing <span class="math inline">\(\gamma\)</span> will make the model more conservative.”</li>
+</ul></li>
+<li><strong>Be confident:</strong> Demonstrate your expertise by speaking clearly and confidently.</li>
+</ul>
+<p>By following these guidelines, you can effectively demonstrate your knowledge of XGBoost hyperparameters and your ability to tune them for optimal performance.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

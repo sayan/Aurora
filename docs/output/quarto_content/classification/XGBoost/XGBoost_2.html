@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>xgboost_2</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-discuss-the-role-and-significance-of-second-order-derivatives-hessians-in-xgboost.-how-do-they-contribute-to-the-optimization-process" class="level2">
+<h2 class="anchored" data-anchor-id="question-discuss-the-role-and-significance-of-second-order-derivatives-hessians-in-xgboost.-how-do-they-contribute-to-the-optimization-process">Question: Discuss the role and significance of second-order derivatives (Hessians) in XGBoost. How do they contribute to the optimization process?</h2>
+<p><strong>Best Answer</strong></p>
+<p>XGBoost (Extreme Gradient Boosting) is a powerful gradient boosting algorithm that leverages both first and second-order derivatives of the loss function to build more accurate and efficient models. The use of second-order derivatives, specifically the Hessian matrix, is a key differentiating factor and contributes significantly to XGBoost’s performance.</p>
+<p><strong>1. Gradient Boosting and Taylor Expansion:</strong></p>
+<p>Gradient boosting, in general, is an iterative process where new trees are added to an ensemble to correct the errors of the existing trees. At each iteration, the algorithm aims to find a function (in XGBoost’s case, a decision tree) that minimizes the loss function. XGBoost uses a Taylor expansion to approximate the loss function around the current prediction.</p>
+<p>The Taylor expansion of the loss function <span class="math inline">\(L\)</span> up to the second order is:</p>
+<p><span class="math display">\[L(f_t) \approx L(f_{t-1}) + g_t f_t + \frac{1}{2} h_t f_t^2\]</span></p>
+<p>where: * <span class="math inline">\(f_t\)</span> is the new tree we are adding at iteration <span class="math inline">\(t\)</span>. * <span class="math inline">\(f_{t-1}\)</span> is the ensemble model built up to iteration <span class="math inline">\(t-1\)</span>. * <span class="math inline">\(g_t = \frac{\partial L(f_{t-1})}{\partial f_{t-1}}\)</span> is the first-order derivative (gradient) of the loss function with respect to the prediction of the ensemble model at iteration <span class="math inline">\(t-1\)</span>. * <span class="math inline">\(h_t = \frac{\partial^2 L(f_{t-1})}{\partial f_{t-1}^2}\)</span> is the second-order derivative (Hessian) of the loss function with respect to the prediction of the ensemble model at iteration <span class="math inline">\(t-1\)</span>.</p>
+<p><strong>2. Role of the Hessian:</strong></p>
+<p>The Hessian plays a crucial role in refining the approximation of the loss function.</p>
+<ul>
+<li><p><strong>More Accurate Approximation:</strong> Using only the gradient (first-order derivative) provides a linear approximation of the loss function. Including the Hessian (second-order derivative) provides a quadratic approximation, which is a more accurate representation, especially when the loss function is highly non-linear. This allows XGBoost to make more informed decisions about how to update the model.</p></li>
+<li><p><strong>Optimal Leaf Weights:</strong> XGBoost uses the gradient and Hessian to calculate the optimal leaf weights for each tree. After determining the structure of a tree (i.e., how the data is split into different leaves), XGBoost calculates the optimal weight <span class="math inline">\(w_j\)</span> for each leaf <span class="math inline">\(j\)</span> by minimizing the approximated loss function. The objective function can be written as:</p>
+<p><span class="math display">\[ Obj = \sum_{j=1}^{T} \left[ (\sum_{i \in I_j} g_i)w_j + \frac{1}{2} (\sum_{i \in I_j} h_i)w_j^2 \right] + \lambda \sum_{j=1}^{T} w_j^2 + \gamma T\]</span></p>
+<p>Where:</p>
+<ul>
+<li><span class="math inline">\(I_j\)</span> is the set of instances in leaf <span class="math inline">\(j\)</span></li>
+<li><span class="math inline">\(T\)</span> is the number of leaves</li>
+<li><span class="math inline">\(\lambda\)</span> is the L2 regularization term</li>
+<li><span class="math inline">\(\gamma\)</span> is the L1 regularization term</li>
+</ul>
+<p>To find the optimal weight <span class="math inline">\(w_j^*\)</span>, we take the derivative of the objective function with respect to <span class="math inline">\(w_j\)</span> and set it to zero:</p>
+<p><span class="math display">\[\frac{\partial Obj}{\partial w_j} = \sum_{i \in I_j} g_i + (\sum_{i \in I_j} h_i)w_j + 2 \lambda w_j = 0\]</span></p>
+<p>Solving for <span class="math inline">\(w_j^*\)</span>:</p>
+<p><span class="math display">\[w_j^* = - \frac{\sum_{i \in I_j} g_i}{\sum_{i \in I_j} h_i + \lambda}\]</span></p>
+<p>The Hessian in the denominator provides information about the curvature of the loss function. If the curvature is high (large Hessian), the optimal weight will be smaller, leading to a more conservative update. If the curvature is low (small Hessian), the optimal weight will be larger, allowing for a more aggressive update. This adaptivity enables XGBoost to converge faster and avoid overshooting the optimal solution.</p></li>
+<li><p><strong>Objective Function Value:</strong> Substituting the optimal weights <span class="math inline">\(w_j^*\)</span> back into the objective function, we obtain the reduction in loss achieved by the current tree:</p>
+<p><span class="math display">\[Obj^* = -\frac{1}{2} \sum_{j=1}^T \frac{(\sum_{i \in I_j} g_i)^2}{\sum_{i \in I_j} h_i + \lambda} + \gamma T\]</span></p>
+<p>This objective function is used to evaluate the quality of different tree structures. The algorithm greedily searches for the best split points that maximize the reduction in loss, guided by both the gradient and Hessian. This objective is what’s maximized during structure learning.</p></li>
+<li><p><strong>Regularization Effect:</strong> The Hessian also implicitly contributes to regularization. By influencing the leaf weights, it prevents individual trees from becoming too influential and overfitting the data. The <span class="math inline">\(L_2\)</span> regularization term <span class="math inline">\(\lambda\)</span> is often added to the denominator in the optimal weight equation, further stabilizing the learning process.</p></li>
+<li><p><strong>Improved Convergence:</strong> By taking into account the curvature of the loss function, the Hessian helps XGBoost converge faster than methods that rely solely on the gradient. It allows the algorithm to take larger steps in areas where the loss function is relatively flat and smaller steps in areas where the loss function is highly curved, preventing oscillations and accelerating convergence.</p></li>
+</ul>
+<p><strong>3. Practical Considerations:</strong></p>
+<ul>
+<li><strong>Computational Cost:</strong> Calculating the Hessian can be computationally expensive, especially for large datasets and complex loss functions. However, the benefits in terms of accuracy and convergence speed often outweigh the increased cost.</li>
+<li><strong>Choice of Loss Function:</strong> The Hessian is dependent on the specific loss function used. For some loss functions, the Hessian may be analytically available. For others, it may need to be approximated numerically. XGBoost supports a variety of loss functions and provides methods for calculating or approximating the Hessian.</li>
+<li><strong>Implementation Details:</strong> XGBoost’s efficient implementation includes optimizations for calculating and storing the gradient and Hessian, such as using sparse matrices for handling categorical features and parallel processing for accelerating computations.</li>
+</ul>
+<p><strong>In summary,</strong> the Hessian plays a vital role in XGBoost by providing a more accurate approximation of the loss function, enabling the calculation of optimal leaf weights, contributing to regularization, and improving convergence speed. This makes XGBoost a powerful and versatile algorithm for a wide range of machine learning tasks.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a suggested approach to explaining this topic in an interview:</p>
+<ol type="1">
+<li><strong>Start with the Big Picture:</strong>
+<ul>
+<li>“XGBoost is a gradient boosting algorithm, and like other boosting methods, it builds an ensemble of trees iteratively. The key advantage of XGBoost lies in its use of second-order derivatives, also known as the Hessian, in addition to the first-order derivative or gradient.”</li>
+</ul></li>
+<li><strong>Explain the Taylor Expansion:</strong>
+<ul>
+<li>“At each iteration, XGBoost approximates the loss function using a Taylor expansion. Specifically, it uses a second-order Taylor expansion. This allows us to represent the loss function <span class="math inline">\(L\)</span> around the current prediction like this: [State the equation <span class="math inline">\(L(f_t) \approx L(f_{t-1}) + g_t f_t + \frac{1}{2} h_t f_t^2\)</span>]. Where <span class="math inline">\(g_t\)</span> is the gradient and <span class="math inline">\(h_t\)</span> is the Hessian.”</li>
+<li>“Briefly explain what each term represents (<span class="math inline">\(f_t\)</span>, <span class="math inline">\(g_t\)</span>, <span class="math inline">\(h_t\)</span>).”</li>
+</ul></li>
+<li><strong>Explain the Benefits of Using the Hessian (Core Explanation):</strong>
+<ul>
+<li>“The Hessian provides crucial information about the curvature of the loss function, which leads to several key benefits:”
+<ul>
+<li><strong>More Accurate Approximation:</strong> “Using the Hessian provides a more accurate quadratic approximation compared to the linear approximation obtained using only the gradient. This is particularly important when the loss function is highly non-linear.”</li>
+<li><strong>Optimal Leaf Weights:</strong> “XGBoost uses the gradient and Hessian to compute the optimal leaf weights for each tree. The formula for the optimal weight <span class="math inline">\(w_j^*\)</span> is: [State the equation <span class="math inline">\(w_j^* = - \frac{\sum_{i \in I_j} g_i}{\sum_{i \in I_j} h_i + \lambda}\)</span>]. Notice how the Hessian is in the denominator. A larger Hessian means a smaller weight, leading to more conservative updates, and vice versa.”</li>
+<li><strong>Regularization:</strong> “The Hessian implicitly contributes to regularization by influencing the leaf weights. This helps to prevent overfitting.”</li>
+<li><strong>Improved Convergence:</strong> “By considering the curvature, XGBoost converges faster and avoids oscillations compared to methods that only use the gradient.”</li>
+</ul></li>
+</ul></li>
+<li><strong>Mention Objective Function:</strong>
+<ul>
+<li>“After finding the optimal weights, they get plugged into the objective function. This objective function helps determine the best structure to learn.”</li>
+</ul></li>
+<li><strong>Discuss Practical Considerations (Optional, depending on the interviewer’s interest):</strong>
+<ul>
+<li>“Calculating the Hessian can be computationally expensive, but the improvements in accuracy and convergence often outweigh the cost. XGBoost has efficient implementations to handle this. Also, the specific Hessian depends on the chosen loss function.”</li>
+</ul></li>
+<li><strong>Summarize:</strong>
+<ul>
+<li>“In summary, the Hessian is a key component of XGBoost, allowing for more accurate modeling, faster convergence, and better regularization. It’s what helps make XGBoost so effective in practice.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush through the explanation, especially when presenting equations. Give the interviewer time to process the information.</li>
+<li><strong>Use Visual Cues (if possible):</strong> If you’re in a virtual interview, consider using a whiteboard (virtual or physical) to write down the key equations.</li>
+<li><strong>Check for Understanding:</strong> After explaining a complex concept like the Taylor expansion or the optimal weight calculation, pause and ask if the interviewer has any questions. “Does that make sense?” or “Would you like me to elaborate on that further?”</li>
+<li><strong>Connect to Real-World Applications:</strong> If you have experience using XGBoost in a specific project, briefly mention it to demonstrate the practical relevance of your knowledge. “In my work on [project], we saw a significant improvement in accuracy when using XGBoost compared to other gradient boosting methods, which we attribute in part to its use of the Hessian.”</li>
+<li><strong>Don’t Be Afraid to Simplify:</strong> If the interviewer seems unfamiliar with the details of gradient boosting, start with a higher-level overview before diving into the specifics of the Hessian. You can gauge their understanding by their questions and adjust your explanation accordingly.</li>
+<li><strong>Confidence:</strong> Deliver the answer with confidence, showcasing your understanding and experience with the topic.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

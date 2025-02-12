@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>xgboost_10</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-what-potential-pitfalls-might-occur-when-deploying-xgboost-models-in-a-production-environment-and-how-would-you-mitigate-them" class="level2">
+<h2 class="anchored" data-anchor-id="question-what-potential-pitfalls-might-occur-when-deploying-xgboost-models-in-a-production-environment-and-how-would-you-mitigate-them">Question: What potential pitfalls might occur when deploying XGBoost models in a production environment, and how would you mitigate them?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Deploying XGBoost models to production can present several challenges that, if not properly addressed, can significantly impact performance, reliability, and maintainability. Here are some potential pitfalls and their corresponding mitigation strategies:</p>
+<ol type="1">
+<li><p><strong>Model Drift:</strong></p>
+<ul>
+<li><strong>Pitfall:</strong> Model drift occurs when the statistical properties of the target variable, input features, or the relationship between them change over time. This can happen due to seasonality, evolving user behavior, or changes in the underlying data generation process. Consequently, the model’s predictive accuracy degrades.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>Continuous Monitoring:</strong> Implement a robust monitoring system to track key performance metrics (e.g., AUC, precision, recall, F1-score, RMSE) and data distributions in real-time. Tools like Prometheus, Grafana, or cloud-specific monitoring solutions (e.g., AWS CloudWatch, Azure Monitor) can be used. Set up alerts that trigger when performance metrics fall below acceptable thresholds or when data distributions diverge significantly from the training data.</li>
+<li><strong>Data Distribution Monitoring:</strong> Monitor statistical properties of input features like mean, standard deviation, and quantiles. Use statistical tests like the Kolmogorov-Smirnov test or Chi-squared test to detect significant deviations in data distributions.</li>
+<li><strong>Regular Retraining:</strong> Establish a pipeline for automated retraining of the model on a scheduled basis (e.g., weekly, monthly) or when drift is detected. Employ techniques like transfer learning or continual learning to adapt to new data efficiently.</li>
+<li><strong>A/B Testing:</strong> Deploy new model versions in shadow mode or through A/B testing to compare their performance against the current production model before fully replacing it.</li>
+<li><strong>Concept Drift Detection:</strong> Explore algorithms specifically designed for concept drift detection, such as the Drift Detection Method (DDM) or Page-Hinkley Test, to proactively identify changes in the underlying data generating process.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Scalability and Performance:</strong></p>
+<ul>
+<li><strong>Pitfall:</strong> XGBoost models can be computationally intensive, especially for large datasets with many features. Prediction latency can become a bottleneck in real-time applications.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>Model Optimization:</strong>
+<ul>
+<li><strong>Feature Selection:</strong> Reduce the number of features using techniques like feature importance ranking or recursive feature elimination.</li>
+<li><strong>Tree Pruning:</strong> Carefully tune hyperparameters like <code>max_depth</code>, <code>min_child_weight</code>, and <code>gamma</code> to prevent overfitting and reduce model complexity.</li>
+<li><strong>Quantization:</strong> Experiment with quantizing model weights to reduce memory footprint and improve inference speed.</li>
+</ul></li>
+<li><strong>Hardware Acceleration:</strong> Leverage GPUs or specialized hardware accelerators like TPUs to accelerate prediction. XGBoost supports GPU acceleration through libraries like cuML.</li>
+<li><strong>Distributed Inference:</strong> Distribute prediction workload across multiple machines using frameworks like Dask or Spark. This allows for parallel processing of prediction requests.</li>
+<li><strong>Caching:</strong> Cache frequently accessed features or prediction results to reduce the load on the model and data sources.</li>
+<li><strong>Model Compilation:</strong> Compile the XGBoost model into a lower-level representation using tools like TVM or ONNX Runtime to optimize performance for the target hardware.</li>
+<li><strong>Batch Processing:</strong> For non-real-time applications, process prediction requests in batches to improve throughput and reduce overhead.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Data Quality Issues:</strong></p>
+<ul>
+<li><strong>Pitfall:</strong> Data inconsistencies, missing values, outliers, or incorrect data types in the production data can lead to inaccurate predictions or model failures.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>Data Validation:</strong> Implement rigorous data validation checks to ensure that incoming data conforms to the expected schema, data types, and value ranges.</li>
+<li><strong>Data Cleaning:</strong> Develop robust data cleaning pipelines to handle missing values (e.g., imputation), outliers (e.g., Winsorization, trimming), and data inconsistencies.</li>
+<li><strong>Data Profiling:</strong> Use data profiling tools to understand the characteristics of the production data and identify potential data quality issues.</li>
+<li><strong>Error Handling:</strong> Implement appropriate error handling mechanisms to gracefully handle unexpected data issues and prevent model failures. Log errors and alerts for investigation.</li>
+<li><strong>Data Monitoring:</strong> Monitor data quality metrics such as missing value rates, outlier counts, and data type mismatches.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Integration Issues:</strong></p>
+<ul>
+<li><strong>Pitfall:</strong> Integrating XGBoost models with existing systems (e.g., databases, APIs, web applications) can be challenging due to compatibility issues, data format differences, or lack of standardized interfaces.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>Standardized APIs:</strong> Expose the XGBoost model as a REST API using frameworks like Flask or FastAPI. This provides a standardized interface for other systems to interact with the model.</li>
+<li><strong>Data Serialization:</strong> Use standardized data serialization formats like JSON or Protocol Buffers to ensure compatibility between the model and other systems.</li>
+<li><strong>Containerization:</strong> Package the XGBoost model and its dependencies into a container using Docker. This ensures consistent execution across different environments.</li>
+<li><strong>Orchestration:</strong> Use container orchestration platforms like Kubernetes to manage and scale the deployment of the XGBoost model.</li>
+<li><strong>Version Control:</strong> Use version control systems like Git to track changes to the model code, data pipelines, and deployment configurations.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Feature Engineering in Production:</strong></p>
+<ul>
+<li><strong>Pitfall:</strong> Discrepancies between the feature engineering process used during training and the feature engineering process used in production can lead to prediction errors.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>Feature Store:</strong> Use a feature store to centralize and manage feature definitions, transformations, and storage. This ensures consistency between training and production environments.</li>
+<li><strong>Reproducible Pipelines:</strong> Implement feature engineering pipelines using tools like Apache Beam or Spark to ensure that the same transformations are applied to the data in both training and production.</li>
+<li><strong>Testing:</strong> Thoroughly test the feature engineering pipelines to ensure that they are producing the expected results.</li>
+<li><strong>Monitoring:</strong> Monitor the output of the feature engineering pipelines to detect any unexpected changes or errors.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Model Versioning and Rollback:</strong></p>
+<ul>
+<li><strong>Pitfall:</strong> Lack of proper model versioning and rollback mechanisms can make it difficult to revert to a previous working version of the model in case of errors or performance degradation.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>Model Registry:</strong> Use a model registry (e.g., MLflow, Neptune.ai) to track and manage different versions of the model.</li>
+<li><strong>Automated Rollback:</strong> Implement automated rollback procedures that can quickly revert to a previous version of the model in case of errors.</li>
+<li><strong>Blue-Green Deployment:</strong> Use blue-green deployment strategies to deploy new model versions without disrupting the existing production environment.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Security Vulnerabilities:</strong></p>
+<ul>
+<li><strong>Pitfall:</strong> XGBoost models can be vulnerable to adversarial attacks or data poisoning, which can compromise their integrity and accuracy.</li>
+<li><strong>Mitigation:</strong>
+<ul>
+<li><strong>Input Validation:</strong> Implement strict input validation to prevent malicious data from being injected into the model.</li>
+<li><strong>Adversarial Training:</strong> Train the model to be robust against adversarial attacks using techniques like adversarial training.</li>
+<li><strong>Access Control:</strong> Implement strict access control policies to protect the model and its data from unauthorized access.</li>
+<li><strong>Regular Security Audits:</strong> Conduct regular security audits to identify and address potential vulnerabilities.</li>
+</ul></li>
+</ul></li>
+</ol>
+<p>By proactively addressing these potential pitfalls, you can ensure the successful and reliable deployment of XGBoost models in production environments.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a guide on how to articulate this answer in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with a High-Level Overview:</strong></p>
+<ul>
+<li>“Deploying XGBoost models to production involves several challenges beyond just training the model. We need to consider things like model drift, scalability, data quality, and integration with existing systems.”</li>
+</ul></li>
+<li><p><strong>Model Drift (Explain, then Mitigate):</strong></p>
+<ul>
+<li>“One major issue is model drift. This happens when the data the model sees in production changes over time, making its predictions less accurate. Think of it like training a model on summer data and then using it in winter – things will be different.”</li>
+<li>“To mitigate this, I’d set up continuous monitoring of model performance and data distributions using tools like Prometheus or CloudWatch. I’d also schedule regular retraining or use techniques like A/B testing to compare new model versions. For example, we can monitor the PSI between the training and inference data and trigger a retraining job if the PSI exceeds a certain threshold.”</li>
+</ul></li>
+<li><p><strong>Scalability and Performance (Explain, then Mitigate):</strong></p>
+<ul>
+<li>“Scalability is another key concern. XGBoost models can be computationally expensive, especially with large datasets. This can lead to slow prediction times.”</li>
+<li>“To address this, I’d focus on model optimization techniques like feature selection and tree pruning. I might also leverage hardware acceleration with GPUs or consider distributed inference using Dask or Spark. Another optimization is to convert the model to TensorRT to reduce latency.”</li>
+</ul></li>
+<li><p><strong>Data Quality (Explain, then Mitigate):</strong></p>
+<ul>
+<li>“Data quality is crucial. Inconsistent or missing data in production can lead to incorrect predictions or model failures.”</li>
+<li>“I’d implement rigorous data validation checks and cleaning pipelines to handle these issues. Monitoring data quality metrics is also important.”</li>
+</ul></li>
+<li><p><strong>Integration Issues (Explain, then Mitigate):</strong></p>
+<ul>
+<li>“Integrating XGBoost models with existing systems can be tricky. Compatibility issues can arise.”</li>
+<li>“The best approach is to expose the model as a REST API using frameworks like Flask or FastAPI. Containerization with Docker and orchestration with Kubernetes can also help ensure consistent deployment.”</li>
+</ul></li>
+<li><p><strong>Feature Engineering in Production (Explain, then Mitigate):</strong></p>
+<ul>
+<li>“Feature engineering needs to be consistent between training and production. Discrepancies can lead to errors.”</li>
+<li>“Using a feature store helps centralize and manage feature definitions. Implementing reproducible pipelines with tools like Apache Beam or Spark is also important.”</li>
+</ul></li>
+<li><p><strong>Model Versioning and Rollback (Explain, then Mitigate):</strong></p>
+<ul>
+<li>“It’s essential to have proper model versioning and rollback mechanisms. If something goes wrong, you need to be able to revert to a previous working version.”</li>
+<li>“A model registry like MLflow can help track different versions. Automated rollback procedures and blue-green deployments can minimize disruption.”</li>
+</ul></li>
+<li><p><strong>Security Vulnerabilities (Explain, then Mitigate):</strong></p>
+<ul>
+<li>“Finally, we need to consider security vulnerabilities like adversarial attacks.”</li>
+<li>“Input validation, adversarial training, access control, and regular security audits are all important measures.”</li>
+</ul></li>
+<li><p><strong>Mathematical Considerations (How to Handle):</strong></p>
+<ul>
+<li>If asked about specific formulas or algorithms:
+<ul>
+<li>“For example, when monitoring data drift, we can use the Population Stability Index (PSI), calculated as: <span class="math display">\[PSI = \sum_{i=1}^{N} (Actual_i - Expected_i) * ln(\frac{Actual_i}{Expected_i})\]</span> where Actual and expected are the propotions of population.”</li>
+<li>“This helps us quantify the shift in feature distributions between training and production data.”</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Concluding Remarks:</strong></p>
+<ul>
+<li>“By carefully addressing these potential pitfalls, we can ensure the successful and reliable deployment of XGBoost models in production environments.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Be Structured:</strong> Present your answer in a clear and organized manner.</li>
+<li><strong>Use Examples:</strong> Illustrate your points with concrete examples to make them more relatable.</li>
+<li><strong>Explain “Why”:</strong> Don’t just list solutions; explain <em>why</em> they are necessary.</li>
+<li><strong>Be Concise:</strong> Avoid rambling. Get to the point quickly and efficiently.</li>
+<li><strong>Check for Understanding:</strong> Pause occasionally to check if the interviewer is following you and to give them a chance to ask questions.</li>
+<li><strong>Tailor to the Role:</strong> Emphasize aspects that are most relevant to the specific role you’re interviewing for.</li>
+<li><strong>Be Confident:</strong> Project confidence in your knowledge and abilities.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

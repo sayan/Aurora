@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>naive_bayes_3</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-4.-discuss-how-you-would-handle-zero-probability-issues-in-naive-bayes-models-particularly-when-encountering-features-not-seen-in-training." class="level2">
+<h2 class="anchored" data-anchor-id="question-4.-discuss-how-you-would-handle-zero-probability-issues-in-naive-bayes-models-particularly-when-encountering-features-not-seen-in-training.">Question: 4. Discuss how you would handle zero probability issues in Naive Bayes models, particularly when encountering features not seen in training.</h2>
+<p><strong>Best Answer</strong></p>
+<p>Naive Bayes classifiers operate under the assumption of conditional independence between features given the class. This simplifies computation but also introduces vulnerabilities, particularly concerning zero probabilities. Let’s delve into the “zero probability problem” and how to address it.</p>
+<p><strong>The Zero Probability Problem</strong></p>
+<p>In Naive Bayes, we calculate the probability of a class <span class="math inline">\(C_k\)</span> given a feature vector <span class="math inline">\(x = (x_1, x_2, ..., x_n)\)</span> as:</p>
+<p><span class="math display">\[P(C_k | x) \propto P(C_k) \prod_{i=1}^{n} P(x_i | C_k)\]</span></p>
+<p>where: - <span class="math inline">\(P(C_k | x)\)</span> is the posterior probability of class <span class="math inline">\(C_k\)</span> given the feature vector <span class="math inline">\(x\)</span>. - <span class="math inline">\(P(C_k)\)</span> is the prior probability of class <span class="math inline">\(C_k\)</span>. - <span class="math inline">\(P(x_i | C_k)\)</span> is the likelihood of feature <span class="math inline">\(x_i\)</span> given class <span class="math inline">\(C_k\)</span>.</p>
+<p>If, during training, a particular feature value <span class="math inline">\(x_i\)</span> never occurs with class <span class="math inline">\(C_k\)</span>, then <span class="math inline">\(P(x_i | C_k) = 0\)</span>. Consequently, the entire product becomes zero, nullifying the influence of all other features and leading to incorrect classification. This is the zero probability problem, also referred to as the “sparse data” problem.</p>
+<p><strong>Smoothing Techniques</strong></p>
+<p>To mitigate the zero probability issue, smoothing techniques are employed. These techniques add a small value to the count of each feature-class occurrence, ensuring that no probability is exactly zero. Several smoothing methods exist; let’s discuss some common ones:</p>
+<ol type="1">
+<li><p><strong>Laplace Smoothing (Add-One Smoothing)</strong></p>
+<p>Laplace smoothing, also known as add-one smoothing, is the simplest and most common smoothing technique. It adds 1 to the count of each feature value for each class. The formula for the smoothed likelihood becomes:</p>
+<p><span class="math display">\[P(x_i | C_k) = \frac{\text{count}(x_i, C_k) + 1}{\text{count}(C_k) + |V_i|}\]</span></p>
+<p>Where:</p>
+<ul>
+<li><span class="math inline">\(\text{count}(x_i, C_k)\)</span> is the number of times feature value <span class="math inline">\(x_i\)</span> appears in class <span class="math inline">\(C_k\)</span>.</li>
+<li><span class="math inline">\(\text{count}(C_k)\)</span> is the total number of instances in class <span class="math inline">\(C_k\)</span>.</li>
+<li><span class="math inline">\(|V_i|\)</span> is the number of possible values for feature <span class="math inline">\(x_i\)</span> (i.e., the size of the vocabulary for feature <em>i</em>).</li>
+</ul>
+<p>Laplace smoothing guarantees that no probability is zero, preventing the nullification effect. It’s easy to implement but can be overly aggressive, especially with limited data.</p></li>
+<li><p><strong>Lidstone Smoothing (Add-k Smoothing)</strong></p>
+<p>Lidstone smoothing is a generalization of Laplace smoothing. Instead of adding 1, it adds a value <span class="math inline">\(k\)</span> (where <span class="math inline">\(0 &lt; k &lt; 1\)</span>) to the count of each feature value. The formula becomes:</p>
+<p><span class="math display">\[P(x_i | C_k) = \frac{\text{count}(x_i, C_k) + k}{\text{count}(C_k) + k|V_i|}\]</span></p>
+<p>The parameter <span class="math inline">\(k\)</span> allows for finer control over the amount of smoothing. When <span class="math inline">\(k = 1\)</span>, it is equivalent to Laplace smoothing. Lower values of <span class="math inline">\(k\)</span> provide less smoothing. The choice of <span class="math inline">\(k\)</span> often involves experimentation or cross-validation to optimize performance.</p></li>
+<li><p><strong>Expected Likelihood Estimation</strong></p>
+<p>This method incorporates prior knowledge or expectations about the distribution of feature values. Instead of adding a constant, it adds an expected count based on a prior distribution. For example, if we have reason to believe that certain feature values are more likely, we can reflect this in the prior.</p>
+<p>For instance, if we have a prior probability <span class="math inline">\(P'(x_i)\)</span> for feature <span class="math inline">\(x_i\)</span>, we can use it to adjust our estimates:</p>
+<p><span class="math display">\[P(x_i | C_k) = \frac{\text{count}(x_i, C_k) + m \cdot P'(x_i)}{\text{count}(C_k) + m}\]</span></p>
+<p>Here, <span class="math inline">\(m\)</span> represents the “equivalent sample size” of the prior, determining how much influence the prior has on the final estimate.</p></li>
+</ol>
+<p><strong>Handling Features Not Seen in Training</strong></p>
+<p>When encountering features (or feature values) not seen during training, the smoothing techniques automatically handle the problem by assigning a non-zero probability. However, it’s essential to consider the implications:</p>
+<ul>
+<li><strong>Rare Features:</strong> Features that are genuinely rare might still have a very low probability after smoothing. This can be appropriate, reflecting their low likelihood of occurrence.</li>
+<li><strong>Out-of-Vocabulary (OOV) Words:</strong> In text classification, OOV words are words not present in the training vocabulary. Smoothing assigns them a small probability, but more advanced techniques, such as subword tokenization (e.g., Byte-Pair Encoding) or using pre-trained word embeddings, can provide better representations for OOV words.</li>
+<li><strong>Feature Engineering:</strong> Careful feature engineering can reduce the likelihood of encountering unseen features. For example, grouping similar feature values or discretizing continuous features can help.</li>
+</ul>
+<p><strong>Implementation Considerations</strong></p>
+<ul>
+<li><p><strong>Log Probabilities:</strong> In practice, to avoid underflow issues when multiplying many small probabilities, it’s common to work with log probabilities:</p>
+<p><span class="math display">\[\log P(C_k | x) = \log P(C_k) + \sum_{i=1}^{n} \log P(x_i | C_k)\]</span></p>
+<p>This involves taking the logarithm of the smoothed probabilities before summing them.</p></li>
+<li><p><strong>Data Types:</strong> Ensure that the data types used for storing counts and probabilities are appropriate to prevent overflow or precision issues.</p></li>
+</ul>
+<p><strong>Advanced Techniques</strong></p>
+<p>While Laplace and Lidstone smoothing are widely used, more advanced techniques exist for handling sparse data:</p>
+<ul>
+<li><strong>Good-Turing Smoothing:</strong> This method estimates the probability of unseen events based on the frequency of observed events.</li>
+<li><strong>Kneser-Ney Smoothing:</strong> A sophisticated smoothing technique particularly effective in language modeling.</li>
+</ul>
+<p><strong>Why Smoothing is Important</strong></p>
+<p>Smoothing is crucial for the robustness and accuracy of Naive Bayes classifiers. Without it, the model becomes overly sensitive to unseen feature combinations, leading to poor generalization performance. It addresses the fundamental problem of sparse data, ensuring that all features contribute to the classification decision.</p>
+<p><strong>How to Choose a Smoothing Technique</strong></p>
+<p>The choice of smoothing technique depends on the dataset and the specific application. Laplace smoothing is a good starting point due to its simplicity. Lidstone smoothing provides more flexibility. Cross-validation can be used to determine the optimal value of the smoothing parameter (<span class="math inline">\(k\)</span> in Lidstone smoothing). For more complex scenarios, especially in language modeling, Good-Turing or Kneser-Ney smoothing might be more appropriate.</p>
+<p><strong>Real-World Example</strong></p>
+<p>Consider a spam filter built using Naive Bayes. Suppose the word ” Viagra” never appeared in the training set for legitimate emails (ham). Without smoothing, encountering “Viagra” in a new email would result in <span class="math inline">\(P(\text{"Viagra"} | \text{ham}) = 0\)</span>, incorrectly classifying the email as spam regardless of other words. Smoothing ensures that this probability is non-zero, allowing other features to influence the classification.</p>
+<p><strong>In summary,</strong> addressing zero probability issues in Naive Bayes models through smoothing is essential for creating robust and accurate classifiers, especially when dealing with sparse data or unseen feature combinations. The choice of smoothing technique and its parameters should be carefully considered and validated to achieve optimal performance.</p>
+<hr>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a step-by-step guide on how to articulate this in an interview:</p>
+<ol type="1">
+<li><strong>Start with the Problem:</strong>
+<ul>
+<li>“The Naive Bayes classifier relies on multiplying probabilities, and if any feature has zero probability given a class, the entire product becomes zero. This is the ‘zero probability problem’, and it can severely impact accuracy.”</li>
+</ul></li>
+<li><strong>Explain the Impact:</strong>
+<ul>
+<li>“This problem arises when we encounter a feature value during prediction that wasn’t seen for a particular class during training. Without addressing it, the model will incorrectly classify instances, regardless of other features.”</li>
+</ul></li>
+<li><strong>Introduce Smoothing:</strong>
+<ul>
+<li>“To address this, we use smoothing techniques, which add a small value to the counts of each feature-class occurrence, preventing zero probabilities.”</li>
+</ul></li>
+<li><strong>Explain Laplace Smoothing:</strong>
+<ul>
+<li>“The simplest technique is Laplace smoothing, or add-one smoothing. We add 1 to the numerator and the size of the vocabulary to the denominator when calculating the likelihood: <span class="math inline">\(P(x_i | C_k) = \frac{\text{count}(x_i, C_k) + 1}{\text{count}(C_k) + |V_i|}\)</span> . This guarantees no zero probabilities.”</li>
+</ul></li>
+<li><strong>Explain Lidstone Smoothing:</strong>
+<ul>
+<li>“A more general approach is Lidstone smoothing, or add-k smoothing, where we add a value <em>k</em> between 0 and 1 instead of 1. This gives us more control over the amount of smoothing: <span class="math inline">\(P(x_i | C_k) = \frac{\text{count}(x_i, C_k) + k}{\text{count}(C_k) + k|V_i|}\)</span>”</li>
+</ul></li>
+<li><strong>Explain Expected Likelihood Estimation (Optional):</strong>
+<ul>
+<li>“Another approach is Expected Likelihood Estimation, where we incorporate prior knowledge. Instead of adding a constant, we add an expected count based on a prior distribution.”</li>
+</ul></li>
+<li><strong>Address Features Not Seen in Training:</strong>
+<ul>
+<li>“When we encounter entirely unseen features, smoothing techniques automatically handle them by assigning a small probability. It’s important to recognize these cases and potentially use more sophisticated methods to handle OOV scenarios depending on the application.”</li>
+</ul></li>
+<li><strong>Discuss Implementation Considerations:</strong>
+<ul>
+<li>“In practice, we often work with log probabilities to avoid underflow issues when multiplying many small probabilities. Also, ensuring appropriate data types for counts and probabilities is crucial.”</li>
+</ul></li>
+<li><strong>Mention Advanced Techniques (Optional):</strong>
+<ul>
+<li>“There are also more advanced techniques like Good-Turing or Kneser-Ney smoothing, which are often used in language modeling.”</li>
+</ul></li>
+<li><strong>Emphasize the Importance:</strong>
+<ul>
+<li>“Smoothing is crucial for the robustness and generalization ability of Naive Bayes. Without it, the model is too sensitive to unseen data and performs poorly in real-world scenarios.”</li>
+</ul></li>
+<li><strong>Provide a Real-World Example:</strong>
+<ul>
+<li>“For example, in a spam filter, if the word ‘Viagra’ never appeared in legitimate emails during training, without smoothing, any email containing ‘Viagra’ would be immediately classified as spam. Smoothing prevents this.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace:</strong> Speak clearly and at a moderate pace, especially when explaining formulas.</li>
+<li><strong>Visual Aids:</strong> If possible, use a whiteboard or virtual whiteboard to write down the formulas. This helps the interviewer follow along.</li>
+<li><strong>Check for Understanding:</strong> Pause after explaining a formula and ask if the interviewer has any questions.</li>
+<li><strong>Keep it Concise:</strong> Be detailed but avoid unnecessary jargon. Focus on the core concepts.</li>
+<li><strong>Tailor to Audience:</strong> Gauge the interviewer’s level of expertise and adjust your explanation accordingly. If they seem unfamiliar with a concept, provide a more basic explanation.</li>
+<li><strong>Be Confident:</strong> Demonstrate confidence in your knowledge and ability to explain complex concepts clearly.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

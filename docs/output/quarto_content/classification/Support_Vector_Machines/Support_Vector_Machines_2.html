@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>support_vector_machines_2</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-3.-describe-the-kernel-trick-in-svms.-can-you-provide-examples-of-different-kernels-and-explain-under-what-circumstances-each-might-be-used" class="level2">
+<h2 class="anchored" data-anchor-id="question-3.-describe-the-kernel-trick-in-svms.-can-you-provide-examples-of-different-kernels-and-explain-under-what-circumstances-each-might-be-used">Question: 3. Describe the kernel trick in SVMs. Can you provide examples of different kernels and explain under what circumstances each might be used?</h2>
+<p><strong>Best Answer</strong></p>
+<p>The kernel trick is a powerful technique used in Support Vector Machines (SVMs) and other kernelized models to implicitly map data into a higher-dimensional feature space, enabling the model to perform non-linear classification or regression without explicitly computing the transformation. This allows us to work with linear classifiers in the higher-dimensional space, while only dealing with dot products in the original space.</p>
+<p>The core idea is to replace the dot product, <span class="math inline">\(\langle x_i, x_j \rangle\)</span>, in the SVM formulation with a kernel function, <span class="math inline">\(K(x_i, x_j)\)</span>. The kernel function calculates the dot product of the data points in the higher-dimensional space without ever explicitly calculating the coordinates of the data points in that space. Formally, a kernel function is a function <span class="math inline">\(K\)</span> that satisfies Mercer’s theorem:</p>
+<p><span class="math display">\[ K(x_i, x_j) = \langle \phi(x_i), \phi(x_j) \rangle\]</span></p>
+<p>where <span class="math inline">\(\phi\)</span> is a mapping from the input space to a (potentially infinite-dimensional) feature space. This means <span class="math inline">\(K(x_i, x_j)\)</span> computes the dot product in the feature space induced by <span class="math inline">\(\phi\)</span>, but without needing to know <span class="math inline">\(\phi\)</span> explicitly.</p>
+<p><strong>Why is it Important?</strong></p>
+<ol type="1">
+<li><strong>Implicit Feature Mapping:</strong> The kernel trick implicitly maps the data to a higher-dimensional space where linear separation is possible, even if it’s not in the original space.</li>
+<li><strong>Computational Efficiency:</strong> It avoids the explicit computation of the high-dimensional feature vectors <span class="math inline">\(\phi(x)\)</span>, which can be computationally expensive or even impossible if the feature space is infinite-dimensional. The kernel only requires computing <span class="math inline">\(K(x_i, x_j)\)</span>, which is often much cheaper.</li>
+<li><strong>Flexibility:</strong> It allows the SVM to model complex, non-linear relationships by choosing appropriate kernel functions without changing the underlying linear classification algorithm.</li>
+</ol>
+<p><strong>Common Kernel Functions and Their Use Cases:</strong></p>
+<ol type="1">
+<li><strong>Linear Kernel:</strong>
+<ul>
+<li>Formula: <span class="math inline">\(K(x_i, x_j) = x_i^T x_j\)</span></li>
+<li>Description: This is simply the dot product of the two input vectors. It represents no transformation into a higher-dimensional space.</li>
+<li>Use Cases: Suitable when the data is already linearly separable or when dealing with high-dimensional, sparse data (e.g., text classification). It’s computationally efficient since it involves just the dot product.</li>
+<li>Computational Implications: Fastest to compute. Scales well to large datasets. No hyperparameters to tune.</li>
+</ul></li>
+<li><strong>Polynomial Kernel:</strong>
+<ul>
+<li>Formula: <span class="math inline">\(K(x_i, x_j) = (\gamma x_i^T x_j + r)^d\)</span> where <span class="math inline">\(\gamma\)</span> is a scaling factor, <span class="math inline">\(r\)</span> is a constant offset, and <span class="math inline">\(d\)</span> is the degree of the polynomial.</li>
+<li>Description: This kernel represents all polynomials up to degree <span class="math inline">\(d\)</span>. It allows for non-linear separation.</li>
+<li>Use Cases: Useful when you suspect that the relationships between the features are polynomial. The degree <span class="math inline">\(d\)</span> controls the complexity of the model.</li>
+<li>Computational Implications: More expensive than the linear kernel, especially for high degrees. Requires tuning of hyperparameters <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(r\)</span>, and <span class="math inline">\(d\)</span>.</li>
+</ul></li>
+<li><strong>Radial Basis Function (RBF) or Gaussian Kernel:</strong>
+<ul>
+<li>Formula: <span class="math inline">\(K(x_i, x_j) = \exp(-\gamma ||x_i - x_j||^2)\)</span> where <span class="math inline">\(\gamma &gt; 0\)</span> is a parameter that controls the width of the Gaussian kernel.</li>
+<li>Description: Maps data into an infinite-dimensional space. It creates a Gaussian “bump” centered at each data point.</li>
+<li>Use Cases: This is a very popular kernel that can handle non-linear relationships effectively. It’s generally a good first choice when you’re unsure about the data’s underlying structure. The <span class="math inline">\(\gamma\)</span> parameter controls how tightly the kernel fits to the data; smaller <span class="math inline">\(\gamma\)</span> means a wider Gaussian and a smoother decision boundary.</li>
+<li>Computational Implications: Can be computationally intensive for large datasets. Sensitive to the choice of <span class="math inline">\(\gamma\)</span>. Requires careful hyperparameter tuning using techniques like cross-validation.</li>
+</ul></li>
+<li><strong>Sigmoid Kernel:</strong>
+<ul>
+<li>Formula: <span class="math inline">\(K(x_i, x_j) = \tanh(\gamma x_i^T x_j + r)\)</span> where <span class="math inline">\(\gamma\)</span> is a scaling factor and <span class="math inline">\(r\)</span> is a constant offset.</li>
+<li>Description: Behaves like a neural network activation function.</li>
+<li>Use Cases: Sometimes used as a proxy for a two-layer neural network. However, it doesn’t always satisfy Mercer’s condition for all values of <span class="math inline">\(\gamma\)</span> and <span class="math inline">\(r\)</span>, so it might not always be a valid kernel. Its performance can be unpredictable.</li>
+<li>Computational Implications: Similar computational cost to the polynomial kernel. Requires tuning of <span class="math inline">\(\gamma\)</span> and <span class="math inline">\(r\)</span>.</li>
+</ul></li>
+</ol>
+<p><strong>Choosing the Right Kernel:</strong></p>
+<p>The choice of kernel depends heavily on the nature of the data and the problem at hand.</p>
+<ul>
+<li><p><strong>Start with RBF:</strong> If you have no prior knowledge about the data, the RBF kernel is often a good starting point due to its flexibility. However, it’s important to tune the hyperparameter <span class="math inline">\(\gamma\)</span> appropriately.</p></li>
+<li><p><strong>Linear for Large, Sparse Data:</strong> If the data is high-dimensional and sparse (e.g., text data), the linear kernel often performs well and is computationally efficient.</p></li>
+<li><p><strong>Consider Polynomial for Specific Relationships:</strong> If you suspect polynomial relationships between the features, the polynomial kernel might be a good choice.</p></li>
+<li><p><strong>Experiment and Use Cross-Validation:</strong> In practice, it’s crucial to experiment with different kernels and hyperparameter settings and use cross-validation to evaluate their performance.</p></li>
+</ul>
+<p><strong>Real-world considerations:</strong></p>
+<ul>
+<li><strong>Computational Cost:</strong> Kernel computation can become a bottleneck for large datasets, especially with RBF and polynomial kernels. Approximation techniques (e.g., Nyström method, Random Kitchen Sinks) can be used to speed up the computation.</li>
+<li><strong>Hyperparameter Tuning:</strong> The performance of kernel methods is highly sensitive to the choice of hyperparameters (e.g., <span class="math inline">\(\gamma\)</span> for RBF, degree for polynomial). Careful tuning using techniques like grid search or Bayesian optimization is essential.</li>
+<li><strong>Kernel selection:</strong> There are many other kernels beyond the ones listed here (e.g., string kernels, graph kernels). The choice of kernel should be guided by domain knowledge and the specific characteristics of the data.</li>
+<li><strong>Mercer’s Theorem:</strong> Ensuring that a chosen kernel function satisfies Mercer’s condition guarantees that the kernel corresponds to a valid dot product in some feature space, and thus ensures the convergence and stability of the SVM.</li>
+</ul>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a breakdown of how to present this information during an interview:</p>
+<ol type="1">
+<li><p><strong>Start with the Core Concept:</strong></p>
+<ul>
+<li>“The kernel trick is a technique used in SVMs to implicitly map data into a higher-dimensional space without explicitly calculating the transformation. This allows us to use linear classifiers in that higher-dimensional space, even when the original data isn’t linearly separable.”</li>
+<li>“The key idea is to replace the dot product in the SVM formulation with a kernel function, which computes the dot product in the higher-dimensional space.”</li>
+</ul></li>
+<li><p><strong>Explain the Importance:</strong></p>
+<ul>
+<li>“The advantage of the kernel trick is that it avoids the expensive computation of the feature mapping. Instead, we can use kernel functions that directly compute the dot product in the higher-dimensional space.”</li>
+<li>“This offers flexibility. We can model complex non-linear relationships without changing the underlying linear SVM algorithm.”</li>
+</ul></li>
+<li><p><strong>Introduce Mercer’s Theorem (If Appropriate for the Audience):</strong></p>
+<ul>
+<li>“Formally, a kernel function is a function that satisfies Mercer’s theorem. This ensures that the kernel corresponds to a valid dot product in some feature space.”</li>
+<li><em>Pause and gauge the interviewer’s reaction. If they seem comfortable with mathematical concepts, you can briefly mention the equation:</em>
+<ul>
+<li>“Mercer’s theorem basically states that the kernel function can be expressed as $ K(x_i, x_j) = (x_i), (x_j) $ where <span class="math inline">\(\phi\)</span> is a mapping to the higher dimensional space”</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Describe Common Kernel Functions:</strong></p>
+<ul>
+<li>“Some common kernel functions include the linear, polynomial, RBF (Gaussian), and sigmoid kernels. Each has its own characteristics and is suited for different types of data.”</li>
+</ul></li>
+<li><p><strong>Elaborate on Each Kernel (Provide Examples):</strong></p>
+<ul>
+<li><strong>Linear Kernel:</strong> “The linear kernel is simply the dot product. It’s suitable when the data is already linearly separable or when dealing with high-dimensional, sparse data, like in text classification. It’s computationally very efficient.”</li>
+<li><strong>Polynomial Kernel:</strong> “The polynomial kernel introduces non-linearity through polynomial combinations of features. The degree of the polynomial controls the complexity. This is useful if you suspect polynomial relationships in your data, but it is more computationally expensive.”</li>
+<li><strong>RBF Kernel:</strong> “The RBF or Gaussian kernel is a very popular choice and a good starting point if you’re unsure about the data. It maps data into an infinite-dimensional space and uses a <span class="math inline">\(\gamma\)</span> parameter to control the ‘width’ of the Gaussian. A smaller gamma yields a wider Gaussian, leading to smoother decision boundaries.”</li>
+<li><strong>Sigmoid Kernel:</strong> “The sigmoid kernel resembles a neural network activation function. It’s sometimes used as a proxy for a two-layer neural network, but it doesn’t always satisfy Mercer’s condition, so it can be less reliable.”</li>
+</ul></li>
+<li><p><strong>Discuss Kernel Selection:</strong></p>
+<ul>
+<li>“The choice of kernel depends on the data. The RBF kernel is a good starting point. Linear kernels work well for large sparse data sets. Always use cross validation to determine the appropriate hyperparameters.”</li>
+</ul></li>
+<li><p><strong>Mention Real-World Considerations:</strong></p>
+<ul>
+<li>“In practice, kernel computation can be a bottleneck for large datasets. Also, performance is highly sensitive to the hyperparameters, like <span class="math inline">\(\gamma\)</span> in the RBF kernel, so proper tuning is important.”</li>
+<li>“There are approximation techniques for speeding up kernel computation like the Nyström method. Kernel selection is also a crucial step and should be guided by domain knowledge.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush through the explanation. Allow the interviewer time to process the information.</li>
+<li><strong>Use Visual Aids (If Possible):</strong> If you’re in a virtual interview, consider sketching a simple diagram to illustrate the feature mapping. If it’s in-person, ask if you can use a whiteboard.</li>
+<li><strong>Gauge the Interviewer’s Understanding:</strong> Pay attention to the interviewer’s body language and ask clarifying questions like, “Does that make sense?” or “Would you like me to elaborate on any of these kernels?”</li>
+<li><strong>Focus on the Big Picture:</strong> Don’t get bogged down in excessive mathematical detail unless the interviewer specifically requests it. Emphasize the intuition and practical implications.</li>
+<li><strong>Highlight Your Experience:</strong> If you have experience using specific kernels in real-world projects, mention it to demonstrate practical knowledge. For example, “In my previous role, I used an RBF kernel for image classification and saw a significant improvement in accuracy after tuning the gamma parameter.”</li>
+<li><strong>Stay Confident:</strong> Even if you’re not 100% sure about a detail, present your knowledge with confidence. If you don’t know something, be honest and say that you’d need to look into it further.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

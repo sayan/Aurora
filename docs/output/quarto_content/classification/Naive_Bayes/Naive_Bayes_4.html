@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>naive_bayes_4</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-5.-what-are-the-implications-of-the-conditional-independence-assumption-in-naive-bayes-and-how-does-its-violation-affect-the-models-performance" class="level2">
+<h2 class="anchored" data-anchor-id="question-5.-what-are-the-implications-of-the-conditional-independence-assumption-in-naive-bayes-and-how-does-its-violation-affect-the-models-performance">Question: 5. What are the implications of the conditional independence assumption in Naive Bayes, and how does its violation affect the model’s performance?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Naive Bayes is a probabilistic classifier based on applying Bayes’ theorem with strong (naive) independence assumptions between the features. The core idea is to calculate the probability of a given instance belonging to a certain class, given its features.</p>
+<ul>
+<li><p><strong>Bayes’ Theorem:</strong></p>
+<p>The fundamental equation upon which Naive Bayes rests is Bayes’ Theorem:</p>
+<p><span class="math display">\[
+P(y|x_1, ..., x_n) = \frac{P(y) P(x_1, ..., x_n | y)}{P(x_1, ..., x_n)}
+\]</span></p>
+<p>Where:</p>
+<ul>
+<li><span class="math inline">\(P(y|x_1, ..., x_n)\)</span> is the posterior probability of class <span class="math inline">\(y\)</span> given features <span class="math inline">\(x_1, ..., x_n\)</span>.</li>
+<li><span class="math inline">\(P(y)\)</span> is the prior probability of class <span class="math inline">\(y\)</span>.</li>
+<li><span class="math inline">\(P(x_1, ..., x_n | y)\)</span> is the likelihood of features <span class="math inline">\(x_1, ..., x_n\)</span> given class <span class="math inline">\(y\)</span>.</li>
+<li><span class="math inline">\(P(x_1, ..., x_n)\)</span> is the prior probability of the features (evidence).</li>
+</ul></li>
+<li><p><strong>Conditional Independence Assumption:</strong></p>
+<p>The “naive” part of Naive Bayes comes from the assumption that the features are conditionally independent given the class. Mathematically, this means:</p>
+<p><span class="math display">\[
+P(x_i | y, x_1, ..., x_{i-1}, x_{i+1}, ..., x_n) = P(x_i | y)
+\]</span></p>
+<p>Or, equivalently:</p>
+<p><span class="math display">\[
+P(x_1, ..., x_n | y) = \prod_{i=1}^{n} P(x_i | y)
+\]</span></p>
+<p>This assumption simplifies the calculation of the likelihood term <span class="math inline">\(P(x_1, ..., x_n | y)\)</span> significantly. Instead of having to model the joint distribution of all features given the class (which can be very complex and require a lot of data), we only need to model the individual conditional distributions of each feature given the class.</p></li>
+<li><p><strong>Simplified Calculation:</strong></p>
+<p>With the conditional independence assumption, Bayes’ Theorem simplifies to:</p>
+<p><span class="math display">\[
+P(y|x_1, ..., x_n) \propto P(y) \prod_{i=1}^{n} P(x_i | y)
+\]</span></p>
+<p>The classifier then predicts the class <span class="math inline">\(y\)</span> with the highest posterior probability:</p>
+<p><span class="math display">\[
+\hat{y} = \arg\max_y P(y) \prod_{i=1}^{n} P(x_i | y)
+\]</span></p></li>
+<li><p><strong>Implications of the Assumption:</strong></p>
+<ol type="1">
+<li><p><strong>Computational Efficiency:</strong> The conditional independence assumption drastically reduces the computational complexity. Estimating <span class="math inline">\(P(x_i | y)\)</span> for each feature independently is much faster and requires less data than estimating the joint distribution <span class="math inline">\(P(x_1, ..., x_n | y)\)</span>.</p></li>
+<li><p><strong>Data Requirements:</strong> Due to the simplified calculations, Naive Bayes can perform reasonably well even with limited training data. It mitigates the curse of dimensionality to some extent.</p></li>
+<li><p><strong>Model Simplicity:</strong> Naive Bayes is a simple and interpretable model. The impact of each feature on the classification decision is clear.</p></li>
+</ol></li>
+<li><p><strong>Violation of the Assumption and its Effects:</strong></p>
+<p>In reality, the conditional independence assumption is almost always violated to some degree. Features are often correlated, meaning the value of one feature provides information about the value of another, even given the class label.</p>
+<ol type="1">
+<li><p><strong>Inflated Probabilities:</strong> When features are correlated, the product of individual probabilities <span class="math inline">\(\prod_{i=1}^{n} P(x_i | y)\)</span> can become skewed. The model may overemphasize the evidence from correlated features, leading to inaccurate probability estimates.</p></li>
+<li><p><strong>Suboptimal Decision Boundary:</strong> The decision boundary learned by Naive Bayes may be suboptimal when features are dependent. The model might make incorrect classifications due to the inaccurate probability estimates. The shape of the decision boundary is implicitly linear even when the true boundary is highly non-linear.</p></li>
+<li><p><strong>Performance Degradation:</strong> The extent of performance degradation depends on the degree of violation of the assumption.</p>
+<ul>
+<li><strong>Strong Dependencies:</strong> If features are highly correlated, the performance of Naive Bayes can suffer significantly. For example, in text classification, if the presence of word “A” strongly implies the presence of word “B”, the model might double-count this information, leading to biased probability estimates.</li>
+<li><strong>Weak Dependencies:</strong> If feature dependencies are weak or moderate, Naive Bayes can still perform surprisingly well. Its simplicity and robustness to overfitting can sometimes outweigh the negative effects of the violated assumption. In some cases, it even outperforms more sophisticated models.</li>
+<li><strong>Zero-Frequency Problem (handled by smoothing):</strong> Occurs when a feature value doesn’t appear in the training data for a particular class. This leads to a zero probability, which can zero out the entire product. Smoothing techniques (e.g., Laplace smoothing or Lidstone smoothing) add a small constant to the counts to avoid zero probabilities: <span class="math display">\[P(x_i | y) = \frac{count(x_i, y) + \alpha}{count(y) + \alpha * N_i}\]</span> where <span class="math inline">\(N_i\)</span> is the number of possible values for feature <span class="math inline">\(x_i\)</span>, and <span class="math inline">\(\alpha\)</span> is the smoothing parameter.</li>
+</ul></li>
+</ol></li>
+<li><p><strong>When Naive Bayes Can Still Work Well:</strong></p>
+<p>Despite its naive assumption, Naive Bayes can be effective in certain scenarios:</p>
+<ol type="1">
+<li><p><strong>Categorical Features:</strong> Naive Bayes often works well with categorical features. The conditional independence assumption is less problematic when dealing with discrete data.</p></li>
+<li><p><strong>High-Dimensional Data:</strong> In high-dimensional spaces, the simplicity of Naive Bayes can prevent overfitting, making it competitive with more complex models.</p></li>
+<li><p><strong>Real-World Examples:</strong></p>
+<ul>
+<li><strong>Spam Filtering:</strong> Naive Bayes is a classic example. Even though words in an email are not strictly independent, Naive Bayes performs well in classifying spam vs.&nbsp;non-spam emails.</li>
+<li><strong>Text Classification:</strong> Document categorization, sentiment analysis.</li>
+<li><strong>Medical Diagnosis:</strong> Quick preliminary diagnoses based on symptoms.</li>
+</ul></li>
+</ol></li>
+<li><p><strong>Mitigation Strategies:</strong></p>
+<ol type="1">
+<li><p><strong>Feature Selection:</strong> Select features that are relatively independent. Techniques like Information Gain or Chi-squared test can be used to identify and remove highly correlated features.</p></li>
+<li><p><strong>Data Transformation:</strong> Transform features to reduce dependencies. For example, Principal Component Analysis (PCA) can be used to create uncorrelated features, but this sacrifices interpretability.</p></li>
+<li><p><strong>Bayesian Networks:</strong> Consider using Bayesian Networks, which allow modeling dependencies between features explicitly. However, this comes at the cost of increased complexity.</p></li>
+<li><p><strong>Tree Augmented Naive Bayes (TAN):</strong> An extension of Naive Bayes that allows each feature to depend on the class and at most one other feature. This provides a balance between model complexity and accuracy.</p></li>
+</ol></li>
+</ul>
+<p>In summary, the conditional independence assumption in Naive Bayes simplifies computation and reduces data requirements, but its violation can lead to performance degradation, particularly when features are highly correlated. However, the model can still be surprisingly effective in many real-world applications, especially when combined with feature selection or data transformation techniques.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a suggested way to present this answer in an interview:</p>
+<ol type="1">
+<li><strong>Start with the basics:</strong>
+<ul>
+<li>“Naive Bayes is a probabilistic classifier based on Bayes’ Theorem.” Briefly state Bayes’ Theorem. Don’t write it out unless prompted, but have it ready.</li>
+<li>“The ‘naive’ part refers to the assumption that features are conditionally independent given the class.”</li>
+</ul></li>
+<li><strong>Explain the assumption’s impact:</strong>
+<ul>
+<li>“This assumption dramatically simplifies the calculations. Instead of modeling complex joint distributions, we only need to estimate individual conditional probabilities.”</li>
+<li>“This makes the model computationally efficient and requires less data.”</li>
+</ul></li>
+<li><strong>Address the real-world implications:</strong>
+<ul>
+<li>“In reality, this assumption is almost always violated to some extent. Features are often correlated.”</li>
+<li>“When features are correlated, the model can overemphasize the evidence, leading to inaccurate probability estimates and a suboptimal decision boundary.”</li>
+</ul></li>
+<li><strong>Discuss the performance impact:</strong>
+<ul>
+<li>“The degree of performance degradation depends on how strongly the assumption is violated.”</li>
+<li>“If dependencies are strong, performance can suffer. But if dependencies are weak, Naive Bayes can still be surprisingly effective due to its simplicity and robustness to overfitting.”</li>
+</ul></li>
+<li><strong>Provide real-world examples:</strong>
+<ul>
+<li>“Despite its naive assumption, Naive Bayes is used in spam filtering, text classification, and even preliminary medical diagnosis.”</li>
+<li>“For example, in spam filtering, even though words in an email are not entirely independent, Naive Bayes performs well in classifying spam.”</li>
+</ul></li>
+<li><strong>Mention mitigation strategies (if time allows or if asked):</strong>
+<ul>
+<li>“There are ways to mitigate the impact of violating the independence assumption, such as feature selection to remove correlated features or data transformations like PCA.”</li>
+<li>“More complex models like Bayesian Networks can also model dependencies explicitly, but at the cost of increased complexity.”</li>
+<li>“Tree Augmented Naive Bayes (TAN) offers a compromise by allowing each feature to depend on at most one other feature.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace yourself:</strong> Don’t rush through the explanation. Allow the interviewer to absorb the information.</li>
+<li><strong>Use analogies:</strong> Real-world examples help to illustrate the concept.</li>
+<li><strong>Be honest about limitations:</strong> Acknowledge that the assumption is rarely true in practice. This shows a balanced understanding.</li>
+<li><strong>Engage the interviewer:</strong> Pause occasionally to ask if they have any questions.</li>
+<li><strong>Don’t dive too deep into math unless asked:</strong> Have the formulas ready, but don’t present them unless the interviewer is interested. Focus on the conceptual understanding first. If they want to explore the math, be prepared to explain the equations step-by-step.</li>
+<li><strong>Tailor to the audience:</strong> If the interviewer is less technical, focus more on the high-level concepts and real-world implications. If they are more technical, be prepared to discuss the mathematical details.</li>
+<li><strong>End with a summary:</strong> Reiterate the key points: the assumption, its impact, and when Naive Bayes can still be useful.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
