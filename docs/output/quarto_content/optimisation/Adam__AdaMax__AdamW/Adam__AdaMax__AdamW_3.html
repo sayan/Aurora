@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>adam__adamax__adamw_3</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-4.-optimizers-like-adam-and-its-variants-are-sensitive-to-hyperparameters-such-as-the-learning-rate-and-the-beta-coefficients.-how-would-you-approach-tuning-these-parameters-and-what-pitfalls-might-arise-during-the-process-consider-potential-issues-such-as-overfitting-convergence-instability-and-the-effect-of-these-hyperparameters-on-different-data-regimes." class="level2">
+<h2 class="anchored" data-anchor-id="question-4.-optimizers-like-adam-and-its-variants-are-sensitive-to-hyperparameters-such-as-the-learning-rate-and-the-beta-coefficients.-how-would-you-approach-tuning-these-parameters-and-what-pitfalls-might-arise-during-the-process-consider-potential-issues-such-as-overfitting-convergence-instability-and-the-effect-of-these-hyperparameters-on-different-data-regimes.">Question: 4. Optimizers like Adam and its variants are sensitive to hyperparameters such as the learning rate and the beta coefficients. How would you approach tuning these parameters, and what pitfalls might arise during the process? Consider potential issues such as overfitting, convergence instability, and the effect of these hyperparameters on different data regimes.</h2>
+<p><strong>Best Answer</strong></p>
+<p>Adam (Adaptive Moment Estimation) and its variants (e.g., AdamW, AdaMax) are popular optimization algorithms widely used in training deep neural networks. Their adaptive nature often leads to faster convergence and better performance than traditional methods like stochastic gradient descent (SGD). However, their effectiveness hinges on carefully tuning hyperparameters, especially the learning rate (<span class="math inline">\(\alpha\)</span>) and the exponential decay rates for the moment estimates (<span class="math inline">\(\beta_1\)</span> and <span class="math inline">\(\beta_2\)</span>). Let’s dive deep into the tuning strategies and potential pitfalls.</p>
+<p><strong>1. Understanding the Parameters</strong></p>
+<p>Before tuning, it’s crucial to understand the role of each hyperparameter:</p>
+<ul>
+<li><p><strong>Learning Rate (<span class="math inline">\(\alpha\)</span>):</strong> Determines the step size during optimization. Too high, and the algorithm might overshoot the minimum; too low, and it might converge very slowly or get stuck in local minima.</p></li>
+<li><p><strong><span class="math inline">\(\beta_1\)</span> (Exponential decay rate for the first moment estimates):</strong> Controls the decay rate of the moving average of the gradient. It is responsible for tracking the mean of gradients. A typical value is 0.9.</p></li>
+<li><p><strong><span class="math inline">\(\beta_2\)</span> (Exponential decay rate for the second moment estimates):</strong> Controls the decay rate of the moving average of the squared gradient. It is responsible for tracking the variance or uncentered variance of gradients. A typical value is 0.999. It helps in adapting the learning rate for each parameter based on its historical gradients.</p></li>
+<li><p><strong><span class="math inline">\(\epsilon\)</span> (A small constant for numerical stability):</strong> A very small number (e.g., <span class="math inline">\(10^{-8}\)</span>) to prevent division by zero. It is usually kept at the default value.</p></li>
+</ul>
+<p><strong>2. Tuning Strategies</strong></p>
+<p>Several strategies can be employed to tune these hyperparameters effectively:</p>
+<ul>
+<li><p><strong>Grid Search:</strong> A systematic approach where a predefined set of values for each hyperparameter is tested exhaustively. While simple, it becomes computationally expensive as the number of hyperparameters increases.</p>
+<ul>
+<li>Define a grid of values for <span class="math inline">\(\alpha\)</span>, <span class="math inline">\(\beta_1\)</span>, and <span class="math inline">\(\beta_2\)</span>. For instance:
+<ul>
+<li><span class="math inline">\(\alpha \in \{0.1, 0.01, 0.001, 0.0001\}\)</span></li>
+<li><span class="math inline">\(\beta_1 \in \{0.9, 0.95, 0.99\}\)</span></li>
+<li><span class="math inline">\(\beta_2 \in \{0.999, 0.9995, 0.9999\}\)</span></li>
+</ul></li>
+<li>Train the model for each combination of hyperparameter values.</li>
+<li>Evaluate the performance (e.g., validation loss) and select the best combination.</li>
+</ul></li>
+<li><p><strong>Random Search:</strong> Instead of a predefined grid, hyperparameters are sampled randomly from a distribution. This is often more efficient than grid search, especially when some hyperparameters are more important than others.</p>
+<ul>
+<li>Define a distribution for each hyperparameter. For example:
+<ul>
+<li><span class="math inline">\(\alpha \sim \text{LogUniform}(-5, -1)\)</span> (i.e., <span class="math inline">\(10^x\)</span> where <span class="math inline">\(x\)</span> is uniformly sampled from -5 to -1)</li>
+<li><span class="math inline">\(\beta_1 \sim \text{Uniform}(0.8, 0.99)\)</span></li>
+<li><span class="math inline">\(\beta_2 \sim \text{Uniform}(0.99, 0.9999)\)</span></li>
+</ul></li>
+<li>Sample a set of hyperparameter values from these distributions.</li>
+<li>Train and evaluate the model for each set.</li>
+</ul></li>
+<li><p><strong>Bayesian Optimization:</strong> Uses a probabilistic model to guide the search for optimal hyperparameters. It balances exploration (trying new hyperparameter values) and exploitation (refining promising values). Gaussian Processes (GPs) or Tree-structured Parzen Estimator (TPE) are commonly used.</p>
+<ul>
+<li>Build a surrogate model (e.g., GP) to approximate the objective function (validation loss).</li>
+<li>Use an acquisition function (e.g., Expected Improvement, Upper Confidence Bound) to determine the next set of hyperparameters to evaluate.</li>
+<li>Update the surrogate model with the new evaluation results.</li>
+<li>Repeat until convergence or budget exhaustion.</li>
+</ul></li>
+<li><p><strong>Learning Rate Schedulers:</strong> Adjust the learning rate during training. This can help to fine-tune the model and improve convergence. Common schedulers include:</p>
+<ul>
+<li><strong>Step Decay:</strong> Reduce the learning rate by a factor after a certain number of epochs. If <span class="math inline">\(\alpha_0\)</span> is the initial learning rate, and <span class="math inline">\(d\)</span> is the decay rate, then after <span class="math inline">\(n\)</span> steps, <span class="math inline">\(\alpha_n = \alpha_0 * d^{\lfloor n/r \rfloor}\)</span> where <span class="math inline">\(r\)</span> is decay steps.</li>
+<li><strong>Exponential Decay:</strong> Reduce the learning rate exponentially over time. <span class="math inline">\(\alpha_n = \alpha_0 * e^{-kn}\)</span>, where <span class="math inline">\(k\)</span> is the decay rate.</li>
+<li><strong>Cosine Annealing:</strong> Vary the learning rate according to a cosine function. <span class="math inline">\(\alpha_n = \alpha_{min} + 0.5 * (\alpha_{max} - \alpha_{min}) * (1 + cos(\frac{n}{T} \pi))\)</span>, where <span class="math inline">\(T\)</span> is the total number of steps.</li>
+<li><strong>Cyclical Learning Rates (CLR):</strong> Cyclically vary the learning rate between a minimum and maximum value.</li>
+</ul></li>
+<li><p><strong>Adaptive Techniques (e.g., AdamW):</strong> AdamW introduces weight decay regularization, which is decoupled from the gradient updates. This often leads to better generalization and improved performance compared to standard Adam with L2 regularization. The update rule in AdamW is:</p>
+<ol type="1">
+<li>Calculate gradients <span class="math inline">\(g_t\)</span></li>
+<li>Update the first and second moment estimates: <span class="math display">\[m_t = \beta_1 m_{t-1} + (1 - \beta_1) g_t\]</span> <span class="math display">\[v_t = \beta_2 v_{t-1} + (1 - \beta_2) g_t^2\]</span></li>
+<li>Apply bias correction: <span class="math display">\[\hat{m}_t = \frac{m_t}{1 - \beta_1^t}\]</span> <span class="math display">\[\hat{v}_t = \frac{v_t}{1 - \beta_2^t}\]</span></li>
+<li>Update parameters: <span class="math display">\[\theta_t = \theta_{t-1} - \alpha (\frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \epsilon} + \lambda \theta_{t-1})\]</span> where <span class="math inline">\(\lambda\)</span> is the weight decay coefficient.</li>
+</ol></li>
+</ul>
+<p><strong>3. Potential Pitfalls</strong></p>
+<ul>
+<li><strong>Overfitting:</strong> A high learning rate or inappropriate <span class="math inline">\(\beta\)</span> values can lead to overfitting, especially with complex models or limited data. Monitor the validation loss and use regularization techniques (e.g., weight decay, dropout) to mitigate this.</li>
+<li><strong>Convergence Instability:</strong> Setting <span class="math inline">\(\beta_1\)</span> or <span class="math inline">\(\beta_2\)</span> too close to 1 can result in slow convergence or even divergence. This is because the moment estimates become too “smooth” and fail to adapt quickly to changes in the gradient. Setting them too low can cause the optimizer to be unstable, as it becomes too sensitive to recent gradients, leading to oscillations.</li>
+<li><strong>Poor Generalization:</strong> Even if the model converges, it might not generalize well to unseen data. This can be addressed by using appropriate regularization, data augmentation, or by tuning the hyperparameters to find a better trade-off between training and validation performance.</li>
+<li><strong>Sensitivity to Initialization:</strong> The initial values of the model parameters can significantly affect the convergence and final performance. Experiment with different initialization schemes (e.g., Xavier, He initialization) to find one that works well for the specific task and architecture.</li>
+<li><strong>Vanishing/Exploding Gradients:</strong> If gradients vanish or explode, the optimizer may fail to converge. Gradient clipping can be used to prevent exploding gradients, while techniques like batch normalization can help to mitigate vanishing gradients.</li>
+<li><strong>Local Minima/Saddle Points:</strong> Adam and its variants are not guaranteed to escape local minima or saddle points. Using a larger batch size or adding noise to the gradients can sometimes help.</li>
+<li><strong>Impact of Data Regimes:</strong> The optimal hyperparameter values can vary depending on the characteristics of the data. For example, in non-stationary or noisy data scenarios, using a smaller <span class="math inline">\(\beta_1\)</span> value can help the optimizer to adapt more quickly to changes in the data distribution.</li>
+<li><strong>Beta values close to 1 in later training:</strong> As training progresses, the gradient becomes smaller, which results in <span class="math inline">\(m_t\)</span> also becoming smaller. This could be an issue, as the adaptive learning rate becomes very small.</li>
+</ul>
+<p><strong>4. Practical Considerations</strong></p>
+<ul>
+<li><strong>Start with Default Values:</strong> Begin with the default values for <span class="math inline">\(\beta_1\)</span> (0.9) and <span class="math inline">\(\beta_2\)</span> (0.999) and tune the learning rate first.</li>
+<li><strong>Logarithmic Scale:</strong> When tuning the learning rate, consider using a logarithmic scale (e.g., 0.1, 0.01, 0.001, 0.0001).</li>
+<li><strong>Early Stopping:</strong> Monitor the validation loss and stop training when it stops improving.</li>
+<li><strong>Coarse-to-Fine Tuning:</strong> Start with a coarse grid or random search to identify promising regions in the hyperparameter space, and then refine the search in those regions.</li>
+<li><strong>Use Visualization Tools:</strong> Tools like TensorBoard can help visualize the training process and identify potential issues.</li>
+</ul>
+<p>By carefully considering these strategies and potential pitfalls, you can effectively tune the hyperparameters of Adam and its variants to achieve optimal performance on your specific task.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a step-by-step guide on how to deliver this answer verbally:</p>
+<ol type="1">
+<li><p><strong>Start with a brief overview (30 seconds):</strong></p>
+<ul>
+<li>“Adam and its variants are powerful adaptive optimizers, but their performance heavily depends on hyperparameters like the learning rate and beta coefficients.”</li>
+<li>“I’ll discuss how I would approach tuning these, the potential pitfalls, and considerations for different data scenarios.”</li>
+</ul></li>
+<li><p><strong>Explain the Parameters (1-2 minutes):</strong></p>
+<ul>
+<li>“First, it’s essential to understand what each parameter controls. The learning rate determines the step size, <span class="math inline">\(\beta_1\)</span> controls the decay rate of the moving average of the gradient, and <span class="math inline">\(\beta_2\)</span> does the same for the squared gradient. <span class="math inline">\(\epsilon\)</span> is a very small number to ensure numerical stability.”</li>
+<li>“A high learning rate leads to divergence while a small learning rate leads to slow convergence.”</li>
+<li>“<span class="math inline">\(\beta_1\)</span> is typically set close to 1 (e.g.&nbsp;0.9). If <span class="math inline">\(\beta_1\)</span> becomes too small, this will cause oscillations.”</li>
+<li>“<span class="math inline">\(\beta_2\)</span> is typically set close to 1 (e.g.&nbsp;0.999). If <span class="math inline">\(\beta_2\)</span> becomes too small, this will cause oscillations.”</li>
+</ul></li>
+<li><p><strong>Discuss Tuning Strategies (3-4 minutes):</strong></p>
+<ul>
+<li>“I would start with grid search or random search to get a sense of good starting points. Grid search is exhaustive, but random search is often more efficient, especially with many hyperparameters.”</li>
+<li>“Bayesian optimization is a more sophisticated approach that uses a probabilistic model to guide the search. It balances exploration and exploitation.” Briefly explain the concept of surrogate models and acquisition functions, but avoid getting bogged down in the mathematical details unless prompted.</li>
+<li>“Learning rate schedulers are also essential. Step decay, exponential decay, and cosine annealing can help fine-tune the model during training.”</li>
+<li>“AdamW is a useful variant that decouples weight decay, often leading to better generalization. Explain the key formula if asked. Focus on the weight decay term being <em>added</em> to the parameter update.”</li>
+</ul></li>
+<li><p><strong>Address Potential Pitfalls (3-4 minutes):</strong></p>
+<ul>
+<li>“One major pitfall is overfitting. A high learning rate or inappropriate beta values can exacerbate this.”</li>
+<li>“Convergence instability can occur if <span class="math inline">\(\beta_1\)</span> or <span class="math inline">\(\beta_2\)</span> are too close to 1 or too small. This causes the moment estimates to become too slow to respond.”</li>
+<li>“Poor generalization is another risk. Even if the model converges, it might not perform well on unseen data.”</li>
+<li>Mention sensitivity to initialization and the importance of techniques like gradient clipping and batch normalization.</li>
+<li>“The optimal hyperparameters can also depend on the data regime. In non-stationary or noisy data, a smaller <span class="math inline">\(\beta_1\)</span> might be beneficial for faster adaptation.”</li>
+</ul></li>
+<li><p><strong>Highlight Practical Considerations (1 minute):</strong></p>
+<ul>
+<li>“In practice, I would start with the default beta values and tune the learning rate first, using a logarithmic scale. I would also use early stopping based on the validation loss and visualize the training process with tools like TensorBoard.”</li>
+<li>“I would use a coarse-to-fine tuning approach.”</li>
+</ul></li>
+<li><p><strong>Interaction Tips:</strong></p>
+<ul>
+<li><strong>Pace yourself:</strong> Don’t rush through the explanation. Allow the interviewer time to process the information and ask questions.</li>
+<li><strong>Use visual aids:</strong> If possible, sketch out simple diagrams or graphs to illustrate concepts like learning rate schedules or the effect of <span class="math inline">\(\beta\)</span> values.</li>
+<li><strong>Check for understanding:</strong> Pause periodically and ask if the interviewer has any questions or if you should elaborate on a particular point.</li>
+<li><strong>Be prepared to go deeper:</strong> The interviewer might ask you to explain the mathematical details of a particular technique. Be ready to provide more in-depth explanations and derivations.</li>
+<li><strong>Keep it practical:</strong> Always relate your answers to real-world scenarios and practical considerations. This will demonstrate your experience and ability to apply your knowledge.</li>
+</ul></li>
+</ol>
+<p>By following these guidelines, you can effectively communicate your understanding of Adam optimizers and their hyperparameters, demonstrating your expertise and senior-level knowledge.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

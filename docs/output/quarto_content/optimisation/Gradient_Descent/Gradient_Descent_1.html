@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>gradient_descent_1</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-2.-how-does-the-choice-of-learning-rate-affect-the-convergence-of-gradient-descent-how-would-you-diagnose-and-address-issues-arising-from-an-improperly-tuned-learning-rate" class="level2">
+<h2 class="anchored" data-anchor-id="question-2.-how-does-the-choice-of-learning-rate-affect-the-convergence-of-gradient-descent-how-would-you-diagnose-and-address-issues-arising-from-an-improperly-tuned-learning-rate">Question: 2. How does the choice of learning rate affect the convergence of gradient descent? How would you diagnose and address issues arising from an improperly tuned learning rate?</h2>
+<p><strong>Best Answer</strong></p>
+<p>The learning rate is a crucial hyperparameter in gradient descent-based optimization algorithms. It dictates the step size taken in the direction opposite to the gradient of the objective function, aiming to minimize the loss. An improperly tuned learning rate can significantly impede convergence or even cause divergence.</p>
+<p><strong>Impact of Learning Rate on Convergence:</strong></p>
+<ul>
+<li><strong>Too Large Learning Rate:</strong>
+<ul>
+<li><p><strong>Divergence:</strong> If the learning rate (<span class="math inline">\(\alpha\)</span>) is excessively large, the algorithm may overshoot the minimum in each iteration. Instead of converging, the loss function oscillates wildly or even increases, leading to divergence.</p>
+<p>Mathematically, consider the update rule for gradient descent:</p>
+<p><span class="math display">\[
+\theta_{t+1} = \theta_t - \alpha \nabla J(\theta_t)
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(\theta_{t+1}\)</span> is the parameter vector at the next iteration.</li>
+<li><span class="math inline">\(\theta_t\)</span> is the parameter vector at the current iteration.</li>
+<li><span class="math inline">\(\alpha\)</span> is the learning rate.</li>
+<li><span class="math inline">\(\nabla J(\theta_t)\)</span> is the gradient of the loss function <span class="math inline">\(J\)</span> with respect to the parameters <span class="math inline">\(\theta\)</span> at the current iteration.</li>
+</ul>
+<p>If <span class="math inline">\(\alpha\)</span> is too large, the change in <span class="math inline">\(\theta\)</span> can be so significant that it jumps across the valley containing the minimum.</p></li>
+<li><p><strong>Oscillations:</strong> Even without complete divergence, a large learning rate can cause the algorithm to oscillate around the minimum, preventing it from settling into a stable solution. The loss fluctuates significantly from one iteration to the next.</p></li>
+</ul></li>
+<li><strong>Too Small Learning Rate:</strong>
+<ul>
+<li><strong>Slow Convergence:</strong> A learning rate that is too small results in very tiny steps towards the minimum. While the algorithm is likely to converge (given a convex loss landscape), it will take an impractically long time to reach the optimal solution. This is computationally expensive and inefficient.</li>
+<li><strong>Getting Stuck:</strong> In non-convex landscapes, an extremely small learning rate might cause the algorithm to get stuck in a local minimum or saddle point early in training. The updates are so small that the algorithm lacks the momentum to escape these suboptimal regions.</li>
+</ul></li>
+</ul>
+<p><strong>Diagnosing Learning Rate Issues:</strong></p>
+<ol type="1">
+<li><p><strong>Loss Curve Analysis:</strong></p>
+<ul>
+<li><strong>Divergence:</strong> A rapidly increasing loss indicates a learning rate that is too large. The loss function is exploding instead of decreasing.</li>
+<li><strong>Oscillations:</strong> A loss curve with significant up-and-down fluctuations suggests the learning rate is causing the algorithm to jump around the minimum.</li>
+<li><strong>Slow Convergence:</strong> A gradually decreasing, almost flat, loss curve implies the learning rate is too small. The algorithm is making minimal progress.</li>
+<li><strong>Stuck at a Plateau:</strong> The loss curve plateaus prematurely, indicating that the model might have converged to a local minimum, or the gradient has vanished due to a small learning rate.</li>
+</ul></li>
+<li><p><strong>Gradient Norm Monitoring:</strong></p>
+<ul>
+<li>Monitor the norm of the gradient <span class="math inline">\(||\nabla J(\theta_t)||\)</span>. If the gradient norm remains consistently small early in training, it might indicate a vanishing gradient problem exacerbated by a small learning rate.</li>
+<li>If the gradient norm explodes, it suggests the learning rate is too large, and the gradients are becoming unstable.</li>
+</ul></li>
+<li><p><strong>Parameter Updates:</strong></p>
+<ul>
+<li>Observe the magnitude of the parameter updates <span class="math inline">\(||\theta_{t+1} - \theta_t||\)</span>. If the updates are consistently very small, the learning rate might be too small. Conversely, large and erratic updates point towards a large learning rate.</li>
+</ul></li>
+</ol>
+<p><strong>Addressing Learning Rate Issues:</strong></p>
+<ol type="1">
+<li><p><strong>Manual Tuning:</strong></p>
+<ul>
+<li><strong>Grid Search:</strong> Experiment with a range of learning rates (e.g., 0.1, 0.01, 0.001, 0.0001) and evaluate their impact on the loss function.</li>
+<li><strong>Random Search:</strong> Sample learning rates randomly from a predefined distribution. This is often more efficient than grid search.</li>
+<li><strong>Logarithmic Scale:</strong> It’s common to explore learning rates on a logarithmic scale since the effect of changes to the learning rate is often proportional. For example, try values like <span class="math inline">\(10^{-1}, 10^{-2}, 10^{-3}, ...\)</span></li>
+</ul></li>
+<li><p><strong>Learning Rate Scheduling:</strong> Adaptively adjust the learning rate during training.</p>
+<ul>
+<li><p><strong>Step Decay:</strong> Reduce the learning rate by a constant factor (e.g., 0.1 or 0.5) every few epochs or after the loss plateaus.</p>
+<p><span class="math display">\[
+\alpha_{t+1} = \alpha_t * \text{decay_rate}
+\]</span></p></li>
+<li><p><strong>Exponential Decay:</strong> Decrease the learning rate exponentially over time.</p>
+<p><span class="math display">\[
+\alpha_{t+1} = \alpha_0 * e^{-kt}
+\]</span></p>
+<p>where <span class="math inline">\(\alpha_0\)</span> is the initial learning rate, <span class="math inline">\(k\)</span> is the decay rate, and <span class="math inline">\(t\)</span> is the iteration number.</p></li>
+<li><p><strong>Cosine Annealing:</strong> Vary the learning rate following a cosine function, gradually decreasing it to a minimum value and then increasing it again.</p>
+<p><span class="math display">\[
+\alpha_t = \frac{\alpha_{max} - \alpha_{min}}{2} * (1 + \cos(\frac{t}{T}\pi)) + \alpha_{min}
+\]</span></p>
+<p>where <span class="math inline">\(\alpha_{max}\)</span> and <span class="math inline">\(\alpha_{min}\)</span> are the maximum and minimum learning rates, <span class="math inline">\(t\)</span> is the current step, and <span class="math inline">\(T\)</span> is the total number of steps.</p></li>
+<li><p><strong>Polynomial Decay:</strong> Reduce the learning rate based on a polynomial function.</p>
+<p><span class="math display">\[
+\alpha_t = \alpha_0 * (1 - \frac{t}{T})^{power}
+\]</span></p></li>
+<li><p><strong>ReduceLROnPlateau:</strong> A common approach in frameworks like PyTorch, where the learning rate is reduced when a metric (e.g., validation loss) has stopped improving.</p></li>
+</ul></li>
+<li><p><strong>Adaptive Learning Rate Methods:</strong></p>
+<p>These methods automatically adjust the learning rate for each parameter based on the historical gradients.</p>
+<ul>
+<li><p><strong>AdaGrad:</strong> Adapts the learning rate based on the sum of squared gradients. Parameters with frequently large gradients receive smaller learning rates, and vice versa.</p>
+<p><span class="math display">\[
+v_t = v_{t-1} + (\nabla J(\theta_t))^2
+\]</span> <span class="math display">\[
+\theta_{t+1} = \theta_t - \frac{\alpha}{\sqrt{v_t + \epsilon}} \nabla J(\theta_t)
+\]</span></p>
+<p>where <span class="math inline">\(v_t\)</span> is the sum of squared gradients up to time <span class="math inline">\(t\)</span>, and <span class="math inline">\(\epsilon\)</span> is a small constant to prevent division by zero. A significant drawback of AdaGrad is that the learning rate can decay too aggressively, leading to premature stopping.</p></li>
+<li><p><strong>RMSProp:</strong> Addresses AdaGrad’s decaying learning rate by using a moving average of squared gradients.</p>
+<p><span class="math display">\[
+v_t = \beta v_{t-1} + (1 - \beta) (\nabla J(\theta_t))^2
+\]</span> <span class="math display">\[
+\theta_{t+1} = \theta_t - \frac{\alpha}{\sqrt{v_t + \epsilon}} \nabla J(\theta_t)
+\]</span></p>
+<p>where <span class="math inline">\(\beta\)</span> is a decay rate (typically 0.9).</p></li>
+<li><p><strong>Adam:</strong> Combines the benefits of both momentum and RMSProp. It uses moving averages of both the gradients and the squared gradients.</p>
+<p><span class="math display">\[
+m_t = \beta_1 m_{t-1} + (1 - \beta_1) \nabla J(\theta_t)
+\]</span> <span class="math display">\[
+v_t = \beta_2 v_{t-1} + (1 - \beta_2) (\nabla J(\theta_t))^2
+\]</span> <span class="math display">\[
+\hat{m}_t = \frac{m_t}{1 - \beta_1^t}
+\]</span> <span class="math display">\[
+\hat{v}_t = \frac{v_t}{1 - \beta_2^t}
+\]</span> <span class="math display">\[
+\theta_{t+1} = \theta_t - \frac{\alpha}{\sqrt{\hat{v}_t} + \epsilon} \hat{m}_t
+\]</span></p>
+<p>where <span class="math inline">\(m_t\)</span> and <span class="math inline">\(v_t\)</span> are the moving averages of the gradient and squared gradient, respectively, and <span class="math inline">\(\beta_1\)</span> and <span class="math inline">\(\beta_2\)</span> are decay rates (typically 0.9 and 0.999). Adam is widely used due to its robustness and efficiency.</p></li>
+</ul></li>
+<li><p><strong>Learning Rate Range Test:</strong></p>
+<ul>
+<li>Increase the learning rate exponentially during a short training run and observe the loss. The learning rate that results in the steepest decrease in loss before divergence is often a good starting point. This is particularly useful when combined with cyclical learning rates.</li>
+</ul></li>
+</ol>
+<p>In practice, diagnosing and addressing learning rate issues often involves a combination of these techniques. Start by plotting the loss curve and monitoring the gradient norm. Then, experiment with different learning rates, schedules, or adaptive methods until satisfactory convergence is achieved.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a guide on how to explain this in an interview:</p>
+<ol type="1">
+<li><strong>Start with the Importance:</strong>
+<ul>
+<li>“The learning rate is a hyperparameter that significantly affects gradient descent’s convergence. It determines the step size in each iteration, and an improper choice can lead to slow convergence or divergence.”</li>
+</ul></li>
+<li><strong>Explain the Effects of a Large Learning Rate:</strong>
+<ul>
+<li>“If the learning rate is too large, the algorithm might overshoot the minimum, causing oscillations or even divergence. Imagine trying to roll a ball into a valley - if you push it too hard, it’ll just roll right over the other side.”</li>
+<li>“Mathematically, the update rule is <span class="math inline">\(\theta_{t+1} = \theta_t - \alpha \nabla J(\theta_t)\)</span>. A large <span class="math inline">\(\alpha\)</span> means a big jump, potentially past the minimum.” (Write the equation on the whiteboard if available).</li>
+<li>“You’ll see this as a loss curve that increases or fluctuates wildly.”</li>
+</ul></li>
+<li><strong>Explain the Effects of a Small Learning Rate:</strong>
+<ul>
+<li>“Conversely, a learning rate that’s too small leads to very slow convergence. The algorithm creeps towards the minimum, taking an impractical amount of time. It might also get stuck in local minima.”</li>
+<li>“Think of it as taking baby steps - you’ll eventually get there, but it’ll take forever. And in a complex landscape, you might get stuck in a small dip.”</li>
+<li>“In this case, the loss curve decreases very slowly and plateaus prematurely.”</li>
+</ul></li>
+<li><strong>Discuss Diagnostic Techniques:</strong>
+<ul>
+<li>“To diagnose these issues, I’d start by plotting the loss curve. Divergence shows as an increasing loss, oscillations as fluctuations, and slow convergence as a flat curve.”</li>
+<li>“I’d also monitor the gradient norm. If it’s exploding, the learning rate is too high. If it’s consistently small, the learning rate might be too low, or you have a vanishing gradient.”</li>
+<li>“Monitoring the magnitude of the weight updates can also be useful.”</li>
+</ul></li>
+<li><strong>Explain Remedial Strategies:</strong>
+<ul>
+<li>“To address these problems, I’d first try manual tuning with grid search or random search, exploring learning rates on a logarithmic scale.”</li>
+<li>“If that doesn’t work, I’d implement learning rate scheduling. Common techniques include step decay, exponential decay, and cosine annealing. ReduceLROnPlateau, available in PyTorch, is also very effective.”</li>
+<li>“Alternatively, I’d use adaptive learning rate methods like AdaGrad, RMSProp, or Adam. These methods automatically adjust the learning rate for each parameter. Adam is usually a good starting point due to its robustness.” Explain the basics behind Adam briefly.</li>
+<li>“I’d also consider using a learning rate range test to find a good initial learning rate for cyclical learning rates.”</li>
+</ul></li>
+<li><strong>Summarize and Emphasize Practicality:</strong>
+<ul>
+<li>“In practice, I use a combination of these techniques, starting with loss curve analysis and then experimenting with different learning rates, schedules, or adaptive methods until I achieve satisfactory convergence.”</li>
+<li>“The key is to iteratively refine the learning rate based on the observed training dynamics.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace yourself:</strong> Don’t rush through the explanation. Give the interviewer time to process the information.</li>
+<li><strong>Use analogies:</strong> The “ball rolling into a valley” analogy helps illustrate the concept.</li>
+<li><strong>Visual aids:</strong> If possible, draw the loss curves on a whiteboard to demonstrate the different scenarios.</li>
+<li><strong>Check for understanding:</strong> Pause occasionally and ask if the interviewer has any questions.</li>
+<li><strong>Stay practical:</strong> Emphasize your hands-on experience with diagnosing and addressing learning rate issues. Mention specific tools or libraries you’ve used.</li>
+<li><strong>Math accessibility:</strong> Briefly explain the update rule and the adaptive learning rate formulas, but don’t get bogged down in excessive mathematical detail unless the interviewer specifically asks. Focus on the intuition behind the equations.</li>
+<li><strong>Adaptive Methods:</strong> When explaining Adam, mention that it is often the best ‘out of the box’ optimizer due to momentum and adaptive learning rates.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

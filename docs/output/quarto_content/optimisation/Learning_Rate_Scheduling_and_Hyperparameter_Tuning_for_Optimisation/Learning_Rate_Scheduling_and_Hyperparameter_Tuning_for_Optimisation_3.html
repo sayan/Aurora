@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>learning_rate_scheduling_and_hyperparameter_tuning_for_optimisation_3</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-4.-consider-a-scenario-where-you-are-working-with-a-large-dataset-that-is-noisy-and-potentially-contains-many-outliers.-how-would-you-adjust-your-learning-rate-schedule-and-hyperparameter-tuning-strategies-to-address-such-issues" class="level2">
+<h2 class="anchored" data-anchor-id="question-4.-consider-a-scenario-where-you-are-working-with-a-large-dataset-that-is-noisy-and-potentially-contains-many-outliers.-how-would-you-adjust-your-learning-rate-schedule-and-hyperparameter-tuning-strategies-to-address-such-issues">Question: 4. Consider a scenario where you are working with a large dataset that is noisy and potentially contains many outliers. How would you adjust your learning rate schedule and hyperparameter tuning strategies to address such issues?</h2>
+<p><strong>Best Answer</strong></p>
+<p>When faced with a large, noisy dataset containing outliers, adjusting the learning rate schedule and hyperparameter tuning strategies becomes critical for achieving robust model training and generalization. The goal is to prevent the model from overfitting to the noise while still capturing the underlying patterns. Here’s a breakdown of how I would approach this challenge:</p>
+<p><strong>1. Understanding the Impact of Noise and Outliers:</strong></p>
+<ul>
+<li><strong>Instability:</strong> Noisy data and outliers can cause significant fluctuations in the loss function during training. This instability can lead to oscillations and make it difficult for the optimization algorithm to converge.</li>
+<li><strong>Overfitting:</strong> The model may try to fit the noise or outliers, resulting in poor generalization performance on unseen data.</li>
+<li><strong>Gradient Issues:</strong> Outliers can generate large gradients, which can destabilize the training process and potentially lead to exploding gradients.</li>
+</ul>
+<p><strong>2. Learning Rate Scheduling Strategies for Robustness:</strong></p>
+<p>The learning rate schedule needs to be more conservative and adaptive to handle noisy gradients and prevent overfitting. Here’s how I would adjust the learning rate:</p>
+<ul>
+<li><p><strong>Lower Initial Learning Rate:</strong> Start with a smaller initial learning rate to reduce the impact of noisy gradients in the early stages of training. Instead of a typical value like 0.001, I might start with something like 0.0001 or even smaller, depending on the severity of the noise.</p></li>
+<li><p><strong>Adaptive Learning Rate Methods:</strong> Employ adaptive learning rate algorithms like Adam, RMSprop, or AdaGrad. These methods automatically adjust the learning rate for each parameter based on the historical gradients.</p>
+<ul>
+<li><p><strong>Adam:</strong> Adam combines the benefits of both AdaGrad and RMSprop. It uses both momentum (exponentially decaying average of past gradients) and adaptive learning rates. The update rule for Adam is as follows:</p>
+<p><span class="math display">\[
+m_t = \beta_1 m_{t-1} + (1 - \beta_1) g_t \\
+v_t = \beta_2 v_{t-1} + (1 - \beta_2) g_t^2 \\
+\hat{m}_t = \frac{m_t}{1 - \beta_1^t} \\
+\hat{v}_t = \frac{v_t}{1 - \beta_2^t} \\
+\theta_{t+1} = \theta_t - \frac{\eta}{\sqrt{\hat{v}_t} + \epsilon} \hat{m}_t
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(\theta_t\)</span> is the parameter vector at time <span class="math inline">\(t\)</span></li>
+<li><span class="math inline">\(g_t\)</span> is the gradient at time <span class="math inline">\(t\)</span></li>
+<li><span class="math inline">\(m_t\)</span> and <span class="math inline">\(v_t\)</span> are the first and second moment estimates, respectively</li>
+<li><span class="math inline">\(\beta_1\)</span> and <span class="math inline">\(\beta_2\)</span> are the exponential decay rates for the moment estimates</li>
+<li><span class="math inline">\(\hat{m}_t\)</span> and <span class="math inline">\(\hat{v}_t\)</span> are bias-corrected moment estimates</li>
+<li><span class="math inline">\(\eta\)</span> is the learning rate</li>
+<li><span class="math inline">\(\epsilon\)</span> is a small constant to prevent division by zero</li>
+</ul></li>
+<li><p><strong>RMSprop:</strong> RMSprop adapts the learning rate based on the root mean square of past gradients. This helps to dampen oscillations in noisy environments. The update rule can be written as: <span class="math display">\[
+v_t = \beta v_{t-1} + (1 - \beta) g_t^2 \\
+\theta_{t+1} = \theta_t - \frac{\eta}{\sqrt{v_t} + \epsilon} g_t
+\]</span></p></li>
+</ul>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(\beta\)</span> is the decay rate (typically close to 1, such as 0.9 or 0.99)</li>
+<li><span class="math inline">\(\eta\)</span> is the learning rate</li>
+<li><span class="math inline">\(\epsilon\)</span> is a small constant for numerical stability</li>
+</ul></li>
+<li><p><strong>Learning Rate Decay:</strong> Implement a gradual learning rate decay to fine-tune the model and avoid overshooting the optimal solution. Common techniques include:</p>
+<ul>
+<li><p><strong>Step Decay:</strong> Reduce the learning rate by a factor (e.g., 0.1 or 0.5) every few epochs or after a certain number of iterations. <span class="math display">\[
+\eta_{t+1} = \eta_0 * decay\_rate^{\lfloor \frac{epoch}{drop\_every} \rfloor}
+\]</span></p></li>
+<li><p><strong>Exponential Decay:</strong> Decrease the learning rate exponentially with each epoch. <span class="math display">\[
+\eta_t = \eta_0 * e^{-kt}
+\]</span> where <span class="math inline">\(\eta_0\)</span> is the initial learning rate, <span class="math inline">\(k\)</span> is the decay rate, and <span class="math inline">\(t\)</span> is the epoch number.</p></li>
+<li><p><strong>Cosine Annealing:</strong> Vary the learning rate following a cosine function, gradually decreasing and then increasing the learning rate during training. <span class="math display">\[
+\eta_t = \frac{\eta_{max} + \eta_{min}}{2} + \frac{\eta_{max} - \eta_{min}}{2} cos(\frac{t}{T_{max}}\pi)
+\]</span> where <span class="math inline">\(eta_{max}\)</span> and <span class="math inline">\(eta_{min}\)</span> are the maximum and minimum learning rates respectively, t is the current epoch, and <span class="math inline">\(T_{max}\)</span> is the total number of epochs.</p>
+<p>Cosine annealing can help the model jump out of sharp local minima due to its periodic increasing learning rate.</p></li>
+</ul></li>
+<li><p><strong>Early Stopping:</strong> Monitor the performance on a validation set and stop training when the validation loss starts to increase. This prevents overfitting to the training data, including the noisy samples.</p>
+<ul>
+<li>Mathematically, we stop training at epoch <span class="math inline">\(k\)</span> if the validation loss <span class="math inline">\(L_v\)</span> satisfies: <span class="math display">\[
+L_v(k) &gt; L_v(k-n)
+\]</span> for some pre-defined lookback period <span class="math inline">\(n\)</span>.</li>
+</ul></li>
+</ul>
+<p><strong>3. Hyperparameter Tuning Strategies:</strong></p>
+<p>Tuning hyperparameters requires a more careful and iterative approach when dealing with noisy data.</p>
+<ul>
+<li><p><strong>Validation Set:</strong> A reliable validation set is crucial for evaluating the model’s performance and avoiding overfitting. Ensure that the validation set is representative of the real-world data distribution and is cleaned of outliers if possible. In case of limited data, K-fold cross-validation should be applied.</p></li>
+<li><p><strong>Hyperparameter Search Techniques:</strong></p>
+<ul>
+<li><strong>Grid Search:</strong> Systematically search through a predefined set of hyperparameter values.</li>
+<li><strong>Random Search:</strong> Randomly sample hyperparameter values from a specified distribution. Often more efficient than grid search.</li>
+<li><strong>Bayesian Optimization:</strong> Use a probabilistic model to guide the search for optimal hyperparameters, balancing exploration and exploitation. Bayesian Optimization is particularly effective when the evaluation of the objective function (e.g., validation loss) is expensive. It involves:
+<ol type="1">
+<li>Defining a prior probability distribution over the objective function.</li>
+<li>Using a surrogate model (e.g., Gaussian Process) to approximate the objective function.</li>
+<li>Defining an acquisition function (e.g., Expected Improvement, Upper Confidence Bound) that balances exploration and exploitation.</li>
+<li>Iteratively updating the surrogate model and selecting the next set of hyperparameters to evaluate based on the acquisition function.</li>
+</ol></li>
+</ul></li>
+<li><p><strong>Focus on Regularization:</strong> Increase the strength of regularization techniques (e.g., L1, L2 regularization, dropout) to prevent the model from fitting the noise.</p>
+<ul>
+<li>L1 Regularization adds a penalty term proportional to the absolute value of the weights: <span class="math inline">\(Loss = Loss_0 + \lambda \sum |w_i|\)</span></li>
+<li>L2 Regularization adds a penalty term proportional to the square of the weights: <span class="math inline">\(Loss = Loss_0 + \lambda \sum w_i^2\)</span></li>
+<li>Dropout randomly sets a fraction of the input units to 0 at each update during training time, which helps prevent overfitting.</li>
+</ul></li>
+<li><p><strong>More Frequent Evaluations:</strong> Evaluate the model’s performance on the validation set more frequently (e.g., every few mini-batches) to detect overfitting early and adjust the hyperparameters accordingly.</p></li>
+<li><p><strong>Conservative Tuning:</strong> When in doubt, err on the side of more conservative hyperparameter settings, such as lower learning rates and stronger regularization.</p></li>
+</ul>
+<p><strong>4. Outlier Mitigation Strategies (Complementary to Learning Rate Scheduling):</strong></p>
+<p>While learning rate scheduling helps, directly addressing outliers can further improve robustness.</p>
+<ul>
+<li><p><strong>Data Preprocessing:</strong></p>
+<ul>
+<li><strong>Outlier Removal:</strong> Identify and remove or cap outliers based on statistical methods (e.g., Z-score, IQR). Be cautious not to remove genuine extreme values that contain valuable information.</li>
+<li><strong>Robust Scaling:</strong> Use robust scaling techniques like <code>RobustScaler</code> (from scikit-learn) or <code>QuantileTransformer</code> to minimize the impact of outliers on feature scaling. These methods are less sensitive to extreme values than standard scaling methods.</li>
+</ul></li>
+<li><p><strong>Robust Loss Functions:</strong> Use loss functions that are less sensitive to outliers.</p>
+<ul>
+<li><strong>Huber Loss:</strong> Huber loss combines the squared error loss for small errors with the absolute error loss for large errors, making it less sensitive to outliers than the squared error loss. <span class="math display">\[
+L_{\delta}(y, f(x)) =
+\begin{cases}
+\frac{1}{2}(y - f(x))^2 &amp; \text{for } |y - f(x)| \leq \delta \\
+\delta |y - f(x)| - \frac{1}{2}\delta^2 &amp; \text{otherwise}
+\end{cases}
+\]</span> where <span class="math inline">\(\delta\)</span> is a hyperparameter that controls the threshold for switching between the two error functions.</li>
+<li><strong>Tukey’s Biweight Loss:</strong> More robust than Huber loss.</li>
+<li><strong>Log-Cosh Loss:</strong> Another smooth approximation to the absolute loss.</li>
+</ul></li>
+</ul>
+<p><strong>5. Implementation Details and Corner Cases:</strong></p>
+<ul>
+<li><p><strong>Monitoring Training Progress:</strong> Carefully monitor the training and validation loss, learning rate, and gradient norms to detect any issues and adjust the strategies accordingly. Use tools like TensorBoard or Weights &amp; Biases for visualization.</p></li>
+<li><p><strong>Batch Size:</strong> Experiment with different batch sizes. Smaller batch sizes can introduce more noise, which can help the model escape sharp local minima, but may also lead to more unstable training. Larger batch sizes can provide more stable gradient estimates but may also get stuck in local minima.</p></li>
+<li><p><strong>Gradient Clipping:</strong> Implement gradient clipping to prevent exploding gradients caused by outliers. This involves scaling the gradients if their norm exceeds a certain threshold. <span class="math display">\[
+g' = g \cdot \frac{threshold}{||g||} \text{ if } ||g|| &gt; threshold
+\]</span> where <span class="math inline">\(g\)</span> is the original gradient, <span class="math inline">\(g'\)</span> is the clipped gradient, and <span class="math inline">\(threshold\)</span> is the clipping threshold.</p></li>
+</ul>
+<p>By combining these strategies, I aim to build a robust model that generalizes well even in the presence of noisy data and outliers. The specific choices and tuning will depend on the characteristics of the dataset and the model architecture.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a guide for verbally delivering this answer in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with Context:</strong> Acknowledge the problem of noisy data and outliers, emphasizing their potential impact on model training and generalization. <em>“When dealing with large, noisy datasets with outliers, we need to adjust our learning rate and hyperparameter tuning strategies to prevent overfitting and ensure robust performance. Outliers can destabilize training and lead to poor generalization.”</em></p></li>
+<li><p><strong>Explain the Core Idea (Learning Rate Scheduling):</strong> Introduce the concept of adjusting the learning rate schedule for robustness. <em>“The key is to use a more conservative and adaptive learning rate schedule that can handle noisy gradients and prevent the model from being overly influenced by outliers.”</em></p></li>
+<li><p><strong>Discuss Specific Techniques:</strong></p>
+<ul>
+<li>Start with a lower initial learning rate. <em>“I would start with a lower initial learning rate, perhaps 0.0001 instead of 0.001, to dampen the impact of noisy gradients early in training.”</em></li>
+<li>Highlight adaptive learning rate methods (Adam, RMSprop). <em>“I would definitely use adaptive learning rate methods like Adam or RMSprop. These algorithms automatically adjust the learning rate for each parameter based on the history of its gradients, which helps in noisy environments.”</em>
+<ul>
+<li>If asked to elaborate, briefly explain the underlying principles without overwhelming the interviewer with math. <em>“For instance, Adam combines momentum and adaptive learning rates, using estimates of both the first and second moments of the gradients to adjust the learning rate for each parameter individually.”</em></li>
+</ul></li>
+<li>Explain learning rate decay strategies (step decay, exponential decay, cosine annealing). <em>“I would also implement a learning rate decay strategy, such as step decay or exponential decay, to fine-tune the model and avoid overshooting the optimal solution. Cosine annealing could also be useful to help jump out of local minima.”</em></li>
+</ul></li>
+<li><p><strong>Transition to Hyperparameter Tuning:</strong> <em>“In addition to learning rate scheduling, careful hyperparameter tuning is crucial.”</em></p></li>
+<li><p><strong>Discuss Hyperparameter Tuning Strategies:</strong></p>
+<ul>
+<li>Emphasize the importance of a reliable validation set. <em>“A reliable validation set is essential for evaluating the model’s performance and preventing overfitting. If the dataset is small, K-fold cross-validation will be used.”</em></li>
+<li>Mention hyperparameter search techniques (grid search, random search, Bayesian optimization). <em>“I would use techniques like random search or Bayesian optimization to efficiently explore the hyperparameter space. Bayesian optimization is particularly useful because it balances exploration and exploitation based on a probabilistic model of the objective function.”</em></li>
+<li>Highlight the importance of regularization. <em>“I would also focus on regularization techniques like L1, L2 regularization, and dropout to prevent the model from fitting the noise. Stronger regularization is generally better in this case.”</em></li>
+<li>Explain the need for more frequent evaluations. <em>“I would evaluate the model’s performance on the validation set more frequently to detect overfitting early and adjust the hyperparameters accordingly.”</em></li>
+</ul></li>
+<li><p><strong>Introduce Outlier Mitigation:</strong> <em>“Complementary to learning rate scheduling and hyperparameter tuning, we can also employ outlier mitigation techniques.”</em></p></li>
+<li><p><strong>Discuss Outlier Mitigation Strategies:</strong></p>
+<ul>
+<li>Explain data preprocessing techniques (outlier removal, robust scaling). <em>“I would consider data preprocessing techniques like outlier removal or capping. Robust scaling methods, like RobustScaler from scikit-learn, can minimize the impact of outliers on feature scaling.”</em></li>
+<li>Highlight robust loss functions (Huber loss). <em>“I would also explore using robust loss functions like Huber loss, which are less sensitive to outliers compared to squared error loss.”</em> Briefly explain the benefit. <em>“Huber loss behaves like squared error for small errors but switches to absolute error for large errors, reducing the impact of outliers.”</em></li>
+</ul></li>
+<li><p><strong>Discuss Implementation Details and Monitoring:</strong> <em>“During implementation, I would carefully monitor the training and validation loss, learning rate, and gradient norms using tools like TensorBoard to detect any issues.”</em> Also, Batch size and Gradient Clipping is important to consider.</p></li>
+<li><p><strong>Concluding Remark:</strong> <em>“By combining these strategies – careful learning rate scheduling, robust hyperparameter tuning, and outlier mitigation techniques – I aim to build a model that generalizes well even in the presence of noisy data and outliers. The specific choices and tuning will depend on the characteristics of the dataset and the model.”</em></p></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush through the explanation. Take your time to articulate each point clearly.</li>
+<li><strong>Use Visual Aids (if possible):</strong> If you’re in a virtual interview, consider sharing your screen and showing code snippets or diagrams to illustrate your points.</li>
+<li><strong>Check for Understanding:</strong> Periodically ask the interviewer if they have any questions.</li>
+<li><strong>Tailor the Depth:</strong> Adjust the level of detail based on the interviewer’s reactions and questions. If they seem very interested in a particular technique, elaborate further. If they seem less interested, move on to the next point.</li>
+<li><strong>Be Confident but Humble:</strong> Project confidence in your knowledge but avoid sounding arrogant. Acknowledge that there are always different approaches and that the best solution depends on the specific problem.</li>
+<li><strong>Stay Practical:</strong> Always try to connect the theoretical concepts to practical considerations and real-world examples.</li>
+</ul>
+<p>By following these steps, you can effectively communicate your expertise and demonstrate your ability to handle challenging data science problems.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>mini_batch_gradient_descent_4</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-5.-what-are-some-challenges-when-using-extremely-small-mini-batch-sizes-e.g.-1-or-2-samples-in-training-deep-neural-networks-particularly-in-the-context-of-noisy-gradients-how-might-you-address-these-challenges-in-practice" class="level2">
+<h2 class="anchored" data-anchor-id="question-5.-what-are-some-challenges-when-using-extremely-small-mini-batch-sizes-e.g.-1-or-2-samples-in-training-deep-neural-networks-particularly-in-the-context-of-noisy-gradients-how-might-you-address-these-challenges-in-practice">Question: 5. What are some challenges when using extremely small mini-batch sizes (e.g., 1 or 2 samples) in training deep neural networks, particularly in the context of noisy gradients? How might you address these challenges in practice?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Using extremely small mini-batch sizes, such as 1 or 2, during deep neural network training presents unique challenges, primarily stemming from the increased noise in gradient estimates. While mini-batch gradient descent is an approximation of true gradient descent, smaller batch sizes amplify this approximation error. This leads to noisy gradients, which can hinder convergence, cause instability, and slow down the overall training process. Let’s delve deeper into these challenges and potential solutions.</p>
+<section id="challenges-of-small-mini-batch-sizes" class="level3">
+<h3 class="anchored" data-anchor-id="challenges-of-small-mini-batch-sizes">Challenges of Small Mini-Batch Sizes:</h3>
+<ol type="1">
+<li><p><strong>Noisy Gradient Estimates:</strong></p>
+<ul>
+<li>The gradient calculated from a single sample (stochastic gradient descent - SGD) or a very small batch is a much less accurate estimate of the true gradient (calculated over the entire dataset) than gradients from larger batches. This increased variance means the updates to the model parameters are more erratic.</li>
+<li>Mathematically, let’s denote:
+<ul>
+<li><span class="math inline">\(g_i = \nabla L(w; x_i, y_i)\)</span> as the gradient computed from the <span class="math inline">\(i\)</span>-th data point <span class="math inline">\((x_i, y_i)\)</span> with respect to the loss function <span class="math inline">\(L\)</span> and model parameters <span class="math inline">\(w\)</span>.</li>
+<li><span class="math inline">\(g = \frac{1}{N}\sum_{i=1}^{N}g_i\)</span> as the true gradient over the entire dataset of size <span class="math inline">\(N\)</span>.</li>
+<li><span class="math inline">\(\hat{g}_B = \frac{1}{|B|}\sum_{i \in B}g_i\)</span> as the mini-batch gradient calculated over a mini-batch <span class="math inline">\(B\)</span> of size <span class="math inline">\(|B|\)</span>.</li>
+</ul>
+When <span class="math inline">\(|B|\)</span> is small (e.g., 1 or 2), the variance of <span class="math inline">\(\hat{g}_B\)</span> is high, meaning <span class="math inline">\(\hat{g}_B\)</span> is a poor approximation of <span class="math inline">\(g\)</span>.</li>
+</ul></li>
+<li><p><strong>Unstable Training:</strong></p>
+<ul>
+<li>The high variance in gradient estimates can lead to oscillations around the optimal solution or even divergence during training. The model parameters jump around erratically, making it difficult to find a stable minimum.</li>
+</ul></li>
+<li><p><strong>Slow Convergence:</strong></p>
+<ul>
+<li>While small mini-batches can sometimes escape local minima more easily due to the added noise (acting as a form of regularization), the erratic updates slow down the overall convergence rate. It takes more iterations to reach a satisfactory level of performance compared to using larger batches that provide more stable gradient information.</li>
+</ul></li>
+<li><p><strong>Sensitivity to Learning Rate:</strong></p>
+<ul>
+<li>Small batch sizes are more sensitive to the choice of learning rate. A learning rate that works well with larger batches may cause divergence with very small batches. Fine-tuning the learning rate becomes crucial and more challenging.</li>
+</ul></li>
+<li><p><strong>Difficulty in Parallelization:</strong></p>
+<ul>
+<li>Extremely small batch sizes reduce the opportunity for parallelization. Modern hardware (GPUs) are optimized for matrix operations, and small batches underutilize these capabilities, leading to inefficient training.</li>
+</ul></li>
+</ol>
+</section>
+<section id="addressing-the-challenges" class="level3">
+<h3 class="anchored" data-anchor-id="addressing-the-challenges">Addressing the Challenges:</h3>
+<p>To mitigate the adverse effects of noisy gradients with small mini-batch sizes, several techniques can be employed:</p>
+<ol type="1">
+<li><p><strong>Gradient Averaging/Accumulation:</strong></p>
+<ul>
+<li><p>Instead of updating the model parameters after each mini-batch of size 1 or 2, accumulate the gradients over several mini-batches before applying the update. This effectively simulates a larger batch size while retaining the benefits of smaller batches.</p></li>
+<li><p>Implementation:</p>
+<ol type="1">
+<li>Initialize accumulated gradient: <span class="math inline">\(g_{accumulated} = 0\)</span></li>
+<li>For each mini-batch <span class="math inline">\(B_i\)</span> of size <span class="math inline">\(|B_i|\)</span>:
+<ul>
+<li>Compute gradient <span class="math inline">\(\hat{g}_{B_i} = \frac{1}{|B_i|}\sum_{j \in B_i}g_j\)</span></li>
+<li>Accumulate: <span class="math inline">\(g_{accumulated} = g_{accumulated} + \hat{g}_{B_i}\)</span></li>
+</ul></li>
+<li>After accumulating over <span class="math inline">\(k\)</span> mini-batches, update the parameters: <span class="math inline">\(w = w - \eta \cdot \frac{1}{k} g_{accumulated}\)</span>, where <span class="math inline">\(\eta\)</span> is the learning rate.</li>
+</ol></li>
+</ul></li>
+<li><p><strong>Learning Rate Scheduling and Tuning:</strong></p>
+<ul>
+<li>Carefully tune the learning rate to prevent oscillations and divergence. Start with a small learning rate and potentially use a learning rate schedule that gradually decreases the learning rate during training. Techniques like cyclical learning rates (CLR) or adaptive learning rates can also be beneficial.</li>
+<li>Common Scheduling Strategies:
+<ul>
+<li><strong>Step Decay:</strong> Reduce the learning rate by a factor (e.g., 0.1 or 0.5) every few epochs.</li>
+<li><strong>Exponential Decay:</strong> <span class="math inline">\(\eta_t = \eta_0 \cdot e^{-kt}\)</span>, where <span class="math inline">\(\eta_t\)</span> is the learning rate at time step <span class="math inline">\(t\)</span>, <span class="math inline">\(\eta_0\)</span> is the initial learning rate, and <span class="math inline">\(k\)</span> is a decay constant.</li>
+<li><strong>Cosine Annealing:</strong> Vary the learning rate according to a cosine function.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Adaptive Optimizers:</strong></p>
+<ul>
+<li><p>Adaptive optimization algorithms like Adam, RMSprop, and Adagrad can help mitigate the impact of noisy gradients by adapting the learning rate for each parameter based on its historical gradient information. These algorithms maintain a per-parameter learning rate, effectively damping oscillations and accelerating convergence.</p></li>
+<li><p>For example, Adam updates parameters as follows:</p>
+<ul>
+<li>Calculate gradients: <span class="math inline">\(g_t = \nabla L(w_t)\)</span></li>
+<li>Update biased first moment estimate: <span class="math inline">\(m_t = \beta_1 m_{t-1} + (1 - \beta_1) g_t\)</span></li>
+<li>Update biased second moment estimate: <span class="math inline">\(v_t = \beta_2 v_{t-1} + (1 - \beta_2) g_t^2\)</span></li>
+<li>Correct bias: <span class="math inline">\(\hat{m}_t = \frac{m_t}{1 - \beta_1^t}\)</span> and <span class="math inline">\(\hat{v}_t = \frac{v_t}{1 - \beta_2^t}\)</span></li>
+<li>Update parameters: <span class="math inline">\(w_{t+1} = w_t - \frac{\eta}{\sqrt{\hat{v}_t} + \epsilon} \hat{m}_t\)</span> where <span class="math inline">\(\beta_1\)</span> and <span class="math inline">\(\beta_2\)</span> are exponential decay rates for the moment estimates, <span class="math inline">\(\eta\)</span> is the learning rate, and <span class="math inline">\(\epsilon\)</span> is a small constant to prevent division by zero.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Batch Normalization:</strong></p>
+<ul>
+<li><p>Batch normalization can stabilize training by reducing internal covariate shift, which is the change in the distribution of network activations due to changes in the network parameters during training. While seemingly counter-intuitive to use with very small <em>batch sizes</em>, some research has indicated that modified forms of Batch Norm can be useful in the very small batch regime.</p></li>
+<li><p>The standard Batch Normalization transform is:</p>
+<ul>
+<li><span class="math inline">\(\mu_B = \frac{1}{|B|}\sum_{i \in B} x_i\)</span> (mini-batch mean)</li>
+<li><span class="math inline">\(\sigma_B^2 = \frac{1}{|B|}\sum_{i \in B} (x_i - \mu_B)^2\)</span> (mini-batch variance)</li>
+<li><span class="math inline">\(\hat{x}_i = \frac{x_i - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}}\)</span> (normalized value)</li>
+<li><span class="math inline">\(y_i = \gamma \hat{x}_i + \beta\)</span> (scaled and shifted value) where <span class="math inline">\(\gamma\)</span> and <span class="math inline">\(\beta\)</span> are learnable parameters.</li>
+</ul>
+<p>With small batch sizes, the estimates of <span class="math inline">\(\mu_B\)</span> and <span class="math inline">\(\sigma_B^2\)</span> are noisy. Modifications like Batch Renormalization or Group Normalization may be more effective.</p></li>
+</ul></li>
+<li><p><strong>Careful Initialization:</strong></p>
+<ul>
+<li>Proper initialization of the network weights is crucial, especially with small batch sizes. Techniques like Xavier or He initialization help prevent vanishing or exploding gradients, promoting more stable training.</li>
+</ul></li>
+<li><p><strong>Regularization Techniques:</strong></p>
+<ul>
+<li>Employ regularization techniques like L1 or L2 regularization, dropout, or early stopping to prevent overfitting and improve generalization. These techniques can help the model learn more robust features and reduce sensitivity to noisy gradients.</li>
+</ul></li>
+<li><p><strong>Gradient Clipping:</strong></p>
+<ul>
+<li><p>Gradient clipping helps to prevent exploding gradients by limiting the magnitude of the gradients during backpropagation. This technique can stabilize training and prevent the model from making excessively large updates. Can be especially useful with noisy gradients.</p></li>
+<li><p>If <span class="math inline">\(||\hat{g}_B|| &gt; \theta\)</span>, then <span class="math inline">\(\hat{g}_B = \frac{\theta}{||\hat{g}_B||}\hat{g}_B\)</span>, where <span class="math inline">\(\theta\)</span> is the clipping threshold.</p></li>
+</ul></li>
+</ol>
+</section>
+<section id="trade-offs" class="level3">
+<h3 class="anchored" data-anchor-id="trade-offs">Trade-offs:</h3>
+<p>It’s crucial to consider the trade-offs when using extremely small mini-batch sizes:</p>
+<ul>
+<li><strong>Exploration vs.&nbsp;Instability:</strong> The added noise from small batches can encourage exploration of the parameter space and potentially escape local minima. However, it can also lead to instability and divergence.</li>
+<li><strong>Computational Efficiency vs.&nbsp;Memory Usage:</strong> Small batches require more frequent updates, potentially increasing computational cost. However, they also reduce memory requirements, which can be beneficial when training on large models or datasets.</li>
+</ul>
+<p>In summary, training deep neural networks with very small mini-batch sizes presents significant challenges due to noisy gradients. By carefully employing techniques like gradient averaging, learning rate scheduling, adaptive optimizers, batch normalization, and regularization, it is possible to mitigate these challenges and achieve satisfactory training performance. The choice of specific techniques depends on the particular characteristics of the dataset and the model architecture.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a guide on how to verbally deliver this answer in an interview:</p>
+<ol type="1">
+<li><strong>Start with a Concise Summary:</strong>
+<ul>
+<li>“Using very small mini-batch sizes like 1 or 2 introduces challenges primarily due to increased noise in the gradient estimates. This can lead to unstable training, slow convergence, and sensitivity to the learning rate.”</li>
+</ul></li>
+<li><strong>Explain the Noisy Gradients:</strong>
+<ul>
+<li>“With small batch sizes, each gradient update is based on very few samples. Therefore, the gradient calculated is a less accurate representation of the true gradient over the entire dataset. It’s like trying to understand a complex phenomenon with only a tiny, potentially biased, sample of data.”</li>
+<li><em>Optional: Briefly mention the formulas <span class="math inline">\(g_i\)</span>, <span class="math inline">\(g\)</span>, and <span class="math inline">\(\hat{g}_B\)</span> to illustrate the difference between the sample gradient and the true gradient.</em></li>
+<li>“The high variance in these gradient estimates results in the model parameters jumping around erratically, making it difficult to find a stable minimum.”</li>
+</ul></li>
+<li><strong>Describe the Consequences:</strong>
+<ul>
+<li>“This noise leads to several problems. First, unstable training, where the model oscillates or even diverges. Second, slower convergence because each update is less reliable. And third, increased sensitivity to the learning rate, making it harder to find a good value.”</li>
+</ul></li>
+<li><strong>Introduce Mitigation Techniques:</strong>
+<ul>
+<li>“Fortunately, we can address these issues using a combination of techniques. I’ll describe a few of the most effective ones.”</li>
+</ul></li>
+<li><strong>Discuss Gradient Averaging/Accumulation:</strong>
+<ul>
+<li>“One approach is gradient averaging or accumulation. Instead of updating parameters after each tiny batch, we accumulate the gradients over several batches before updating. This effectively smooths out the noise and simulates a larger batch size.”</li>
+<li><em>Optional: Briefly outline the steps of gradient accumulation without getting too deep into the code details unless the interviewer asks.</em></li>
+</ul></li>
+<li><strong>Explain Learning Rate Scheduling and Tuning:</strong>
+<ul>
+<li>“Another critical technique is careful tuning of the learning rate, often coupled with a learning rate schedule. We might start with a small learning rate and gradually reduce it over time, preventing overshooting and oscillations.”</li>
+<li>“Common schedules include step decay, exponential decay, and cosine annealing, each with its own way of adjusting the learning rate.”</li>
+</ul></li>
+<li><strong>Describe Adaptive Optimizers:</strong>
+<ul>
+<li>“Adaptive optimizers like Adam are particularly helpful. They automatically adjust the learning rate for each parameter based on its historical gradient information, making them more robust to noisy gradients.”</li>
+<li><em>Optional: Mention Adam’s moment estimates and bias correction to showcase deeper knowledge, but only if the interviewer seems engaged and knowledgeable. Avoid overwhelming them with the full equations unless they specifically ask.</em></li>
+</ul></li>
+<li><strong>Mention Batch Normalization:</strong>
+<ul>
+<li>“Batch Normalization can also help by stabilizing the activations within the network, but it’s worth noting that it might require some adaptations for very small batch sizes, such as using Group Normalization or Batch Renormalization. Standard Batch Norm can suffer when batch statistics are unreliable.”</li>
+</ul></li>
+<li><strong>Briefly Mention Other Techniques:</strong>
+<ul>
+<li>“Other techniques like careful weight initialization, regularization (L1, L2, Dropout), and gradient clipping can further improve stability and generalization.”</li>
+</ul></li>
+<li><strong>Discuss Trade-offs:</strong>
+<ul>
+<li>“It’s important to remember the trade-offs. Smaller batches offer the potential for more exploration, but they also increase instability. The choice depends on the specifics of the problem and the model.”</li>
+</ul></li>
+<li><strong>Conclude Summarizing:</strong>
+<ul>
+<li>“In summary, while extremely small mini-batch sizes present challenges due to noisy gradients, we can effectively address them with a combination of gradient averaging, learning rate techniques, adaptive optimizers, batch normalization, and regularization. The key is to carefully balance exploration and stability to achieve good training performance.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Start Broad, Then Dive Deeper:</strong> Begin with a high-level overview and then drill down into specifics.</li>
+<li><strong>Use Analogies:</strong> Relate technical concepts to real-world scenarios to make them more understandable. For example, comparing noisy gradients to navigating a maze with inaccurate directions.</li>
+<li><strong>Pause and Ask:</strong> Periodically pause and ask the interviewer if they have any questions. This ensures they are following along and allows you to adjust your explanation based on their level of understanding.</li>
+<li><strong>Avoid Jargon Overload:</strong> Be mindful of using too much technical jargon. Define terms when necessary and explain concepts in a clear, accessible way.</li>
+<li><strong>Show Enthusiasm:</strong> Demonstrate your passion for the topic and your eagerness to learn.</li>
+<li><strong>Be Prepared for Follow-Up Questions:</strong> Anticipate follow-up questions about the implementation details, the advantages and disadvantages of different techniques, and the specific scenarios where they are most effective.</li>
+<li><strong>Adapt to the Interviewer:</strong> Pay attention to the interviewer’s reactions and adjust your level of detail accordingly. If they seem bored or confused, simplify your explanation. If they seem engaged and knowledgeable, you can delve into more technical details.</li>
+</ul>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

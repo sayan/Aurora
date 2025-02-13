@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>learning_rate_scheduling_and_hyperparameter_tuning_for_optimisation_4</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-5.-in-production-environments-scalability-is-a-key-concern.-how-would-you-design-an-automated-system-for-hyperparameter-tuning-and-learning-rate-scheduling-that-is-both-scalable-and-efficient-what-are-potential-pitfalls-during-deployment" class="level2">
+<h2 class="anchored" data-anchor-id="question-5.-in-production-environments-scalability-is-a-key-concern.-how-would-you-design-an-automated-system-for-hyperparameter-tuning-and-learning-rate-scheduling-that-is-both-scalable-and-efficient-what-are-potential-pitfalls-during-deployment">Question: 5. In production environments, scalability is a key concern. How would you design an automated system for hyperparameter tuning and learning rate scheduling that is both scalable and efficient? What are potential pitfalls during deployment?</h2>
+<p><strong>Best Answer</strong></p>
+<p>To design a scalable and efficient automated system for hyperparameter tuning and learning rate scheduling in a production environment, we need to consider several components: a hyperparameter optimization engine, a learning rate scheduler component, distributed computing infrastructure, an experiment tracking system, and a robust deployment strategy.</p>
+<ol type="1">
+<li><p><strong>Hyperparameter Optimization Engine:</strong></p>
+<ul>
+<li><strong>Algorithm Selection</strong>: The core of the system is the hyperparameter optimization algorithm. Suitable choices include:
+<ul>
+<li><p><strong>Bayesian Optimization:</strong> Bayesian optimization builds a probabilistic model mapping hyperparameters to a validation metric. It utilizes Gaussian Processes (GPs) or Tree-structured Parzen Estimators (TPEs) to model the objective function (validation performance). It balances exploration and exploitation intelligently.</p>
+<p>The acquisition function (e.g., Expected Improvement, Probability of Improvement, or Upper Confidence Bound) guides the search for new hyperparameter configurations. Let <span class="math inline">\(f(x)\)</span> be the objective function we are trying to maximize, where <span class="math inline">\(x\)</span> represents the hyperparameters. The Expected Improvement (EI) is defined as:</p>
+<p><span class="math display">\[EI(x) = E[max(f(x) - f(x^+), 0)]\]</span></p>
+<p>where <span class="math inline">\(x^+\)</span> is the best hyperparameter setting found so far. The EI balances exploration (trying uncertain regions) and exploitation (improving upon the best known result).</p></li>
+<li><p><strong>Hyperband:</strong> Hyperband is a bandit-based approach that adaptively allocates resources (e.g., training epochs) to different hyperparameter configurations. It efficiently explores a large search space by stopping poorly performing configurations early.</p>
+<p>Hyperband involves iteratively running successive halving (<span class="math inline">\(SHA\)</span>) with different values of <span class="math inline">\(s\)</span>, which represents the aggressiveness of the halving. <span class="math inline">\(R\)</span> is the maximum resource that can be allocated to a single configuration and <span class="math inline">\(\eta\)</span> is the halving factor.</p>
+<p><span class="math display">\[s_{max} = floor(log_{\eta}(R))\]</span></p>
+<p>For each <span class="math inline">\(s \in [0, s_{max}]\)</span>, run <span class="math inline">\(SHA(n, r, \eta)\)</span> where <span class="math inline">\(n\)</span> is the number of configurations and <span class="math inline">\(r\)</span> is the initial resource allocation.</p></li>
+<li><p><strong>Population Based Training (PBT):</strong> PBT is an evolutionary algorithm that trains a population of models in parallel. Periodically, poorly performing models are replaced with mutated versions of better-performing models. This approach is particularly effective for optimizing learning rate schedules dynamically. PBT leverages exploration and exploitation by having each agent learn through random search and imitation.</p></li>
+<li><p><strong>Random Search &amp; Grid Search:</strong> Though simpler, these can be viable baselines, particularly with appropriate resource allocation.</p></li>
+</ul></li>
+<li><strong>Scalability Considerations:</strong> Implement the optimization algorithm in a distributed manner. Libraries such as Ray Tune, Optuna, or Kubeflow allow parallel evaluation of hyperparameter configurations across multiple machines or GPUs.</li>
+<li><strong>Integration</strong>: Abstract the optimization algorithm with well-defined interfaces, allowing seamless swapping or extension.</li>
+</ul></li>
+<li><p><strong>Learning Rate Scheduler Component:</strong></p>
+<ul>
+<li><strong>Scheduler Types:</strong> Implement various learning rate scheduling techniques such as:
+<ul>
+<li><p><strong>Step Decay:</strong> Reduce the learning rate by a factor every few epochs. For example:</p>
+<p><span class="math display">\[lr = lr_{initial} * drop\_rate^{floor(epoch / drop\_every)}\]</span></p>
+<p>Where <span class="math inline">\(lr_{initial}\)</span> is the initial learning rate, <span class="math inline">\(drop\_rate\)</span> is the decay factor, <span class="math inline">\(epoch\)</span> is the current epoch number, and <span class="math inline">\(drop\_every\)</span> is the number of epochs between drops.</p></li>
+<li><p><strong>Exponential Decay:</strong> Exponentially decay the learning rate over time.</p>
+<p><span class="math display">\[lr = lr_{initial} * e^{-decay\_rate * epoch}\]</span></p>
+<p>Where <span class="math inline">\(decay\_rate\)</span> controls the rate of decay.</p></li>
+<li><p><strong>Cosine Annealing:</strong> Vary the learning rate following a cosine function.</p>
+<p><span class="math display">\[lr = lr_{min} + 0.5 * (lr_{max} - lr_{min}) * (1 + cos(\frac{epoch}{T_{max}}\pi))\]</span></p>
+<p>Where <span class="math inline">\(lr_{min}\)</span> is the minimum learning rate, <span class="math inline">\(lr_{max}\)</span> is the maximum learning rate, and <span class="math inline">\(T_{max}\)</span> is the total number of epochs.</p></li>
+<li><p><strong>Cyclical Learning Rates (CLR):</strong> CLR oscillates the learning rate between lower and upper bounds.</p>
+<p><span class="math display">\[lr = lr_{min} + (lr_{max} - lr_{min}) * f(cycle)\]</span></p>
+<p>Where <span class="math inline">\(f(cycle)\)</span> is a cyclical function (e.g., a triangular or sinusoidal wave).</p></li>
+<li><p><strong>Adaptive Learning Rate Methods:</strong> Adam, RMSprop, and Adagrad adapt the learning rate for each parameter based on historical gradients. Although these methods have some adaptive components already, they can also benefit from learning rate scheduling (e.g., “Adam with Warmup”).</p></li>
+</ul></li>
+<li><strong>Dynamic Scheduling</strong>: Employ adaptive techniques that adjust the learning rate based on validation performance or training dynamics. This might involve monitoring the loss landscape and adjusting the learning rate in response to plateaus or divergence.</li>
+<li><strong>Search Space</strong>: Treat the learning rate schedule parameters (e.g., decay rate, step size, min/max learning rates) as hyperparameters to be optimized by the hyperparameter optimization engine.</li>
+</ul></li>
+<li><p><strong>Distributed Computing Infrastructure:</strong></p>
+<ul>
+<li><strong>Resource Management:</strong> Utilize containerization technologies like Docker and orchestration tools like Kubernetes or cloud-based solutions (AWS SageMaker, Google AI Platform, Azure Machine Learning) to manage compute resources.</li>
+<li><strong>Parallel Evaluation</strong>: Distribute hyperparameter trials across multiple workers. Ensure efficient data parallelism for training large models. Consider using distributed training frameworks like TensorFlow’s <code>tf.distribute.Strategy</code> or PyTorch’s <code>DistributedDataParallel</code>.</li>
+<li><strong>Asynchronous Execution:</strong> Employ asynchronous execution to prevent stragglers from slowing down the entire optimization process.</li>
+</ul></li>
+<li><p><strong>Experiment Tracking and Monitoring:</strong></p>
+<ul>
+<li><strong>Logging:</strong> Log all hyperparameter configurations, training metrics (loss, accuracy, validation performance), and system resource usage (CPU, GPU, memory).</li>
+<li><strong>Visualization</strong>: Use tools like TensorBoard, Weights &amp; Biases, or MLflow to visualize the optimization process, track the performance of different hyperparameter configurations, and identify promising areas of the search space.</li>
+<li><strong>Reproducibility</strong>: Store all code, data, and configurations associated with each experiment to ensure reproducibility.</li>
+</ul></li>
+<li><p><strong>Deployment Strategy:</strong></p>
+<ul>
+<li><strong>Model Versioning:</strong> Implement a robust model versioning system to track different versions of the model and their associated hyperparameters.</li>
+<li><strong>A/B Testing</strong>: Deploy different versions of the model (with different hyperparameter settings or learning rate schedules) in parallel and compare their performance in a production environment using A/B testing.</li>
+<li><strong>Monitoring</strong>: Continuously monitor the model’s performance in production and retrain the model periodically with updated data.</li>
+</ul></li>
+</ol>
+<p><strong>Potential Pitfalls During Deployment</strong></p>
+<ol type="1">
+<li><strong>Model Drift:</strong> The distribution of the input data may change over time, leading to a decrease in model performance. Implement monitoring systems to detect model drift and trigger retraining.</li>
+<li><strong>Variability in Performance:</strong> Differences in the production environment (e.g., hardware, software versions, network latency) can affect model performance. Thoroughly test the model in a production-like environment before deployment.</li>
+<li><strong>Integration Challenges:</strong> Integrating the model into existing systems can be complex. Ensure clear interfaces and communication protocols between the model and other components.</li>
+<li><strong>Cold Starts:</strong> Newly deployed models may perform poorly initially due to a lack of data. Consider using techniques like transfer learning or fine-tuning to mitigate cold start issues.</li>
+<li><strong>Resource Constraints:</strong> Production environments may have limited resources (e.g., CPU, memory, GPU). Optimize the model for resource efficiency without sacrificing performance. Quantization, pruning, and knowledge distillation can help.</li>
+<li><strong>Adversarial Attacks</strong>: Models deployed in production are vulnerable to adversarial attacks. Consider including adversarial training techniques or input validation/sanitization steps as part of the system design.</li>
+<li><strong>Overfitting to Validation Set:</strong> When doing hyperparameter tuning, it is possible to overfit to the validation set. The final selected hyperparameter settings must be validated on a separate held-out test set before deployment.</li>
+</ol>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a step-by-step guide on how to articulate this answer in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with the Big Picture:</strong></p>
+<ul>
+<li>“To build a scalable automated system, we need to consider several key components: a hyperparameter optimization engine, a learning rate scheduler, distributed computing infrastructure, experiment tracking, and a deployment strategy.”</li>
+</ul></li>
+<li><p><strong>Delve into Hyperparameter Optimization:</strong></p>
+<ul>
+<li>“The core is the hyperparameter optimization. I’d consider options like Bayesian Optimization, Hyperband, and Population Based Training. Bayesian Optimization, for example, uses a probabilistic model to map hyperparameters to performance. A key aspect is the acquisition function, such as Expected Improvement, which balances exploration and exploitation.”</li>
+<li>“Mathematically, Expected Improvement can be expressed as… (write the formula quickly if you’re at a whiteboard or explain it concisely). The key is that it guides the search effectively.”</li>
+<li>“For scalability, this needs to be distributed. Libraries like Ray Tune or Optuna are essential for parallel evaluations.”</li>
+</ul></li>
+<li><p><strong>Explain the Learning Rate Scheduler:</strong></p>
+<ul>
+<li>“The learning rate scheduler adjusts the learning rate during training. We could use step decay, exponential decay, cosine annealing, cyclical learning rates, or adaptive methods like Adam. For instance, step decay reduces the learning rate by a factor every few epochs (write the equation quickly if you’re at a whiteboard).”</li>
+<li>“The parameters of the scheduler itself (like the decay rate) should also be treated as hyperparameters and optimized.”</li>
+</ul></li>
+<li><p><strong>Discuss Distributed Computing:</strong></p>
+<ul>
+<li>“Scalability demands a distributed computing infrastructure. Kubernetes or cloud platforms like AWS SageMaker are crucial for resource management and orchestration.”</li>
+<li>“We need parallel evaluation of hyperparameter trials, using data parallelism with frameworks like TensorFlow’s <code>tf.distribute.Strategy</code> or PyTorch’s <code>DistributedDataParallel</code>.”</li>
+<li>“Asynchronous execution is vital to avoid stragglers impacting the optimization process.”</li>
+</ul></li>
+<li><p><strong>Highlight Experiment Tracking:</strong></p>
+<ul>
+<li>“Comprehensive experiment tracking is non-negotiable. We need to log all configurations, metrics, and resource usage. Tools like TensorBoard, Weights &amp; Biases, or MLflow are valuable for visualization and analysis.”</li>
+<li>“Reproducibility is paramount, so storing all code, data, and configurations is critical.”</li>
+</ul></li>
+<li><p><strong>Outline Deployment Strategy:</strong></p>
+<ul>
+<li>“For deployment, a robust model versioning system is required. A/B testing allows comparing different model versions in production.”</li>
+<li>“Continuous monitoring is essential, triggering retraining when necessary.”</li>
+</ul></li>
+<li><p><strong>Address Potential Pitfalls:</strong></p>
+<ul>
+<li>“Several potential pitfalls exist during deployment, including model drift, performance variability, integration challenges, cold starts, resource constraints, and adversarial attacks.”</li>
+<li>“Model drift, where input data changes, is a common issue. Monitoring systems should be in place to detect this and trigger retraining.”</li>
+<li>“Consider defense mechanisms against adversarial attacks as part of the design.”</li>
+</ul></li>
+<li><p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace yourself:</strong> Don’t rush through the explanation.</li>
+<li><strong>Use visuals (if available):</strong> Write down key equations or draw diagrams to illustrate concepts.</li>
+<li><strong>Check for understanding:</strong> Pause occasionally and ask if the interviewer has any questions.</li>
+<li><strong>Stay high-level when appropriate:</strong> Avoid getting bogged down in unnecessary details.</li>
+<li><strong>Be ready to go deeper:</strong> If the interviewer asks for more detail on a specific area, be prepared to provide it.</li>
+<li><strong>Demonstrate practical experience:</strong> Whenever possible, relate your answer to real-world projects or experiences.</li>
+<li><strong>End with a summary:</strong> Reiterate the key points of your answer to ensure they are clear and concise.</li>
+</ul></li>
+</ol>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

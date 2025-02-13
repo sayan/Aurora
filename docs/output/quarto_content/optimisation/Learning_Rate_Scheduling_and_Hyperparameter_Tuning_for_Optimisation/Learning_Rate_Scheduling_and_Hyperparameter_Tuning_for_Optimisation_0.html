@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>learning_rate_scheduling_and_hyperparameter_tuning_for_optimisation_0</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-1.-explain-the-concept-of-learning-rate-scheduling-in-optimization.-what-are-some-commonly-used-scheduling-strategies-and-why-might-they-be-preferable-over-using-a-constant-learning-rate" class="level2">
+<h2 class="anchored" data-anchor-id="question-1.-explain-the-concept-of-learning-rate-scheduling-in-optimization.-what-are-some-commonly-used-scheduling-strategies-and-why-might-they-be-preferable-over-using-a-constant-learning-rate">Question: 1. Explain the concept of learning rate scheduling in optimization. What are some commonly used scheduling strategies, and why might they be preferable over using a constant learning rate?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Learning rate scheduling, also known as learning rate annealing, is a technique used in training machine learning models, particularly deep neural networks, to adjust the learning rate during the training process. The learning rate is a hyperparameter that controls the step size at each iteration while moving toward a minimum of a loss function. Instead of using a fixed learning rate throughout training, scheduling adjusts the learning rate based on the number of epochs/iterations, model performance, or other criteria. This dynamic adjustment often leads to faster convergence, better generalization, and improved final model performance.</p>
+<p><strong>Why Learning Rate Scheduling is Important</strong></p>
+<ul>
+<li><p><strong>Faster Convergence</strong>: Initially, a higher learning rate can accelerate the learning process by making larger steps toward the minimum.</p></li>
+<li><p><strong>Avoiding Local Minima</strong>: As training progresses, reducing the learning rate can help the optimization algorithm settle into a narrower minimum and avoid overshooting or oscillating around the optimal solution.</p></li>
+<li><p><strong>Improved Generalization</strong>: A well-tuned learning rate schedule can improve the model’s ability to generalize to unseen data by finding a more stable and robust minimum.</p></li>
+<li><p><strong>Escaping Plateaus</strong>: Gradual decrease of learning rate helps the model to escape from plateaus and saddle points in the loss landscape.</p></li>
+</ul>
+<p><strong>Common Learning Rate Scheduling Strategies</strong></p>
+<ol type="1">
+<li><p><strong>Time-Based Decay</strong>:</p>
+<ul>
+<li>The learning rate decreases linearly or polynomially with time (number of epochs or iterations). A common formula is:</li>
+</ul>
+<p><span class="math display">\[
+\alpha_t = \alpha_0 / (1 + k \cdot t)
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(\alpha_t\)</span> is the learning rate at time <span class="math inline">\(t\)</span>.</li>
+<li><span class="math inline">\(\alpha_0\)</span> is the initial learning rate.</li>
+<li><span class="math inline">\(k\)</span> is a decay rate hyperparameter.</li>
+<li><span class="math inline">\(t\)</span> is the iteration number or epoch.</li>
+</ul></li>
+<li><p><strong>Step Decay (or Staircase Decay)</strong>:</p>
+<ul>
+<li>The learning rate is reduced by a factor after a fixed number of epochs. For example, drop the learning rate by half every 20 epochs.</li>
+</ul>
+<p><span class="math display">\[
+\alpha_t = \alpha_0 \cdot drop^{floor(t / epochs\_drop)}
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(\alpha_t\)</span> is the learning rate at time <span class="math inline">\(t\)</span>.</li>
+<li><span class="math inline">\(\alpha_0\)</span> is the initial learning rate.</li>
+<li><span class="math inline">\(drop\)</span> is the factor by which the learning rate is reduced (e.g., 0.5 for halving).</li>
+<li><span class="math inline">\(epochs\_drop\)</span> is the number of epochs after which the learning rate is reduced.</li>
+</ul></li>
+<li><p><strong>Exponential Decay</strong>:</p>
+<ul>
+<li>The learning rate decreases exponentially over time.</li>
+</ul>
+<p><span class="math display">\[
+\alpha_t = \alpha_0 \cdot e^{-k \cdot t}
+\]</span></p>
+<p>or</p>
+<p><span class="math display">\[
+\alpha_t = \alpha_0 \cdot decay\_rate^{t}
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(\alpha_t\)</span> is the learning rate at time <span class="math inline">\(t\)</span>.</li>
+<li><span class="math inline">\(\alpha_0\)</span> is the initial learning rate.</li>
+<li><span class="math inline">\(k\)</span> or <span class="math inline">\(decay\_rate\)</span> is a hyperparameter controlling the decay rate.</li>
+</ul></li>
+<li><p><strong>Cosine Annealing</strong>:</p>
+<ul>
+<li>The learning rate follows a cosine function, gradually decreasing and then sharply increasing. This can help the model jump out of local minima.</li>
+</ul>
+<p><span class="math display">\[
+\alpha_t = \alpha_{min} + 0.5 (\alpha_{max} - \alpha_{min}) (1 + cos(\frac{t}{T_{max}} \pi))
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(\alpha_t\)</span> is the learning rate at time <span class="math inline">\(t\)</span>.</li>
+<li><span class="math inline">\(\alpha_{max}\)</span> is the maximum learning rate.</li>
+<li><span class="math inline">\(\alpha_{min}\)</span> is the minimum learning rate.</li>
+<li><span class="math inline">\(T_{max}\)</span> is the total number of iterations or epochs.</li>
+</ul></li>
+<li><p><strong>Cyclical Learning Rates (CLR)</strong>:</p>
+<ul>
+<li>The learning rate varies cyclically between a lower and upper bound. This can help the model explore the loss landscape more effectively. A common method is the triangular policy, where the learning rate increases linearly from the minimum to the maximum bound and then decreases linearly back to the minimum.</li>
+</ul>
+<p><span class="math display">\[
+\alpha_t = \alpha_{min} + (\alpha_{max} - \alpha_{min}) \cdot max(0, (1 - |mod(\frac{t}{stepsize}) - 1|))
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(\alpha_t\)</span> is the learning rate at time <span class="math inline">\(t\)</span>.</li>
+<li><span class="math inline">\(\alpha_{min}\)</span> is the minimum learning rate.</li>
+<li><span class="math inline">\(\alpha_{max}\)</span> is the maximum learning rate.</li>
+<li><span class="math inline">\(stepsize\)</span> is half the cycle length.</li>
+</ul></li>
+<li><p><strong>Adaptive Learning Rate Methods (e.g., Adam, RMSprop, Adagrad)</strong>:</p>
+<ul>
+<li><p>These methods adapt the learning rate for each parameter based on the historical gradients. While they are adaptive, they can also benefit from an overall learning rate schedule. For example, using a warm-up period where the learning rate gradually increases before applying the adaptive method.</p></li>
+<li><p>Adam update rule, incorporating learning rate <span class="math inline">\(\alpha_t\)</span>:</p></li>
+</ul>
+<p><span class="math display">\[
+m_t = \beta_1 m_{t-1} + (1 - \beta_1)g_t \\
+v_t = \beta_2 v_{t-1} + (1 - \beta_2)g_t^2 \\
+\hat{m}_t = \frac{m_t}{1 - \beta_1^t} \\
+\hat{v}_t = \frac{v_t}{1 - \beta_2^t} \\
+\theta_t = \theta_{t-1} - \frac{\alpha_t}{\sqrt{\hat{v}_t} + \epsilon} \hat{m}_t
+\]</span></p>
+<p>Where: * <span class="math inline">\(m_t\)</span> is the first moment vector (estimate of the mean). * <span class="math inline">\(v_t\)</span> is the second moment vector (estimate of the uncentered variance). * <span class="math inline">\(g_t\)</span> is the gradient at time <span class="math inline">\(t\)</span>. * <span class="math inline">\(\beta_1, \beta_2\)</span> are exponential decay rates for the moment estimates. * <span class="math inline">\(\hat{m}_t, \hat{v}_t\)</span> are bias-corrected first and second moment estimates. * <span class="math inline">\(\theta_t\)</span> is the parameter vector being updated. * <span class="math inline">\(\epsilon\)</span> is a small constant for numerical stability. * <span class="math inline">\(\alpha_t\)</span> is the learning rate at time <span class="math inline">\(t\)</span> (potentially scheduled).</p></li>
+</ol>
+<p><strong>Advantages of Learning Rate Scheduling Over Constant Learning Rate</strong></p>
+<ul>
+<li><p><strong>Improved Performance</strong>: Learning rate scheduling often leads to better final model performance compared to a fixed learning rate. By starting with a larger learning rate and gradually decreasing it, the optimization process can quickly explore the search space and then fine-tune the solution.</p></li>
+<li><p><strong>Faster Convergence</strong>: By dynamically adjusting the learning rate, the model can converge faster than with a constant learning rate that may be either too large (causing oscillations) or too small (leading to slow progress).</p></li>
+<li><p><strong>Better Generalization</strong>: Learning rate scheduling can help the model find a more stable and robust minimum, leading to better generalization performance on unseen data.</p></li>
+<li><p><strong>Avoiding Oscillations</strong>: A constant, high learning rate can cause the optimization process to oscillate around the minimum, preventing convergence. Scheduling helps to dampen these oscillations.</p></li>
+<li><p><strong>Escaping Local Minima</strong>: Cyclical and cosine annealing methods are specifically designed to help the model escape local minima by temporarily increasing the learning rate.</p></li>
+</ul>
+<p><strong>Real-World Considerations</strong></p>
+<ul>
+<li><p><strong>Hyperparameter Tuning</strong>: The parameters of the learning rate schedule (e.g., decay rate, step size, maximum/minimum learning rates) need to be tuned, often requiring experimentation.</p></li>
+<li><p><strong>Monitoring Performance</strong>: It’s essential to monitor the model’s performance during training to determine whether the learning rate schedule is effective. Techniques such as validation loss tracking and learning rate plots are commonly employed.</p></li>
+<li><p><strong>Warm-up Period</strong>: Some schedules include a warm-up period at the beginning of training, where the learning rate gradually increases from a small value to the initial learning rate. This can improve stability, especially when using adaptive methods.</p></li>
+<li><p><strong>Combination with Adaptive Methods</strong>: Learning rate schedules can be combined with adaptive methods like Adam. For instance, one could use a cosine annealing schedule to adjust the overall learning rate for Adam.</p></li>
+</ul>
+<p>In summary, learning rate scheduling is a valuable technique for training neural networks that dynamically adjusts the learning rate during training. By employing different scheduling strategies, such as time-based decay, step decay, exponential decay, cosine annealing, and cyclical learning rates, we can often achieve faster convergence, improved generalization, and better final model performance compared to using a constant learning rate. Tuning the hyperparameters of the chosen schedule and monitoring performance during training are crucial for success.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s how to articulate this to an interviewer:</p>
+<ol type="1">
+<li><strong>Start with the Definition</strong>:
+<ul>
+<li>“Learning rate scheduling, or learning rate annealing, is a technique where we adjust the learning rate during training, rather than keeping it constant.”</li>
+<li>“The learning rate is a hyperparameter that controls the step size when updating the model’s weights.”</li>
+</ul></li>
+<li><strong>Explain the Importance (Why Use It?)</strong>:
+<ul>
+<li>“The main reasons to use learning rate scheduling are to achieve faster convergence, avoid getting stuck in local minima, and improve the model’s ability to generalize.”</li>
+<li>“A high learning rate can speed up initial progress, while a lower learning rate helps refine the solution and prevent oscillations near the optimum.”</li>
+</ul></li>
+<li><strong>Describe Common Strategies</strong>:
+<ul>
+<li>“There are several common learning rate scheduling strategies, including…”</li>
+<li><strong>For each strategy (select 2-3 to discuss in detail):</strong>
+<ul>
+<li>State the name of the strategy (e.g., “Step Decay”).</li>
+<li>Give a brief, intuitive explanation (e.g., “In step decay, we reduce the learning rate by a factor after a certain number of epochs.”).</li>
+<li>“Mathematically, this can be represented as [briefly show the equation and explain the parameters].” (e.g., “<span class="math inline">\(\alpha_t = \alpha_0 \cdot drop^{floor(t / epochs\_drop)}\)</span>, where alpha_t is the learning rate at time t, alpha_0 is the initial rate, drop is the decay factor, and epochs_drop is how often we decay.”) <em>Don’t dive into every equation unless asked; keep it high-level initially.</em></li>
+<li>Mention the purpose (e.g., “This is useful for gradually reducing the learning rate as we approach the minimum”).</li>
+</ul></li>
+<li>Examples to mention: Step Decay, Exponential Decay, Cosine Annealing, Cyclical Learning Rates, and how they can be used in conjunction with Adaptive methods like Adam.</li>
+</ul></li>
+<li><strong>Contrast with Constant Learning Rate</strong>:
+<ul>
+<li>“Compared to a constant learning rate, scheduling allows us to be more adaptive. A constant rate might be too high, causing oscillations, or too low, leading to slow progress.”</li>
+<li>“Scheduling provides a way to balance exploration (early high learning rate) and exploitation (later low learning rate).”</li>
+</ul></li>
+<li><strong>Discuss Real-World Considerations</strong>:
+<ul>
+<li>“In practice, choosing the right scheduling strategy and tuning its hyperparameters can be challenging and often requires experimentation.”</li>
+<li>“It’s important to monitor the model’s performance, such as the validation loss, during training to ensure the schedule is effective.”</li>
+<li>“Another consideration is using a warm-up period where the learning rate is gradually increased at the beginning of training, especially with adaptive methods.”</li>
+</ul></li>
+<li><strong>Communication Tips</strong>:
+<ul>
+<li><strong>Pace Yourself</strong>: Don’t rush through the explanation. Give the interviewer time to digest the information.</li>
+<li><strong>Check for Understanding</strong>: Periodically pause and ask if the interviewer has any questions or if you should elaborate on a particular point.</li>
+<li><strong>Visual Aids</strong>: If you are in a virtual interview, consider asking if you can share your screen to show a graph or diagram to illustrate a concept like cosine annealing or cyclical learning rates.</li>
+<li><strong>Be Ready to Dive Deeper</strong>: The interviewer might ask you to explain a specific strategy in more detail or to discuss the advantages and disadvantages of different approaches.</li>
+<li><strong>Stay High-Level Initially</strong>: Avoid overwhelming the interviewer with mathematical details unless they specifically ask for them. Focus on conveying the core concepts and intuition.</li>
+</ul></li>
+</ol>
+<p>By following this structure and keeping the explanation clear and concise, you can effectively demonstrate your understanding of learning rate scheduling and its importance in training neural networks.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -37,6 +37,17 @@ ml_ai_ds_topics = {
         'Agglomerative Clustering',
         'Mean-Shift Clustering'
     ],
+    'optimisation_topics' : [
+    'Gradient Descent',
+    'Stochastic Gradient Descent',
+    'Mini-Batch Gradient Descent',
+    'Momentum',
+    'Nesterov Accelerated Gradient',
+    'Adagrad',
+    'RMSprop',
+    'Adam, AdaMax, AdamW',
+    'Learning Rate Scheduling and Hyperparameter Tuning for Optimisation' #    'Hyperparameter Tuning for Optimisation'
+],
     'dimensionality_reduction_topics': [
         'Principal Component Analysis (PCA)',
         'Singular Value Decomposition (SVD)',

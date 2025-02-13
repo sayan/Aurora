@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>stochastic_gradient_descent_5</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-6.-what-common-pitfalls-might-one-encounter-when-using-sgd-such-as-dealing-with-local-minima-saddle-points-or-unstable-gradients-what-techniques-or-modifications-can-be-applied-to-mitigate-these-issues" class="level2">
+<h2 class="anchored" data-anchor-id="question-6.-what-common-pitfalls-might-one-encounter-when-using-sgd-such-as-dealing-with-local-minima-saddle-points-or-unstable-gradients-what-techniques-or-modifications-can-be-applied-to-mitigate-these-issues">Question: 6. What common pitfalls might one encounter when using SGD, such as dealing with local minima, saddle points, or unstable gradients? What techniques or modifications can be applied to mitigate these issues?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Stochastic Gradient Descent (SGD) is a cornerstone optimization algorithm in machine learning, particularly for training large models. While effective, it’s prone to several pitfalls. Understanding these and knowing how to address them is crucial for successful model training.</p>
+<p><strong>1. Local Minima and Saddle Points</strong></p>
+<ul>
+<li><p><strong>Local Minima:</strong> In non-convex optimization landscapes (common in neural networks), SGD can get trapped in local minima. A local minimum is a point where the cost function is smaller than at all nearby points, but not necessarily the global minimum.</p></li>
+<li><p><strong>Saddle Points:</strong> These are points where the gradient is zero, but the point is neither a minimum nor a maximum. In high-dimensional spaces, saddle points are far more prevalent than local minima. The gradient points in some dimensions are ascending and in other dimensions are descending.</p>
+<p>SGD can get stuck near saddle points because the gradient is close to zero, slowing down the training process. The inherent noise in SGD can sometimes help escape saddle points (by “kicking” the optimizer out), but it’s not a reliable mechanism.</p></li>
+</ul>
+<p><strong>2. Unstable Gradients</strong></p>
+<ul>
+<li><strong>Vanishing Gradients:</strong> In deep networks, gradients can become extremely small as they are backpropagated through many layers. This is particularly common with activation functions like sigmoid, where the derivative approaches zero for large positive or negative inputs.</li>
+<li><strong>Exploding Gradients:</strong> Conversely, gradients can become extremely large, leading to large updates that destabilize the training process. This is particularly problematic in recurrent neural networks (RNNs).</li>
+</ul>
+<p><strong>3. Sensitivity to Learning Rate</strong></p>
+<ul>
+<li>Choosing an appropriate learning rate is critical. A learning rate that is too high can cause oscillations or divergence, while a learning rate that is too low can lead to slow convergence or getting stuck in local minima/saddle points.</li>
+<li>A fixed learning rate can be suboptimal throughout training, as the ideal learning rate often changes as the optimizer approaches a minimum.</li>
+</ul>
+<p><strong>4. Noisy Updates</strong></p>
+<ul>
+<li>SGD updates are based on a single data point or a small batch of data points. This introduces noise into the gradient estimation, which can lead to oscillations and slow convergence. While this noise can help escape saddle points, it can also hinder convergence near the optimum.</li>
+</ul>
+<p><strong>Mitigation Techniques</strong></p>
+<p>Several techniques can be used to mitigate these issues:</p>
+<ul>
+<li><p><strong>Momentum:</strong></p>
+<ul>
+<li><p>Momentum helps accelerate SGD in the relevant direction and dampens oscillations. It works by accumulating an exponentially decaying average of past gradients. The update rule is:</p>
+<p><span class="math display">\[v_t = \beta v_{t-1} + (1 - \beta) \nabla L(\theta_{t-1})\]</span> <span class="math display">\[\theta_t = \theta_{t-1} - \alpha v_t\]</span></p>
+<p>Where:</p>
+<ul>
+<li><span class="math inline">\(\theta\)</span> is the model parameters.</li>
+<li><span class="math inline">\(v\)</span> is the momentum vector.</li>
+<li><span class="math inline">\(\alpha\)</span> is the learning rate.</li>
+<li><span class="math inline">\(\beta\)</span> is the momentum coefficient (typically 0.9).</li>
+<li><span class="math inline">\(\nabla L(\theta_{t-1})\)</span> is the gradient of the loss function <span class="math inline">\(L\)</span> with respect to the parameters <span class="math inline">\(\theta\)</span>.</li>
+</ul>
+<p>By accumulating past gradients, momentum helps smooth out the updates and makes it easier to escape shallow local minima and accelerate convergence.</p></li>
+</ul></li>
+<li><p><strong>Nesterov Accelerated Gradient (NAG):</strong></p>
+<ul>
+<li><p>NAG is a variant of momentum that improves convergence by evaluating the gradient at a “lookahead” position. The update rule is:</p>
+<p><span class="math display">\[v_t = \beta v_{t-1} + (1 - \beta) \nabla L(\theta_{t-1} - \alpha \beta v_{t-1})\]</span> <span class="math display">\[\theta_t = \theta_{t-1} - \alpha v_t\]</span></p>
+<p>NAG attempts to correct the overshoot problem by calculating the gradient not with respect to the current position in parameter space but with respect to the approximate future position of the parameters.</p></li>
+</ul></li>
+<li><p><strong>Adaptive Learning Rate Methods:</strong></p>
+<ul>
+<li><p>These methods adjust the learning rate for each parameter individually based on the history of its gradients. This allows for faster convergence and better handling of different parameter sensitivities. Common adaptive learning rate methods include:</p>
+<ul>
+<li><p><strong>Adam (Adaptive Moment Estimation):</strong> Combines momentum and RMSprop.</p>
+<p><span class="math display">\[m_t = \beta_1 m_{t-1} + (1 - \beta_1) \nabla L(\theta_{t-1})\]</span> <span class="math display">\[v_t = \beta_2 v_{t-1} + (1 - \beta_2) (\nabla L(\theta_{t-1}))^2\]</span> <span class="math display">\[\hat{m}_t = \frac{m_t}{1 - \beta_1^t}\]</span> <span class="math display">\[\hat{v}_t = \frac{v_t}{1 - \beta_2^t}\]</span> <span class="math display">\[\theta_t = \theta_{t-1} - \frac{\alpha}{\sqrt{\hat{v}_t} + \epsilon} \hat{m}_t\]</span></p>
+<p>Where:</p>
+<ul>
+<li><span class="math inline">\(m_t\)</span> is the first moment (mean) of the gradients.</li>
+<li><span class="math inline">\(v_t\)</span> is the second moment (uncentered variance) of the gradients.</li>
+<li><span class="math inline">\(\beta_1\)</span> and <span class="math inline">\(\beta_2\)</span> are exponential decay rates for the moment estimates (typically 0.9 and 0.999).</li>
+<li><span class="math inline">\(\epsilon\)</span> is a small constant for numerical stability.</li>
+<li><span class="math inline">\(\hat{m}_t\)</span> and <span class="math inline">\(\hat{v}_t\)</span> are bias-corrected estimates of the moments.</li>
+</ul></li>
+<li><p><strong>RMSprop (Root Mean Square Propagation):</strong> Divides the learning rate for a weight by a running average of the magnitudes of recent gradients for that weight.</p>
+<p><span class="math display">\[v_t = \beta v_{t-1} + (1 - \beta) (\nabla L(\theta_{t-1}))^2\]</span> <span class="math display">\[\theta_t = \theta_{t-1} - \frac{\alpha}{\sqrt{v_t} + \epsilon} \nabla L(\theta_{t-1})\]</span></p>
+<p>RMSProp adapts the learning rate for each parameter by dividing it by the root mean square of the past gradients.</p></li>
+<li><p><strong>Adagrad (Adaptive Gradient Algorithm):</strong> Adapts the learning rate to the parameters, performing larger updates for infrequent and smaller updates for frequent parameters.</p>
+<p><span class="math display">\[s_t = s_{t-1} + (\nabla L(\theta_{t-1}))^2\]</span> <span class="math display">\[\theta_t = \theta_{t-1} - \frac{\alpha}{\sqrt{s_t} + \epsilon} \nabla L(\theta_{t-1})\]</span></p>
+<p>Adagrad is well-suited for dealing with sparse data because it adapts the learning rate based on the historical gradient information of each parameter.</p></li>
+</ul></li>
+</ul></li>
+<li><p><strong>Learning Rate Scheduling:</strong></p>
+<ul>
+<li><p>Adjusting the learning rate during training can significantly improve convergence. Common scheduling techniques include:</p>
+<ul>
+<li><strong>Step Decay:</strong> Reduce the learning rate by a constant factor every few epochs.</li>
+<li><strong>Exponential Decay:</strong> Reduce the learning rate exponentially over time. <span class="math display">\[ \alpha_t = \alpha_0 e^{-kt}\]</span> Where <span class="math inline">\(\alpha_0\)</span> is the initial learning rate, <span class="math inline">\(k\)</span> is the decay rate, and <span class="math inline">\(t\)</span> is the iteration number.</li>
+<li><strong>Cosine Annealing:</strong> Vary the learning rate according to a cosine function.</li>
+<li><strong>Cyclical Learning Rates (CLR):</strong> Vary the learning rate between two bounds cyclically.</li>
+<li><strong>One Cycle Policy:</strong> Combines cyclical learning rates with a momentum schedule.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Gradient Clipping:</strong></p>
+<ul>
+<li><p>To prevent exploding gradients, gradient clipping thresholds the gradients during backpropagation. If the gradient norm exceeds a certain value, it is scaled down.</p>
+<p><span class="math display">\[\text{if } ||\nabla L(\theta)||_2 &gt; \text{threshold:}\]</span> <span class="math display">\[\nabla L(\theta) = \frac{\text{threshold}}{||\nabla L(\theta)||_2} \nabla L(\theta)\]</span></p></li>
+</ul></li>
+<li><p><strong>Batch Normalization:</strong></p>
+<ul>
+<li>Batch normalization normalizes the activations of each layer, which helps to stabilize the training process and allows for the use of higher learning rates.</li>
+</ul></li>
+<li><p><strong>Weight Initialization:</strong></p>
+<ul>
+<li><p>Proper weight initialization is crucial for avoiding vanishing or exploding gradients in deep networks. Common initialization techniques include:</p>
+<ul>
+<li><strong>Xavier/Glorot Initialization:</strong> Initializes weights based on the number of input and output neurons.</li>
+<li><strong>He Initialization:</strong> Similar to Xavier initialization but adapted for ReLU activations.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Early Stopping:</strong></p>
+<ul>
+<li>Monitor the performance on a validation set and stop training when the performance starts to degrade. This prevents overfitting and can also help to avoid getting stuck in local minima.</li>
+</ul></li>
+<li><p><strong>Regularization:</strong></p>
+<ul>
+<li><p>Regularization techniques such as L1 and L2 regularization can help to prevent overfitting and improve generalization. Regularization adds a penalty term to the loss function that discourages large weights, which can help to smooth the optimization landscape.</p>
+<ul>
+<li><strong>L1 Regularization (Lasso):</strong> Adds the sum of the absolute values of the weights to the loss function. <span class="math display">\[L_{regularized} = L + \lambda \sum_{i=1}^{n} |w_i|\]</span></li>
+<li><strong>L2 Regularization (Ridge):</strong> Adds the sum of the squares of the weights to the loss function. <span class="math display">\[L_{regularized} = L + \frac{\lambda}{2} \sum_{i=1}^{n} w_i^2\]</span> Where <span class="math inline">\(L\)</span> is the original loss function, <span class="math inline">\(w_i\)</span> are the weights, <span class="math inline">\(n\)</span> is the number of weights, and <span class="math inline">\(\lambda\)</span> is the regularization parameter.</li>
+</ul></li>
+</ul></li>
+</ul>
+<p><strong>Real-World Considerations</strong></p>
+<ul>
+<li><strong>Non-Stationary Data Distributions:</strong> If the data distribution changes over time, the model may need to be retrained periodically. Techniques such as online learning and continual learning can be used to adapt to changing data distributions.</li>
+<li><strong>Initialization Strategies:</strong> The choice of initialization strategy can significantly impact the training process. It’s important to experiment with different initialization strategies to find one that works well for the specific problem.</li>
+<li><strong>Hyperparameter Tuning:</strong> The hyperparameters of the optimization algorithm (e.g., learning rate, momentum, batch size) need to be carefully tuned to achieve good performance. This can be done using techniques such as grid search, random search, or Bayesian optimization.</li>
+</ul>
+<p>By understanding the pitfalls of SGD and employing appropriate mitigation techniques, one can train more effective machine learning models.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a step-by-step guide on delivering this answer verbally:</p>
+<ol type="1">
+<li><p><strong>Start with a High-Level Overview:</strong></p>
+<ul>
+<li>“SGD is fundamental but has challenges like local minima, saddle points, unstable gradients, and sensitivity to the learning rate.”</li>
+</ul></li>
+<li><p><strong>Discuss Local Minima and Saddle Points:</strong></p>
+<ul>
+<li>“SGD can get trapped in local minima. But more often in high dimensions, it struggles with saddle points where gradients are near zero.”</li>
+<li>“While SGD’s noise <em>can</em> help escape saddle points, it’s unreliable.”</li>
+</ul></li>
+<li><p><strong>Explain Unstable Gradients:</strong></p>
+<ul>
+<li>“Deep networks suffer from vanishing or exploding gradients.”</li>
+<li>“Vanishing gradients are where the values become very small, and exploding gradients are where the values become extremely large, destabilizing the training process”</li>
+</ul></li>
+<li><p><strong>Address Learning Rate Sensitivity:</strong></p>
+<ul>
+<li>“The learning rate is crucial. Too high leads to oscillations; too low leads to slow convergence.”</li>
+</ul></li>
+<li><p><strong>Introduce Mitigation Techniques (Prioritize a few key ones):</strong></p>
+<ul>
+<li><p>Choose 3-4 of the most important techniques (e.g., Momentum, Adam, Learning Rate Scheduling, Gradient Clipping).</p></li>
+<li><p>For <em>each</em> selected technique:</p>
+<ul>
+<li><strong>State the technique:</strong> “Momentum helps by…”</li>
+<li><strong>Explain intuitively:</strong> “…accumulating past gradients to smooth updates.”</li>
+<li><strong>Show the equation (optional, and only if comfortable):</strong> “Mathematically, it looks like this: <span class="math inline">\(&lt;v_t = \beta v_{t-1} + (1 - \beta) \nabla L(\theta_{t-1})&gt;\)</span>, <span class="math inline">\(&lt;\theta_t = \theta_{t-1} - \alpha v_t&gt;\)</span>. But the key takeaway is the accumulation of the gradient.”</li>
+<li><strong>Summarize its benefit:</strong> “So, momentum helps escape shallow minima.”</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Briefly Mention Other Techniques:</strong></p>
+<ul>
+<li>“Other techniques include Batch Normalization, Weight Initialization, Early Stopping and Regularization”</li>
+<li>“These help with gradient stabilization, preventing overfitting, and finding better starting points for optimization.”</li>
+</ul></li>
+<li><p><strong>Discuss Real-World Considerations:</strong></p>
+<ul>
+<li>“In practice, consider non-stationary data distributions and adapt models accordingly.”</li>
+<li>“Hyperparameter tuning, especially the learning rate, is always crucial for achieving optimal results.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips</strong></p>
+<ul>
+<li><strong>Pace:</strong> Slow down when explaining mathematical concepts. Give the interviewer time to process.</li>
+<li><strong>Visual Aids:</strong> If in person, consider using a whiteboard to sketch the loss landscape or write down equations. If virtual, be prepared to share your screen and have a simple visual prepared if needed.</li>
+<li><strong>Check for Understanding:</strong> Periodically ask, “Does that make sense?” or “Any questions so far?”</li>
+<li><strong>Focus on Intuition:</strong> Prioritize the <em>why</em> over the <em>how</em>. Explain the intuition behind each technique before diving into the math.</li>
+<li><strong>Tailor to the Audience:</strong> Gauge the interviewer’s level of understanding and adjust your explanation accordingly. If they seem unfamiliar with a concept, provide a more basic explanation.</li>
+<li><strong>Be Confident:</strong> You know this material. Project confidence in your understanding.</li>
+<li><strong>Be Concise:</strong> Do not over-explain a concept; it can make the explanation seem more complicated than it is.</li>
+</ul>
+<p>By following these guidelines, you can deliver a clear, concise, and insightful answer that demonstrates your senior-level expertise in SGD and optimization techniques.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
