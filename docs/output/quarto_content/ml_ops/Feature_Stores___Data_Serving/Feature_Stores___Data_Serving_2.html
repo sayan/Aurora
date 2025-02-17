@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>feature_stores___data_serving_2</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-3.-how-would-you-design-a-feature-store-system-capable-of-handling-high-dimensional-features-with-potentially-messy-data-what-strategies-would-you-employ-for-data-cleaning-and-validation" class="level2">
+<h2 class="anchored" data-anchor-id="question-3.-how-would-you-design-a-feature-store-system-capable-of-handling-high-dimensional-features-with-potentially-messy-data-what-strategies-would-you-employ-for-data-cleaning-and-validation">Question: 3. How would you design a feature store system capable of handling high-dimensional features with potentially messy data? What strategies would you employ for data cleaning and validation?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Designing a feature store for high-dimensional, messy data requires a robust architecture addressing scalability, data quality, and efficient serving. Here’s a comprehensive approach:</p>
+<section id="architecture-overview" class="level3">
+<h3 class="anchored" data-anchor-id="architecture-overview">1. Architecture Overview</h3>
+<p>The feature store architecture will consist of the following components:</p>
+<ul>
+<li><strong>Ingestion Layer:</strong> Responsible for extracting features from various data sources.</li>
+<li><strong>Transformation &amp; Validation Layer:</strong> Handles data cleaning, transformation, and validation.</li>
+<li><strong>Storage Layer:</strong> Stores the features (both online and offline).</li>
+<li><strong>Serving Layer:</strong> Provides access to features for model training and inference.</li>
+<li><strong>Metadata Store:</strong> Centralized repository for feature definitions, lineage, and other metadata.</li>
+</ul>
+<p>Here’s a more detailed breakdown:</p>
+<section id="ingestion-layer" class="level4">
+<h4 class="anchored" data-anchor-id="ingestion-layer">1.1 Ingestion Layer:</h4>
+<ul>
+<li><strong>Modular Pipelines:</strong> Develop modular ingestion pipelines using frameworks like Apache Beam, Spark, or Flink. This allows for independent scaling and updates of individual data sources. Pipelines will need to handle various data formats (CSV, JSON, Parquet, Avro), and sources (databases, data lakes, streaming platforms).</li>
+<li><strong>Data Connectors:</strong> Use pre-built or custom data connectors to interact with various data sources, abstracting away the underlying complexities.</li>
+<li><strong>Change Data Capture (CDC):</strong> Implement CDC mechanisms (e.g., Debezium, Kafka Connect) for near real-time feature updates from transactional databases.</li>
+<li><strong>Feature Engineering at Ingestion:</strong> Perform basic feature engineering close to the data source to reduce downstream processing.</li>
+</ul>
+</section>
+<section id="transformation-validation-layer" class="level4">
+<h4 class="anchored" data-anchor-id="transformation-validation-layer">1.2 Transformation &amp; Validation Layer</h4>
+<p>This layer is critical for handling messy data. It encompasses the following:</p>
+<ul>
+<li><strong>Data Cleaning:</strong>
+<ul>
+<li><strong>Missing Value Handling:</strong>
+<ul>
+<li>Imputation: Using mean, median, mode, or more sophisticated methods like k-NN imputation or model-based imputation. Consider using libraries like <code>sklearn.impute</code> in Python.</li>
+<li>Deletion: Removing rows or columns with excessive missing values (use with caution). Keep track of the number of dropped records in metadata.</li>
+<li>Flagging: Introduce a binary indicator feature to denote the presence of missing data.</li>
+</ul></li>
+<li><strong>Outlier Detection:</strong>
+<ul>
+<li>Statistical Methods: Z-score, IQR (Interquartile Range), Grubbs’ test.</li>
+<li>Machine Learning Methods: Isolation Forest, One-Class SVM, Local Outlier Factor (LOF). These are particularly useful for high-dimensional data where statistical methods might struggle.</li>
+<li>Domain-Specific Rules: Apply business rules to identify outliers based on expert knowledge.</li>
+</ul></li>
+<li><strong>Data Type Conversion:</strong> Ensure data types are consistent and appropriate (e.g., converting strings to numerical values, dates to timestamps).</li>
+<li><strong>Handling Inconsistent Data:</strong> Resolve conflicting data entries based on predefined rules or data reconciliation processes.</li>
+<li><strong>Text Cleaning:</strong> For textual features, perform stemming, lemmatization, stop word removal, and handle encoding issues.</li>
+</ul></li>
+<li><strong>Data Validation:</strong>
+<ul>
+<li><strong>Schema Validation:</strong> Enforce data types and format constraints.</li>
+<li><strong>Range Checks:</strong> Verify that numerical values fall within acceptable ranges.</li>
+<li><strong>Uniqueness Checks:</strong> Ensure that unique identifiers are truly unique.</li>
+<li><strong>Consistency Checks:</strong> Validate relationships between different features (e.g., if feature A &gt; 0, then feature B must also be &gt; 0).</li>
+<li><strong>Statistical Validation:</strong> Monitor the distribution of features over time and detect significant shifts (e.g., using Kolmogorov-Smirnov test, Chi-squared test).</li>
+<li><strong>Custom Validation Rules:</strong> Implement validation rules based on specific business requirements.</li>
+</ul></li>
+<li><strong>Implementation:</strong>
+<ul>
+<li>Utilize data validation libraries like <code>Great Expectations</code>, <code>Pandera</code>, or <code>TFDV (TensorFlow Data Validation)</code>.</li>
+<li>Implement a validation pipeline that runs automatically whenever new data is ingested.</li>
+<li>Store validation results (statistics, anomalies) in the metadata store for monitoring and debugging.</li>
+<li>Automate data profiling to discover data quality issues proactively.</li>
+</ul></li>
+</ul>
+</section>
+<section id="storage-layer" class="level4">
+<h4 class="anchored" data-anchor-id="storage-layer">1.3 Storage Layer</h4>
+<ul>
+<li><strong>Online Store:</strong> Low-latency, key-value store (e.g., Redis, Cassandra) for serving features in real-time during inference. The choice depends on the read/write patterns, latency requirements and feature volume.</li>
+<li><strong>Offline Store:</strong> Scalable, batch-oriented storage (e.g., Hadoop/HDFS, AWS S3, Google Cloud Storage, Azure Blob Storage) for storing historical feature data used for model training and batch inference. Parquet format is ideal for columnar storage and efficient querying. Consider an object storage like S3 or GCS for cost-effectiveness and scalability.</li>
+<li><strong>Feature Materialization:</strong> Implement efficient feature materialization strategies to populate the online store from the offline store. This can be done periodically or triggered by data changes.</li>
+<li><strong>High-Dimensional Data Considerations:</strong>
+<ul>
+<li>For extremely high-dimensional features (e.g., embeddings), consider using vector databases like Faiss, Annoy, or Milvus in the online store.</li>
+<li>Explore dimensionality reduction techniques (PCA, t-SNE, UMAP) if appropriate to reduce storage requirements and improve serving performance. However, be mindful of information loss.</li>
+</ul></li>
+</ul>
+</section>
+<section id="serving-layer" class="level4">
+<h4 class="anchored" data-anchor-id="serving-layer">1.4 Serving Layer</h4>
+<ul>
+<li><strong>Low-Latency API:</strong> Provide a low-latency API (e.g., REST, gRPC) for accessing features from the online store.</li>
+<li><strong>Batch Feature Retrieval:</strong> Support batch retrieval of features from the offline store for model training and batch inference.</li>
+<li><strong>Point-in-Time Correctness:</strong> Implement mechanisms to ensure point-in-time correctness when joining features from different sources. This is crucial for avoiding data leakage and ensuring model accuracy. Feature versioning with appropriate timestamps is often necessary.</li>
+<li><strong>Feature Transformation at Serving Time:</strong> Support on-the-fly feature transformations (e.g., scaling, normalization) if required for model compatibility.</li>
+</ul>
+</section>
+<section id="metadata-store" class="level4">
+<h4 class="anchored" data-anchor-id="metadata-store">1.5 Metadata Store</h4>
+<ul>
+<li><strong>Centralized Repository:</strong> Store feature definitions, data lineage, validation results, feature statistics, and other metadata in a centralized repository.</li>
+<li><strong>Feature Discovery:</strong> Enable users to easily discover and understand available features.</li>
+<li><strong>Data Governance:</strong> Enforce data governance policies and track data quality metrics.</li>
+<li><strong>Implementation:</strong> Use a metadata store like Apache Atlas, Amundsen, or Feast’s metadata store.</li>
+<li><strong>Lineage Tracking:</strong> Store data lineage information for traceability and debugging.</li>
+</ul>
+</section>
+</section>
+<section id="strategies-for-data-cleaning-and-validation" class="level3">
+<h3 class="anchored" data-anchor-id="strategies-for-data-cleaning-and-validation">2. Strategies for Data Cleaning and Validation</h3>
+<ul>
+<li><strong>Automated Validation Routines:</strong>
+<ul>
+<li>Implement automated data validation routines that run continuously and detect data quality issues in real-time.</li>
+<li>Use alerting mechanisms to notify data engineers when validation rules are violated.</li>
+</ul></li>
+<li><strong>Error Handling:</strong>
+<ul>
+<li>Implement robust error handling mechanisms to handle data quality issues gracefully.</li>
+<li>Log errors and track data quality metrics for monitoring and debugging.</li>
+<li>Implement retry mechanisms for transient errors.</li>
+</ul></li>
+<li><strong>Data Reconciliation:</strong>
+<ul>
+<li>Implement data reconciliation processes to resolve conflicting data entries.</li>
+<li>Use data lineage information to trace the origin of data and identify the correct source of truth.</li>
+</ul></li>
+<li><strong>Handling Missing and Anomalous Values:</strong>
+<ul>
+<li>Apply statistical and rule-based approaches to handle missing and anomalous values.</li>
+<li>Use imputation techniques to fill in missing values.</li>
+<li>Use outlier detection techniques to identify and handle anomalous values.</li>
+</ul></li>
+<li><strong>Data Profiling:</strong> Regularly profile the data to understand its characteristics and identify potential data quality issues.</li>
+<li><strong>Data Versioning:</strong> Implement data versioning to track changes to the data over time and enable reproducibility.</li>
+</ul>
+</section>
+<section id="scalability-and-performance" class="level3">
+<h3 class="anchored" data-anchor-id="scalability-and-performance">3. Scalability and Performance</h3>
+<ul>
+<li><strong>Horizontal Scaling:</strong> Design the system to scale horizontally by adding more nodes to the cluster.</li>
+<li><strong>Caching:</strong> Implement caching mechanisms to reduce latency and improve performance.</li>
+<li><strong>Asynchronous Processing:</strong> Use asynchronous processing to offload long-running tasks.</li>
+<li><strong>Resource Management:</strong> Optimize resource utilization by using techniques like resource pooling and auto-scaling.</li>
+</ul>
+</section>
+<section id="high-dimensional-feature-specific-strategies" class="level3">
+<h3 class="anchored" data-anchor-id="high-dimensional-feature-specific-strategies">4. High-Dimensional Feature Specific Strategies</h3>
+<ul>
+<li><strong>Dimensionality Reduction:</strong> Consider PCA, t-SNE, UMAP as pre-processing steps if appropriate to reduce feature space and remove noise.</li>
+<li><strong>Feature Selection:</strong> Use techniques like information gain, chi-square, or model-based feature selection to identify the most relevant features.</li>
+<li><strong>Vector Databases:</strong> Utilize vector databases (Faiss, Annoy, Milvus) for efficient similarity search and retrieval of high-dimensional embeddings.</li>
+<li><strong>Specialized Hardware:</strong> Consider using GPUs or specialized hardware accelerators for computationally intensive tasks like dimensionality reduction or similarity search.</li>
+</ul>
+</section>
+<section id="technologies" class="level3">
+<h3 class="anchored" data-anchor-id="technologies">5. Technologies</h3>
+<ul>
+<li><strong>Orchestration:</strong> Apache Airflow, Kubeflow Pipelines</li>
+<li><strong>Data Processing:</strong> Apache Spark, Apache Beam, Dask</li>
+<li><strong>Data Validation:</strong> Great Expectations, TFDV, Pandera</li>
+<li><strong>Online Store:</strong> Redis, Cassandra, ScyllaDB</li>
+<li><strong>Offline Store:</strong> Hadoop/HDFS, AWS S3, Google Cloud Storage, Azure Blob Storage</li>
+<li><strong>Metadata Store:</strong> Apache Atlas, Amundsen, Feast</li>
+<li><strong>Vector Databases:</strong> Faiss, Annoy, Milvus</li>
+</ul>
+<p>By combining a well-designed architecture with robust data cleaning and validation strategies, we can build a feature store that can handle high-dimensional features with potentially messy data, enabling the development of high-performance machine learning models.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a step-by-step guide on how to articulate this answer in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with a high-level overview:</strong> “To design a feature store capable of handling high-dimensional, messy data, I’d focus on building a robust and scalable system with a strong emphasis on data quality and efficient serving. The key components would be Ingestion, Transformation &amp; Validation, Storage (both online and offline), a Serving layer, and a Metadata Store.”</p></li>
+<li><p><strong>Elaborate on the Ingestion Layer:</strong> “The Ingestion layer is responsible for pulling data from various sources. I’d implement modular pipelines using a framework like Spark or Beam to handle diverse data formats and sources. Change Data Capture would be critical for near real-time updates. We can apply some transformations early at the ingestion layer.”</p></li>
+<li><p><strong>Emphasize the Transformation &amp; Validation Layer:</strong> “The most critical aspect for messy data is a robust Transformation and Validation layer. This involves data cleaning steps like handling missing values through imputation (using methods like mean, median, or k-NN imputation), outlier detection (using statistical methods like Z-score or ML techniques like Isolation Forest), data type conversion, and resolving inconsistencies. We’d use validation libraries like Great Expectations or TFDV. Automated validation routines, comprehensive error handling, and data reconciliation processes are essential here.” <em>Pause here and ask if the interviewer would like a more in-depth example or wants you to elaborate on a particular technique.</em></p></li>
+<li><p><strong>Explain the Storage Layer:</strong> “The Storage layer consists of an online store for low-latency serving (Redis or Cassandra) and an offline store for batch processing (HDFS, S3). Feature materialization moves features between them. For very high-dimensional features, we might consider vector databases like Faiss. Dimensionality reduction techniques could be used before storage, but we need to be careful with information loss.”</p></li>
+<li><p><strong>Describe the Serving Layer:</strong> “The Serving Layer exposes features through a low-latency API. It supports both real-time and batch retrieval and ensures point-in-time correctness. On-the-fly transformations can be implemented at this layer if needed.”</p></li>
+<li><p><strong>Highlight the Metadata Store:</strong> “A Metadata Store (like Apache Atlas) is crucial for feature discovery, data governance, and tracking data lineage. It ties everything together.”</p></li>
+<li><p><strong>Address Scalability and Performance:</strong> “Scalability is addressed through horizontal scaling, caching, and asynchronous processing. Resource management is also key.”</p></li>
+<li><p><strong>Discuss High-Dimensional Feature Strategies:</strong> “For high-dimensional data specifically, we can use dimensionality reduction (PCA, UMAP), feature selection techniques, and vector databases. Specialized hardware like GPUs can also be beneficial.”</p></li>
+<li><p><strong>Mention Key Technologies:</strong> “Finally, I’d leverage technologies like Airflow for orchestration, Spark for data processing, Great Expectations for validation, Redis for online storage, S3 for offline storage, and Feast for metadata management. We’ll need to adapt these choices based on the specific requirements.”</p></li>
+</ol>
+<ul>
+<li><strong>Communication Tips:</strong>
+<ul>
+<li><strong>Structure:</strong> Follow a logical structure (Ingestion -&gt; Transformation -&gt; Storage -&gt; Serving -&gt; Metadata).</li>
+<li><strong>Emphasis:</strong> Emphasize the importance of the Transformation &amp; Validation layer.</li>
+<li><strong>Mathematical Detail:</strong> When discussing techniques like imputation or outlier detection, be prepared to provide the mathematical formula but avoid overwhelming the interviewer unless they ask for it explicitly. For example: “Z-score is calculated as the number of standard deviations a data point is from the mean: <span class="math inline">\(&lt;equation&gt;Z = (x - \mu) / \sigma&lt;/equation&gt;\)</span>. We would flag points with a Z-score above a threshold.”</li>
+<li><strong>Real-world Considerations:</strong> Highlight trade-offs. For example, “Dimensionality reduction can improve performance, but it might also lead to information loss.”</li>
+<li><strong>Interaction:</strong> Pause periodically to gauge the interviewer’s understanding and allow them to ask questions.</li>
+<li><strong>Enthusiasm:</strong> Show enthusiasm for data quality and building robust systems.</li>
+<li><strong>Be ready to provide examples:</strong> Have concrete examples of specific validation rules, transformation techniques, or technologies prepared.</li>
+</ul></li>
+</ul>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

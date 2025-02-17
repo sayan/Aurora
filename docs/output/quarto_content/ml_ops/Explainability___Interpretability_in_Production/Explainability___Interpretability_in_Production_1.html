@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>explainability___interpretability_in_production_1</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-2.-what-are-some-common-techniques-e.g.-lime-shap-for-achieving-model-explainability-and-how-do-they-differ-in-terms-of-assumptions-output-types-and-limitations" class="level2">
+<h2 class="anchored" data-anchor-id="question-2.-what-are-some-common-techniques-e.g.-lime-shap-for-achieving-model-explainability-and-how-do-they-differ-in-terms-of-assumptions-output-types-and-limitations">Question: 2. What are some common techniques (e.g., LIME, SHAP) for achieving model explainability, and how do they differ in terms of assumptions, output types, and limitations?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Model explainability is crucial for building trust, ensuring fairness, and debugging machine learning models, especially in production environments. LIME (Local Interpretable Model-agnostic Explanations) and SHAP (SHapley Additive exPlanations) are two popular techniques for achieving model explainability. They both aim to provide insights into how a model arrives at a specific prediction, but they differ significantly in their approaches, assumptions, output types, and limitations.</p>
+<p><strong>1. LIME (Local Interpretable Model-agnostic Explanations)</strong></p>
+<ul>
+<li><p><strong>Methodology:</strong> LIME aims to approximate the behavior of a complex model locally around a specific prediction. It works by:</p>
+<ol type="1">
+<li><strong>Sampling:</strong> Generating new data points in the vicinity of the instance being explained. This is typically done by randomly perturbing the input features.</li>
+<li><strong>Prediction:</strong> Obtaining predictions from the original model for these perturbed data points.</li>
+<li><strong>Local Model Training:</strong> Training a simple, interpretable model (e.g., a linear model or decision tree) on the perturbed data, using the original model’s predictions as the target. The perturbed samples are weighted by their proximity to the original instance.</li>
+<li><strong>Explanation:</strong> Using the weights (coefficients) of the interpretable model to explain the contribution of each feature to the original model’s prediction.</li>
+</ol></li>
+<li><p><strong>Mathematical Formulation (Linear LIME):</strong> Let <span class="math inline">\(f(x)\)</span> be the complex model and <span class="math inline">\(x\)</span> be the instance to be explained. LIME aims to find an interpretable model <span class="math inline">\(g(z')\)</span> that approximates <span class="math inline">\(f(x)\)</span> locally.</p>
+<p>The objective function to minimize is:</p>
+<p><span class="math display">\[\mathcal{L}(f, g, \pi_x) = \sum_{z \in Z} \pi_x(z)(f(z) - g(z'))^2 + \Omega(g)\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(z\)</span> is a perturbed sample around <span class="math inline">\(x\)</span> in the original feature space.</li>
+<li><span class="math inline">\(z'\)</span> is the corresponding representation of <span class="math inline">\(z\)</span> in the interpretable space (e.g., binary vector indicating the presence or absence of a feature).</li>
+<li><span class="math inline">\(\pi_x(z)\)</span> is a proximity measure defining how close the perturbed sample <span class="math inline">\(z\)</span> is to the original instance <span class="math inline">\(x\)</span>. A common choice is an exponential kernel: <span class="math inline">\(\pi_x(z) = exp(-D(x, z)^2 / \sigma^2)\)</span> where <span class="math inline">\(D\)</span> is a distance metric (e.g., Euclidean distance) and <span class="math inline">\(\sigma\)</span> is a kernel width parameter.</li>
+<li><span class="math inline">\(g(z') = w^T z'\)</span> (e.g., a linear model). <span class="math inline">\(w\)</span> are the feature coefficients we aim to learn.</li>
+<li><span class="math inline">\(\Omega(g)\)</span> is a regularization term (e.g., L1 regularization to promote sparsity).</li>
+</ul>
+<p>The solution to this minimization problem provides the weights <span class="math inline">\(w\)</span> that explain the local behavior of the model <span class="math inline">\(f\)</span> around <span class="math inline">\(x\)</span>.</p></li>
+<li><p><strong>Assumptions:</strong></p>
+<ul>
+<li>The complex model is locally linear or can be well-approximated by a linear model in the neighborhood of the instance being explained.</li>
+<li>The perturbed samples are representative of the local behavior of the model.</li>
+<li>The interpretable model is simple enough to be easily understood (e.g., linear, sparse).</li>
+</ul></li>
+<li><p><strong>Output Types:</strong></p>
+<ul>
+<li>Feature importance scores (weights) for each feature, indicating their contribution to the prediction.</li>
+<li>Visualizations showing the most important features and their impact on the prediction.</li>
+</ul></li>
+<li><p><strong>Limitations:</strong></p>
+<ul>
+<li><strong>Instability:</strong> The explanations can be sensitive to the sampling strategy and the choice of the interpretable model. Small changes in the sampling or model parameters can lead to significantly different explanations.</li>
+<li><strong>Local Approximation:</strong> LIME only provides a local explanation. It does not provide global insights into the model’s behavior.</li>
+<li><strong>Choice of Proximity Measure:</strong> The choice of the proximity measure (<span class="math inline">\(\pi_x(z)\)</span>) can significantly impact the results.</li>
+<li><strong>Feature Correlation:</strong> LIME may struggle with highly correlated features, as the interpretable model may arbitrarily assign importance between them.</li>
+</ul></li>
+</ul>
+<p><strong>2. SHAP (SHapley Additive exPlanations)</strong></p>
+<ul>
+<li><p><strong>Methodology:</strong> SHAP uses concepts from game theory, specifically Shapley values, to allocate the contribution of each feature to the prediction. It considers all possible combinations of features and calculates the average marginal contribution of each feature across all coalitions.</p></li>
+<li><p><strong>Mathematical Formulation:</strong> The Shapley value <span class="math inline">\(\phi_i\)</span> of feature <span class="math inline">\(i\)</span> for instance <span class="math inline">\(x\)</span> is defined as:</p>
+<p><span class="math display">\[\phi_i = \sum_{S \subseteq F \setminus \{i\}} \frac{|S|!(|F| - |S| - 1)!}{|F|!} [f(S \cup \{i\}) - f(S)]\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(F\)</span> is the set of all features.</li>
+<li><span class="math inline">\(S\)</span> is a subset of features not including feature <span class="math inline">\(i\)</span>.</li>
+<li><span class="math inline">\(|S|\)</span> is the number of features in subset <span class="math inline">\(S\)</span>.</li>
+<li><span class="math inline">\(f(S \cup \{i\})\)</span> is the prediction of the model when features in <span class="math inline">\(S\)</span> and feature <span class="math inline">\(i\)</span> are present.</li>
+<li><span class="math inline">\(f(S)\)</span> is the prediction of the model when only features in <span class="math inline">\(S\)</span> are present.</li>
+</ul>
+<p>In practice, calculating Shapley values directly is computationally expensive, especially for models with many features. Therefore, several approximation methods have been developed, such as KernelSHAP, TreeSHAP, and DeepSHAP.</p>
+<p>The SHAP explanation model is an additive feature attribution method:</p>
+<p><span class="math display">\[g(z') = \phi_0 + \sum_{i=1}^{M} \phi_i z'_i\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(g(z')\)</span> is the explanation model.</li>
+<li><span class="math inline">\(z' \in \{0,1\}^M\)</span> represents the simplified input features (presence/absence).</li>
+<li><span class="math inline">\(M\)</span> is the number of simplified input features.</li>
+<li><span class="math inline">\(\phi_i\)</span> is the Shapley value for feature <span class="math inline">\(i\)</span>.</li>
+<li><span class="math inline">\(\phi_0\)</span> is the base value (average prediction over the dataset).</li>
+</ul></li>
+<li><p><strong>Assumptions:</strong></p>
+<ul>
+<li>The prediction can be fairly distributed among the features, adhering to the Shapley axioms (efficiency, symmetry, dummy, additivity).</li>
+<li>For TreeSHAP, the model must be a tree-based model (e.g., Random Forest, Gradient Boosting). For KernelSHAP, it is model-agnostic but relies on sampling and can be computationally expensive. DeepSHAP is designed for deep learning models and leverages backpropagation.</li>
+</ul></li>
+<li><p><strong>Output Types:</strong></p>
+<ul>
+<li>Shapley values for each feature, representing their contribution to the prediction.</li>
+<li>Summary plots showing the overall feature importance and their impact on the model’s output.</li>
+<li>Dependence plots showing the relationship between a feature’s value and its Shapley value.</li>
+<li>Force plots visualizing the contribution of each feature to a single prediction.</li>
+</ul></li>
+<li><p><strong>Limitations:</strong></p>
+<ul>
+<li><strong>Computational Cost:</strong> Calculating exact Shapley values can be computationally expensive, especially for complex models and large datasets. Approximation methods are often used, but they may introduce inaccuracies.</li>
+<li><strong>Assumption of Feature Independence:</strong> Traditional Shapley value calculation assumes feature independence, which is often violated in practice. This can lead to misleading explanations when features are highly correlated. Interventional Shapley values attempt to address this, but they are even more computationally demanding.</li>
+<li><strong>Misinterpretation:</strong> Shapley values represent the average marginal contribution of a feature across all possible coalitions. They do not necessarily represent the causal effect of a feature. It’s crucial to avoid over-interpreting SHAP values as causal relationships.</li>
+<li><strong>Complexity:</strong> While SHAP values are theoretically sound, the underlying game theory concepts can be difficult for non-experts to grasp.</li>
+</ul></li>
+</ul>
+<p><strong>3. Key Differences Summarized:</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 8%">
+<col style="width: 22%">
+<col style="width: 68%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Feature</th>
+<th>LIME</th>
+<th>SHAP</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Methodology</strong></td>
+<td>Local approximation using interpretable model</td>
+<td>Game-theoretic approach using Shapley values</td>
+</tr>
+<tr class="even">
+<td><strong>Assumptions</strong></td>
+<td>Local linearity</td>
+<td>Shapley axioms, feature independence (often violated), model type (TreeSHAP, DeepSHAP)</td>
+</tr>
+<tr class="odd">
+<td><strong>Output Types</strong></td>
+<td>Feature weights, visualizations</td>
+<td>Shapley values, summary plots, dependence plots, force plots</td>
+</tr>
+<tr class="even">
+<td><strong>Computational Cost</strong></td>
+<td>Relatively low</td>
+<td>Potentially high, especially for exact calculation. Approximation methods are commonly used.</td>
+</tr>
+<tr class="odd">
+<td><strong>Interpretability</strong></td>
+<td>Easier to understand locally</td>
+<td>Theoretically sound, but the underlying concepts can be complex. Aims for fair distribution of effects among features.</td>
+</tr>
+<tr class="even">
+<td><strong>Stability</strong></td>
+<td>Less stable</td>
+<td>More stable, especially with approximation techniques designed to ensure consistency.</td>
+</tr>
+<tr class="odd">
+<td><strong>Model Agnostic</strong></td>
+<td>Yes</td>
+<td>Yes (KernelSHAP), but optimized versions exist for specific model types (TreeSHAP, DeepSHAP)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>4. Real-World Considerations:</strong></p>
+<ul>
+<li><strong>Feature Engineering:</strong> The quality of explanations heavily depends on the feature engineering process. If the features are poorly engineered or contain biases, the explanations will reflect those issues.</li>
+<li><strong>Data Preprocessing:</strong> Data scaling and normalization can also impact explanations. It’s important to use consistent data preprocessing techniques when generating explanations.</li>
+<li><strong>Model Debugging:</strong> Explanations can be used to identify potential issues with the model, such as overfitting, bias, or incorrect feature usage.</li>
+<li><strong>Compliance and Regulation:</strong> In regulated industries, such as finance and healthcare, explainability is often required to comply with regulations and ensure fairness.</li>
+<li><strong>Human-Computer Interaction:</strong> Explanations should be presented in a way that is easily understood by users, even those without technical expertise. Visualizations and interactive tools can be helpful in this regard.</li>
+<li><strong>Continuous Monitoring:</strong> Model explanations should be continuously monitored to detect changes in the model’s behavior over time.</li>
+</ul>
+<p>In conclusion, LIME and SHAP are valuable tools for achieving model explainability, but they have different strengths and weaknesses. LIME is easier to understand locally and computationally cheaper, but it can be unstable. SHAP is more theoretically sound and provides a more comprehensive view of feature importance, but it can be computationally expensive and requires careful interpretation. The choice of which technique to use depends on the specific application and the trade-offs between accuracy, interpretability, and computational cost. Furthermore, it’s crucial to be aware of the limitations of each technique and to avoid over-interpreting the explanations.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a guide on how to present this information in an interview:</p>
+<ol type="1">
+<li><strong>Start with the “Why”:</strong> Begin by emphasizing the importance of model explainability in production for trust, fairness, and debugging. “Model explainability is essential, especially in production, for building trust in the model’s predictions, ensuring fairness in its decisions, and facilitating effective debugging.”</li>
+<li><strong>Introduce LIME and SHAP:</strong> Briefly introduce LIME and SHAP as two common techniques, highlighting that they are <em>model-agnostic</em>, meaning they can be applied to various types of models. “Two popular techniques are LIME and SHAP. Both are model-agnostic, but they differ significantly in their approach.”</li>
+<li><strong>Explain LIME:</strong>
+<ul>
+<li>Describe the methodology step-by-step: sampling, prediction, local model training, and explanation extraction. “LIME approximates the model locally. It samples data points around the instance being explained, gets predictions from the original model, trains a simple interpretable model on this data, and uses the weights of that simple model to explain the feature contributions.”</li>
+<li>Mention the local linearity assumption. “LIME assumes that the complex model can be well-approximated by a linear model locally.”</li>
+<li>Briefly touch on the limitations: instability, local approximation, choice of proximity measure. “However, LIME has limitations. The explanations can be unstable due to the sampling process, it only provides a local view, and the choice of the proximity measure can influence the results.”</li>
+</ul></li>
+<li><strong>Explain SHAP:</strong>
+<ul>
+<li>Introduce the game theory concept and Shapley values. “SHAP takes a different approach, using concepts from game theory, specifically Shapley values, to allocate the contribution of each feature.”</li>
+<li>Explain the idea of marginal contribution across all coalitions. “It considers all possible combinations of features and calculates the average marginal contribution of each feature.”</li>
+<li>Mention the different SHAP variants (KernelSHAP, TreeSHAP, DeepSHAP) and their specific model requirements. “There are different variants like KernelSHAP, which is model-agnostic, TreeSHAP for tree-based models, and DeepSHAP for deep learning models.”</li>
+<li>Highlight the output types: Shapley values, summary plots, dependence plots. “SHAP provides outputs like Shapley values, summary plots that show overall feature importance, and dependence plots that visualize the relationship between a feature and its Shapley value.”</li>
+<li>Discuss the limitations: computational cost, feature independence assumption, potential for misinterpretation. “The limitations of SHAP include its computational cost, especially for complex models; the assumption of feature independence, which is often violated; and the potential for misinterpreting Shapley values as causal effects.”</li>
+</ul></li>
+<li><strong>Summarize Key Differences:</strong> Refer to the table or provide a concise verbal summary. “In summary, LIME is easier to understand locally and computationally cheaper but can be unstable. SHAP is theoretically sound, more stable, and provides a more comprehensive view but can be computationally expensive and requires careful interpretation.”</li>
+<li><strong>Discuss Real-World Considerations:</strong> Briefly mention the practical considerations. “In practice, factors like feature engineering, data preprocessing, and the need for continuous monitoring all play a role in effectively using these techniques.”</li>
+<li><strong>Handle Mathematical Sections:</strong>
+<ul>
+<li><strong>Avoid diving too deep:</strong> Unless specifically asked, don’t get bogged down in the detailed mathematical derivations.</li>
+<li><strong>Focus on the intuition:</strong> Explain the high-level concepts behind the formulas. For instance, when discussing the LIME objective function, explain that it’s minimizing the difference between the complex model and the simple model, weighted by proximity, while also encouraging sparsity.</li>
+<li><strong>Offer to elaborate:</strong> If the interviewer seems interested, offer to provide more detail. “I can delve into the mathematical formulation if you’d like, but at a high level, the goal is to…”</li>
+</ul></li>
+<li><strong>Engage the Interviewer:</strong>
+<ul>
+<li><strong>Pause for questions:</strong> After explaining each technique, pause and ask if the interviewer has any questions.</li>
+<li><strong>Relate to your experience:</strong> If you have used these techniques in your projects, briefly mention your experience and the insights you gained.</li>
+<li><strong>Be confident but humble:</strong> Demonstrate your expertise while acknowledging the limitations of these techniques and the importance of careful interpretation.</li>
+</ul></li>
+</ol>
+<p>By following these steps, you can effectively explain LIME and SHAP in an interview, showcasing your understanding of model explainability and your ability to communicate complex technical concepts clearly.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>a_b_testing__canary_deployments_1</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-2.-what-statistical-considerations-are-important-when-designing-an-ab-test-and-how-do-you-ensure-the-validity-of-the-results" class="level2">
+<h2 class="anchored" data-anchor-id="question-2.-what-statistical-considerations-are-important-when-designing-an-ab-test-and-how-do-you-ensure-the-validity-of-the-results">Question: 2. What statistical considerations are important when designing an A/B test, and how do you ensure the validity of the results?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Designing a valid A/B test requires careful attention to statistical principles to ensure that observed differences are truly due to the changes being tested and not simply due to random variation. Here’s a breakdown of key considerations:</p>
+<p><strong>1. Hypothesis Formulation:</strong></p>
+<ul>
+<li><strong>Null Hypothesis (<span class="math inline">\(H_0\)</span>):</strong> States that there is no difference between the control (A) and treatment (B) groups. For example, <span class="math inline">\(H_0\)</span>: <span class="math inline">\(\mu_A = \mu_B\)</span>, where <span class="math inline">\(\mu_A\)</span> and <span class="math inline">\(\mu_B\)</span> are the mean values of the metric of interest for groups A and B, respectively.</li>
+<li><strong>Alternative Hypothesis (<span class="math inline">\(H_1\)</span>):</strong> States that there <em>is</em> a difference. This can be one-sided (e.g., B is better than A: <span class="math inline">\(\mu_B &gt; \mu_A\)</span>) or two-sided (B is different from A: <span class="math inline">\(\mu_B \neq \mu_A\)</span>). The choice depends on prior knowledge and the goals of the test.</li>
+</ul>
+<p><strong>2. Metric Selection:</strong></p>
+<ul>
+<li>Choose metrics that directly reflect the goals of the experiment. For example, click-through rate (CTR), conversion rate, revenue per user, session duration, etc.</li>
+<li>Consider composite metrics carefully. While they can be useful for summarizing overall performance, they can also mask important individual effects.</li>
+</ul>
+<p><strong>3. Sample Size Determination (Power Analysis):</strong></p>
+<ul>
+<li>This is crucial to ensure the test has sufficient statistical power to detect a meaningful effect if it exists. Insufficient sample sizes can lead to false negatives (Type II errors).</li>
+<li><strong>Factors influencing sample size:</strong>
+<ul>
+<li><strong>Baseline Conversion Rate (<span class="math inline">\(p_0\)</span>):</strong> The expected value of the primary metric in the control group.</li>
+<li><strong>Minimum Detectable Effect (MDE) (<span class="math inline">\(\delta\)</span>):</strong> The smallest difference between the control and treatment that is practically significant. Often expressed as a relative change: <span class="math inline">\(\delta = (\mu_B - \mu_A) / \mu_A\)</span>.</li>
+<li><strong>Statistical Power (<span class="math inline">\(1 - \beta\)</span>):</strong> The probability of correctly rejecting the null hypothesis when it is false. Typically set to 0.8 or 0.9.</li>
+<li><strong>Significance Level (<span class="math inline">\(\alpha\)</span>):</strong> The probability of incorrectly rejecting the null hypothesis when it is true (Type I error). Typically set to 0.05.</li>
+<li><strong>Variance (<span class="math inline">\(\sigma^2\)</span>):</strong> The variability of the metric. Higher variance requires larger sample sizes.</li>
+</ul></li>
+<li><strong>Sample Size Formula (Simplified for comparing two means):</strong> <span class="math display">\[n = \frac{2(Z_{1-\alpha/2} + Z_{1-\beta})^2 \sigma^2}{\delta^2}\]</span> Where:
+<ul>
+<li><span class="math inline">\(n\)</span> is the sample size per group.</li>
+<li><span class="math inline">\(Z_{1-\alpha/2}\)</span> is the critical value from the standard normal distribution for a two-tailed test with significance level <span class="math inline">\(\alpha\)</span>.</li>
+<li><span class="math inline">\(Z_{1-\beta}\)</span> is the critical value from the standard normal distribution for power <span class="math inline">\(1-\beta\)</span>.</li>
+</ul></li>
+<li>When conversion rates are the metric, the sample size estimation can be based on the normal approximation to the binomial distribution or other appropriate tests depending on the distribution.</li>
+</ul>
+<p><strong>4. Randomization:</strong></p>
+<ul>
+<li>Assign users randomly to either the control (A) or treatment (B) group. This ensures that the two groups are statistically equivalent at the start of the experiment, minimizing bias.</li>
+<li>Use a robust random number generator.</li>
+<li>Stratified randomization can be employed to ensure balance across important covariates (e.g., demographics, platform) if those covariates are known to influence the metric of interest.</li>
+</ul>
+<p><strong>5. Control of Confounding Variables:</strong></p>
+<ul>
+<li>Identify potential confounding variables that could influence the results. These are variables that are correlated with both the treatment and the outcome.</li>
+<li>Use techniques like stratification or regression analysis to control for these variables.</li>
+</ul>
+<p><strong>6. Significance Level (<span class="math inline">\(\alpha\)</span>) and P-value:</strong></p>
+<ul>
+<li>The significance level (<span class="math inline">\(\alpha\)</span>) is the pre-defined threshold for rejecting the null hypothesis.</li>
+<li>The p-value is the probability of observing the obtained results (or more extreme results) if the null hypothesis were true.</li>
+<li>If the p-value is less than or equal to <span class="math inline">\(\alpha\)</span>, we reject the null hypothesis and conclude that there is a statistically significant difference.</li>
+</ul>
+<p><strong>7. Statistical Tests:</strong></p>
+<ul>
+<li>Choose the appropriate statistical test based on the type of data and the hypothesis being tested. Common tests include:
+<ul>
+<li><strong>T-tests:</strong> For comparing means of two groups (assuming normality). Welch’s t-test is a variant that doesn’t assume equal variances.</li>
+<li><strong>ANOVA:</strong> For comparing means of more than two groups.</li>
+<li><strong>Chi-squared test:</strong> For categorical data (e.g., comparing conversion rates).</li>
+<li><strong>Mann-Whitney U test:</strong> Non-parametric test for comparing two groups when normality cannot be assumed.</li>
+</ul></li>
+<li>Ensure the assumptions of the chosen test are met.</li>
+</ul>
+<p><strong>8. Confidence Intervals:</strong></p>
+<ul>
+<li>A confidence interval provides a range of values within which the true population parameter (e.g., the difference in means) is likely to lie with a certain level of confidence (e.g., 95%).</li>
+<li>The confidence interval provides more information than just the p-value, as it gives a sense of the magnitude and uncertainty of the effect.</li>
+</ul>
+<p><strong>9. Multiple Testing Correction:</strong></p>
+<ul>
+<li>If you are testing multiple metrics or conducting multiple A/B tests simultaneously, you need to adjust the significance level to account for the increased risk of Type I errors (false positives).</li>
+<li>Common correction methods include:
+<ul>
+<li><strong>Bonferroni correction:</strong> Divides the significance level by the number of tests.</li>
+<li><strong>False Discovery Rate (FDR) control (e.g., Benjamini-Hochberg procedure):</strong> Controls the expected proportion of false positives among the rejected hypotheses.</li>
+</ul></li>
+</ul>
+<p><strong>10. Validity Checks and Potential Pitfalls:</strong></p>
+<ul>
+<li><strong>Data Integrity:</strong> Ensure the data is accurate and complete. Implement data validation checks to identify and correct errors.</li>
+<li><strong>A/A Testing (Sanity Checks):</strong> Run A/A tests (where both groups receive the control) to verify that the randomization is working correctly and that there are no underlying biases in the system. The p-value for an A/A test should be significantly above <span class="math inline">\(\alpha\)</span>, failing to reject the null hypothesis.</li>
+<li><strong>Novelty Effect:</strong> Users may behave differently simply because they are experiencing something new. Consider running the A/B test for a sufficient duration to mitigate this effect.</li>
+<li><strong>Seasonality:</strong> Account for seasonal trends in user behavior. Run the test long enough to capture a full cycle, or stratify the data by season.</li>
+<li><strong>Network Effects:</strong> If the treatment affects the user experience of other users, the A/B test may not accurately reflect the true impact.</li>
+<li><strong>P-hacking:</strong> Avoid repeatedly analyzing the data and stopping the test as soon as a significant result is observed. This inflates the Type I error rate.</li>
+<li><strong>Simpson’s Paradox:</strong> Be aware of the possibility that the overall effect may be different from the effect observed in subgroups.</li>
+<li><strong>Once-Off Data Splits:</strong> Create a clear separation of experimental and validation data sets. Do not “peek” at the validation set to influence the experimental design.</li>
+</ul>
+<p><strong>11. Practical Considerations:</strong></p>
+<ul>
+<li><strong>Implementation:</strong> Ensure the A/B test is implemented correctly from an engineering perspective. This includes accurate assignment of users to groups, consistent application of the treatment, and reliable data logging.</li>
+<li><strong>Monitoring:</strong> Monitor the A/B test closely to identify any unexpected issues or anomalies.</li>
+<li><strong>Documentation:</strong> Document all aspects of the A/B test, including the hypothesis, metrics, sample size, randomization method, and results.</li>
+</ul>
+<p><strong>12. Sequential Testing (Optional):</strong></p>
+<ul>
+<li>In some cases, instead of using a fixed sample size, one can employ sequential testing methods. These allow for early stopping of the experiment if a significant effect is observed, reducing the overall sample size required. However, these methods require careful implementation to control the Type I error rate. Examples include the ASTER framework.</li>
+</ul>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a guide on how to present this information in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with the Importance:</strong> “A/B testing is fundamental for data-driven decision-making. The core of a successful A/B test lies in solid statistical design. This ensures we make confident, valid decisions about product changes.”</p></li>
+<li><p><strong>Hypothesis Formulation:</strong> “The first step is defining our hypothesis. We have a null hypothesis, which usually states no difference exists between the control and treatment groups. Then we have an alternative hypothesis, stating there is a difference, which can be one-sided or two-sided. The rigor of the statistical design ensures any observed difference is unlikely due to chance.”</p></li>
+<li><p><strong>Metric Selection:</strong> “Next is metric selection. Choosing meaningful metrics is crucial. I’d select metrics closely tied to the goals of the experiment, such as CTR, conversion rate, or revenue. It’s also essential to be wary of composite metrics that might obscure individual effects.”</p></li>
+<li><p><strong>Sample Size/Power Analysis:</strong> “An absolutely essential step is sample size determination through power analysis. This ensures we have enough users in each group to detect a meaningful effect if it exists. I’d explain the key inputs: baseline conversion rate, minimum detectable effect, desired power, and significance level. Then, I’d present a simplified sample size formula. For example: <span class="math display">\[n = \frac{2(Z_{1-\alpha/2} + Z_{1-\beta})^2 \sigma^2}{\delta^2}\]</span>. It may be helpful to walk them through what each variable means briefly.” <em>Slow down here, check for understanding from the interviewer.</em></p></li>
+<li><p><strong>Randomization &amp; Confounding Variables:</strong> “To prevent bias, randomization is key. We randomly assign users to control and treatment groups. Stratified randomization is something I’d use if there are critical covariates like demographics that I need to balance across the groups. I’d also proactively look for potential confounding variables that might skew the results and use techniques like regression analysis to control for them.”</p></li>
+<li><p><strong>Significance Level &amp; P-Value:</strong> “We then set a significance level, alpha, typically 0.05. We use the p-value, to know whether our results are statistically significant. If p is less than or equal to alpha, we have evidence to reject the null hypothesis.”</p></li>
+<li><p><strong>Statistical Tests &amp; Confidence Intervals:</strong> “I’d pick the right statistical test based on the data – t-tests, chi-squared, or non-parametric tests like Mann-Whitney U. Crucially, beyond just the p-value, I’d also look at confidence intervals, because they give us the likely range of the true effect.”</p></li>
+<li><p><strong>Multiple Testing:</strong> “If we’re testing multiple metrics, we must correct for multiple testing to avoid false positives using Bonferroni or FDR correction.”</p></li>
+<li><p><strong>Validity Checks and Potential Pitfalls:</strong> “I always perform validity checks, including A/A tests to confirm our randomization works. I am on the lookout for things like the novelty effect, seasonality, and ensure solid data integrity. It is very important to guard against ‘p-hacking,’ which undermines the test’s validity.”</p></li>
+<li><p><strong>Practical Considerations:</strong> “Finally, I would mention practical aspects like implementing the A/B test correctly, continuous monitoring, and detailed documentation.”</p></li>
+<li><p><strong>Sequential Testing (Optional):</strong> “In some cases, sequential testing could be used to allow for early stopping of the experiment to reduce the sample size required.”</p></li>
+</ol>
+<p><em>Communication Tips:</em></p>
+<ul>
+<li><strong>Brevity and Clarity:</strong> Keep the explanation concise and easy to follow.</li>
+<li><strong>Analogies:</strong> Use analogies to explain complex concepts.</li>
+<li><strong>Engagement:</strong> Ask the interviewer if they have any questions at certain points.</li>
+<li><strong>Enthusiasm:</strong> Show genuine enthusiasm for the topic.</li>
+<li><strong>Real-World Examples:</strong> Relate your experience to the concepts discussed.</li>
+<li><strong>Mathematical Notation:</strong> When presenting mathematical notations, explain each component clearly and avoid overwhelming the interviewer with too much detail at once. Be prepared to provide more details if asked.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

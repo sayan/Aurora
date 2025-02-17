@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>model_performance_metrics_in_production_3</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-4.-in-production-real-world-data-is-often-messy-and-may-not-follow-the-same-distribution-as-the-training-data.-what-potential-pitfalls-could-arise-when-interpreting-conventional-performance-metrics-under-these-circumstances-and-how-would-you-adjust-your-evaluation-strategy" class="level2">
+<h2 class="anchored" data-anchor-id="question-4.-in-production-real-world-data-is-often-messy-and-may-not-follow-the-same-distribution-as-the-training-data.-what-potential-pitfalls-could-arise-when-interpreting-conventional-performance-metrics-under-these-circumstances-and-how-would-you-adjust-your-evaluation-strategy">Question: 4. In production, real-world data is often messy and may not follow the same distribution as the training data. What potential pitfalls could arise when interpreting conventional performance metrics under these circumstances, and how would you adjust your evaluation strategy?</h2>
+<p><strong>Best Answer</strong></p>
+<p>The shift from a controlled training environment to the unpredictable real world often introduces significant challenges in interpreting conventional performance metrics. These challenges arise primarily due to the divergence between the training data distribution and the production data distribution, coupled with the inherent messiness of real-world data. Here’s a breakdown of potential pitfalls and adjustments to evaluation strategies:</p>
+<section id="potential-pitfalls" class="level3">
+<h3 class="anchored" data-anchor-id="potential-pitfalls">Potential Pitfalls:</h3>
+<ol type="1">
+<li><strong>Data Noise and Outliers:</strong>
+<ul>
+<li><strong>Issue:</strong> Real-world data is inherently noisy, containing errors, inconsistencies, and outliers that were not present or adequately represented in the training data.</li>
+<li><strong>Impact:</strong> Metrics like accuracy, precision, recall, and F1-score can be misleadingly low due to the model’s struggle with unseen noise patterns. The model may overfit to the training data’s specific noise characteristics, performing poorly on novel noise encountered in production.</li>
+<li><strong>Example:</strong> In fraud detection, new types of fraudulent transactions, not seen during training, can appear as outliers and significantly impact precision and recall.</li>
+</ul></li>
+<li><strong>Label Errors:</strong>
+<ul>
+<li><strong>Issue:</strong> Production data might have erroneous or inconsistent labels due to human error, automated labeling issues, or changing definitions.</li>
+<li><strong>Impact:</strong> Misleadingly low performance metrics. The model is penalized for correctly predicting what it <em>should</em> be, based on the true underlying pattern, but which is marked as incorrect due to label errors.</li>
+<li><strong>Example:</strong> In medical imaging, incorrect diagnoses in the production data can lead to a perceived drop in accuracy for a diagnostic model.</li>
+</ul></li>
+<li><strong>Distribution Shift (Covariate and Prior Probability Shift):</strong>
+<ul>
+<li><strong>Issue:</strong>
+<ul>
+<li><strong>Covariate Shift:</strong> The input feature distribution <span class="math inline">\(P(X)\)</span> changes between training and production, while the conditional distribution of the target variable given the input remains the same, <span class="math inline">\(P(Y|X)\)</span>.</li>
+<li><strong>Prior Probability Shift:</strong> The distribution of the target variable <span class="math inline">\(P(Y)\)</span> changes, while the conditional distribution <span class="math inline">\(P(X|Y)\)</span> remains the same.</li>
+<li><strong>Concept Drift:</strong> The relationship between inputs and outputs changes over time, <span class="math inline">\(P(Y|X)\)</span> changes.</li>
+</ul></li>
+<li><strong>Impact:</strong> Models trained on one distribution may not generalize well to a different distribution. Metrics can deteriorate substantially, even if the model is fundamentally sound. For example, a model trained on summer images may perform poorly on winter images due to changes in lighting and weather conditions.</li>
+<li><strong>Mathematical Representation:</strong> Let <span class="math inline">\(X_{train}, Y_{train}\)</span> be the training data and <span class="math inline">\(X_{prod}, Y_{prod}\)</span> be the production data. Covariate shift implies <span class="math inline">\(P_{train}(X) \neq P_{prod}(X)\)</span>, but <span class="math inline">\(P_{train}(Y|X) = P_{prod}(Y|X)\)</span>. Prior probability shift implies <span class="math inline">\(P_{train}(Y) \neq P_{prod}(Y)\)</span>, but <span class="math inline">\(P_{train}(X|Y) = P_{prod}(X|Y)\)</span>. Concept drift implies <span class="math inline">\(P_{train}(Y|X) \neq P_{prod}(Y|X)\)</span>. <em>Example: A sentiment analysis model trained on older social media data might not perform well on current data due to evolving slang and cultural references.</em></li>
+</ul></li>
+<li><strong>Feature Drift:</strong>
+<ul>
+<li><strong>Issue:</strong> The meaning or statistical properties of features change over time. This is a specific case of concept drift.</li>
+<li><strong>Impact:</strong> Models rely on outdated relationships between features and the target variable, leading to performance degradation.</li>
+<li><strong>Example:</strong> In credit risk modeling, the relationship between income and loan default risk might change due to economic shifts.</li>
+</ul></li>
+<li><strong>Feedback Loops and Data Dependencies:</strong>
+<ul>
+<li><strong>Issue:</strong> The model’s predictions in production influence future data, creating a feedback loop that distorts the true underlying distribution.</li>
+<li><strong>Impact:</strong> Metrics become unreliable because the data is no longer independent and identically distributed (i.i.d.). The model may reinforce its own biases.</li>
+<li><strong>Example:</strong> A recommendation system recommending certain products more often can lead to a skewed view of customer preferences over time.</li>
+</ul></li>
+</ol>
+</section>
+<section id="adjusting-evaluation-strategy" class="level3">
+<h3 class="anchored" data-anchor-id="adjusting-evaluation-strategy">Adjusting Evaluation Strategy:</h3>
+<ol type="1">
+<li><strong>Robust Data Preprocessing:</strong>
+<ul>
+<li><strong>Action:</strong> Implement a comprehensive data cleaning and preprocessing pipeline that handles missing values, outliers, and inconsistencies effectively.</li>
+<li><strong>Techniques:</strong>
+<ul>
+<li><strong>Outlier Detection:</strong> Use techniques like IQR, Z-score, or isolation forests to identify and handle outliers.</li>
+<li><strong>Missing Value Imputation:</strong> Employ imputation methods like mean, median, or model-based imputation (e.g., k-NN imputation) to fill in missing values.</li>
+<li><strong>Data Standardization/Normalization:</strong> Scale or normalize features to minimize the impact of differing scales and distributions.</li>
+<li><strong>Error Detection and Correction:</strong> Implement rules and checks to identify and correct common data errors (e.g., invalid date formats, inconsistent units).</li>
+</ul></li>
+</ul></li>
+<li><strong>Real-time Monitoring and Alerting:</strong>
+<ul>
+<li><strong>Action:</strong> Continuously monitor key metrics (accuracy, precision, recall, F1-score, AUC, etc.) and trigger alerts when they deviate significantly from expected levels.</li>
+<li><strong>Techniques:</strong>
+<ul>
+<li><strong>Statistical Process Control (SPC) Charts:</strong> Use control charts to track metric variations over time and identify anomalies.</li>
+<li><strong>Threshold-based Alerts:</strong> Set thresholds for metrics and trigger alerts when these thresholds are breached.</li>
+<li><strong>Anomaly Detection:</strong> Apply anomaly detection algorithms to identify unusual patterns in the data or model predictions.</li>
+</ul></li>
+</ul></li>
+<li><strong>Distribution Shift Detection:</strong>
+<ul>
+<li><strong>Action:</strong> Proactively detect and quantify distribution shifts between training and production data.</li>
+<li><strong>Techniques:</strong>
+<ul>
+<li><strong>Kolmogorov-Smirnov (KS) Test:</strong> Tests if two samples come from the same distribution, by measuring the largest vertical difference between the cumulative distribution functions.</li>
+<li><strong>Population Stability Index (PSI):</strong> Measures the change in the distribution of a single variable between two samples.</li>
+<li><strong>Maximum Mean Discrepancy (MMD):</strong> MMD estimates the distance between two distributions in a reproducing kernel Hilbert space (RKHS). Given samples <span class="math inline">\(X = \{x_i\}_{i=1}^m\)</span> from distribution <span class="math inline">\(P\)</span> and <span class="math inline">\(Y = \{y_i\}_{i=1}^n\)</span> from distribution <span class="math inline">\(Q\)</span>, the MMD is: <span class="math display">\[MMD(P, Q) = \left\| \frac{1}{m} \sum_{i=1}^m \phi(x_i) - \frac{1}{n} \sum_{i=1}^n \phi(y_i) \right\|_{\mathcal{H}}^2\]</span> where <span class="math inline">\(\phi\)</span> maps the data into the RKHS <span class="math inline">\(\mathcal{H}\)</span>.</li>
+<li><strong>Classifier-based Shift Detection:</strong> Train a classifier to distinguish between training and production data. If the classifier performs well, it indicates a significant distribution shift.</li>
+</ul></li>
+</ul></li>
+<li><strong>Adaptive Evaluation Metrics:</strong>
+<ul>
+<li><strong>Action:</strong> Use evaluation metrics that are robust to distribution shifts or that can be adapted to the production environment.</li>
+<li><strong>Techniques:</strong>
+<ul>
+<li><strong>Stratified Evaluation:</strong> Evaluate performance on different subsets of the production data to understand how the model performs under various conditions.</li>
+<li><strong>Confidence Intervals:</strong> Report metrics with confidence intervals to quantify the uncertainty associated with the estimates. Bootstrap resampling can be used to calculate confidence intervals.</li>
+<li><strong>Domain Adaptation Metrics:</strong> If labeled data is scarce in the production environment, consider using metrics designed for domain adaptation tasks.</li>
+</ul></li>
+</ul></li>
+<li><strong>Model Recalibration and Fine-tuning:</strong>
+<ul>
+<li><strong>Action:</strong> Periodically recalibrate or fine-tune the model using data from the production environment to adapt to evolving patterns.</li>
+<li><strong>Techniques:</strong>
+<ul>
+<li><strong>Online Learning:</strong> Update the model incrementally as new data becomes available in production.</li>
+<li><strong>Transfer Learning:</strong> Fine-tune a pre-trained model on a small amount of labeled production data.</li>
+<li><strong>Self-Training:</strong> Iteratively train the model on unlabeled production data, using its own predictions as labels.</li>
+<li><strong>Ensemble Methods:</strong> Combine multiple models trained on different subsets of the data or using different algorithms to improve robustness.</li>
+</ul></li>
+</ul></li>
+<li><strong>Domain Adaptation Techniques:</strong>
+<ul>
+<li><strong>Action:</strong> Employ domain adaptation techniques to bridge the gap between the training and production data distributions.</li>
+<li><strong>Techniques:</strong>
+<ul>
+<li><strong>Adversarial Domain Adaptation:</strong> Train a model to perform well on the main task while simultaneously trying to fool a discriminator that distinguishes between training and production data.</li>
+<li><strong>Maximum Mean Discrepancy (MMD) Minimization:</strong> Train a model to minimize the MMD between the feature distributions of the training and production data.</li>
+<li><strong>Domain-Adversarial Neural Networks (DANNs):</strong> Architectures that explicitly try to learn domain-invariant features.</li>
+</ul></li>
+</ul></li>
+<li><strong>Unsupervised Anomaly Detection:</strong>
+<ul>
+<li><strong>Action:</strong> Use unsupervised methods to identify anomalies in the production data that might indicate data quality issues or emerging patterns.</li>
+<li><strong>Techniques:</strong>
+<ul>
+<li><strong>Clustering:</strong> Use clustering algorithms like k-means or DBSCAN to identify clusters of similar data points and flag outliers.</li>
+<li><strong>Autoencoders:</strong> Train an autoencoder to reconstruct the input data and flag data points with high reconstruction error as anomalies.</li>
+<li><strong>One-Class SVM:</strong> Train a SVM model to learn the boundary of the normal data and flag data points outside this boundary as anomalies.</li>
+</ul></li>
+</ul></li>
+<li><strong>A/B Testing and Shadow Deployment:</strong>
+<ul>
+<li><strong>Action:</strong> Before fully deploying a new model, test its performance in a controlled environment using A/B testing or shadow deployment.</li>
+<li><strong>Techniques:</strong>
+<ul>
+<li><strong>A/B Testing:</strong> Compare the performance of the new model against the existing model on a subset of the production data.</li>
+<li><strong>Shadow Deployment:</strong> Deploy the new model alongside the existing model, but without affecting the user experience. Monitor the new model’s performance and compare it to the existing model’s performance.</li>
+</ul></li>
+</ul></li>
+<li><strong>Human-in-the-Loop Evaluation:</strong>
+<ul>
+<li><strong>Action:</strong> Incorporate human feedback into the evaluation process to assess the model’s performance on complex or nuanced cases.</li>
+<li><strong>Techniques:</strong>
+<ul>
+<li><strong>Active Learning:</strong> Select the most informative data points for human labeling to improve the model’s accuracy.</li>
+<li><strong>Expert Review:</strong> Have domain experts review the model’s predictions on a sample of the production data.</li>
+</ul></li>
+</ul></li>
+</ol>
+<p>By proactively addressing these challenges and adapting the evaluation strategy, data scientists can gain a more realistic understanding of model performance in production and ensure that models continue to deliver value over time.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a suggested approach to articulate this answer effectively in an interview:</p>
+<ol type="1">
+<li><strong>Start by Acknowledging the Core Problem:</strong>
+<ul>
+<li>“The transition from training to production introduces significant challenges because real-world data is often messier and doesn’t perfectly mirror the training data distribution. This can lead to misleading interpretations of conventional performance metrics.”</li>
+</ul></li>
+<li><strong>Outline Key Pitfalls:</strong>
+<ul>
+<li>“Several factors contribute to these challenges. I’ll discuss a few important ones:”</li>
+<li><strong>(Data Noise and Outliers):</strong> “Real-world data is inherently noisy. Models may not generalize well to unseen noise patterns, causing metrics like accuracy to drop.” <em>Give a brief example, like fraud detection.</em></li>
+<li><strong>(Label Errors):</strong> “Production data can contain incorrect labels, which penalizes the model unfairly.” <em>Provide an example, such as medical imaging.</em></li>
+<li><strong>(Distribution Shift):</strong> “A critical issue is distribution shift, where the input features or the target variable distribution changes. There are several types of distribution shift, including covariate shift and prior probability shift. I can briefly describe the differences.” <em>If prompted, explain Covariate and Prior Probability Shifts using the mathematical notations from the <strong>Best Answer</strong> section.</em></li>
+<li><strong>(Feature Drift):</strong> “The properties of the model input features can change over time.” <em>Credit risk modeling example.</em></li>
+<li><strong>(Feedback Loops):</strong> “The model’s own predictions can influence future data, distorting the true underlying distribution. Think of a recommendation system biasing user preferences.”</li>
+</ul></li>
+<li><strong>Transition to Evaluation Strategy Adjustments:</strong>
+<ul>
+<li>“Given these potential pitfalls, a robust evaluation strategy in production requires several adjustments. We want to be proactive and adaptive.”</li>
+</ul></li>
+<li><strong>Describe Adjustment Strategies (Focus on 3-4 Key Ones):</strong>
+<ul>
+<li><strong>(Robust Data Preprocessing):</strong> “First, we need a strong data preprocessing pipeline to handle noise, outliers, and missing values.” <em>Mention techniques like outlier detection, imputation, and normalization.</em></li>
+<li><strong>(Real-time Monitoring and Alerting):</strong> “Continuous monitoring is crucial. We can track key metrics and set up alerts for significant deviations.” <em>Mention SPC charts and threshold-based alerts.</em></li>
+<li><strong>(Distribution Shift Detection):</strong> “Proactively detecting distribution shifts is important. Techniques like KS test, PSI, and even training a classifier to distinguish between training and production data can be very useful.” <em>If pressed, you can mention MMD with its equation.</em></li>
+<li><strong>(Model Recalibration and Fine-tuning):</strong> “Models should be periodically recalibrated or fine-tuned with production data to adapt to evolving patterns. Online learning, transfer learning, and self-training can be applied.”</li>
+<li><strong>(Unsupervised Anomaly Detection):</strong> “Unsupervised methods like clustering or autoencoders can help us detect unusual patterns in the production data that we haven’t seen before.”</li>
+</ul></li>
+<li><strong>Optional: Mention Other Strategies Briefly:</strong>
+<ul>
+<li>“Other helpful strategies include using adaptive evaluation metrics like stratified evaluation and confidence intervals, employing domain adaptation techniques, A/B testing and shadow deployment, and incorporating human-in-the-loop evaluation.”</li>
+</ul></li>
+<li><strong>Concluding Statement:</strong>
+<ul>
+<li>“By proactively addressing these challenges and adapting our evaluation strategy, we can ensure that our models continue to perform reliably and deliver value in the real world.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush. Explain each point clearly and concisely.</li>
+<li><strong>Use Examples:</strong> Real-world examples make your explanation more relatable and easier to understand.</li>
+<li><strong>Gauge the Interviewer:</strong> Pay attention to the interviewer’s body language and questions. If they seem confused or uninterested in a specific area, move on to another topic.</li>
+<li><strong>Be Ready to Go Deeper:</strong> Be prepared to elaborate on any of the techniques or concepts you mention. The interviewer might ask follow-up questions to test your knowledge.</li>
+<li><strong>Highlight Practicality:</strong> Emphasize the practical implications of each challenge and adjustment strategy. Show that you understand how these concepts apply to real-world problems.</li>
+<li><strong>Mathematical Notation:</strong> Only delve into mathematical notation like MMD if the interviewer seems technically inclined and asks for more details. If you do, explain the notation clearly and avoid jargon.</li>
+<li><strong>Conclude with Confidence:</strong> Summarize your main points and reiterate the importance of a proactive and adaptive approach to model evaluation in production.</li>
+</ul>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

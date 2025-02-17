@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>monitoring_and_logging_for_deployed_models_3</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-advanced-discuss-the-challenges-and-trade-offs-of-implementing-both-real-time-monitoring-and-batch-logging-in-the-context-of-high-throughput-production-environments.-how-would-you-ensure-scalability-and-low-latency" class="level2">
+<h2 class="anchored" data-anchor-id="question-advanced-discuss-the-challenges-and-trade-offs-of-implementing-both-real-time-monitoring-and-batch-logging-in-the-context-of-high-throughput-production-environments.-how-would-you-ensure-scalability-and-low-latency">Question: Advanced: Discuss the challenges and trade-offs of implementing both real-time monitoring and batch logging in the context of high-throughput production environments. How would you ensure scalability and low latency?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Implementing both real-time monitoring and batch logging in high-throughput production environments for deployed models presents significant challenges. The primary tension lies in balancing the need for immediate insights and debugging capabilities (real-time monitoring) with the comprehensive data collection required for model retraining, auditing, and in-depth analysis (batch logging). Successfully navigating this involves careful architectural choices and a deep understanding of the trade-offs.</p>
+<p>Here’s a breakdown of the challenges, trade-offs, and strategies for ensuring scalability and low latency:</p>
+<p><strong>Challenges and Trade-offs</strong></p>
+<ul>
+<li><p><strong>Performance Overhead:</strong> Logging, by its nature, introduces overhead. Each prediction request now requires additional I/O operations to write logs. Real-time monitoring can further exacerbate this if it involves complex aggregations or computations.</p>
+<ul>
+<li><strong>Trade-off:</strong> The more detailed the monitoring and logging, the higher the performance impact. There’s a constant push and pull between data fidelity, frequency, and system responsiveness.</li>
+</ul></li>
+<li><p><strong>Latency:</strong> High-throughput environments are sensitive to even small increases in latency. Synchronous logging (where the prediction request waits for the log write to complete) can quickly become a bottleneck.</p>
+<ul>
+<li><strong>Trade-off:</strong> Synchronous logging provides immediate guarantees of data persistence but increases latency. Asynchronous logging reduces latency but introduces the possibility of data loss in case of failures.</li>
+</ul></li>
+<li><p><strong>Scalability:</strong> As the throughput increases, the logging and monitoring infrastructure must scale accordingly. Simple file-based logging won’t cut it; a distributed system is required.</p>
+<ul>
+<li><strong>Trade-off:</strong> Distributed logging and monitoring systems are more complex to set up and maintain but offer the necessary scalability.</li>
+</ul></li>
+<li><p><strong>Data Volume and Storage:</strong> Batch logging, in particular, can generate massive amounts of data, leading to storage challenges.</p>
+<ul>
+<li><strong>Trade-off:</strong> Detailed logging provides richer insights but requires more storage and processing power. Aggregated or sampled logging reduces storage needs but sacrifices granularity.</li>
+</ul></li>
+<li><p><strong>Complexity:</strong> Implementing and maintaining a robust monitoring and logging system in a high-throughput environment adds significant complexity to the overall architecture.</p></li>
+</ul>
+<p><strong>Architectural Strategies for Scalability and Low Latency</strong></p>
+<ol type="1">
+<li><p><strong>Asynchronous Logging:</strong> This is crucial for minimizing the impact on prediction latency. Instead of writing logs directly within the prediction request’s critical path, messages are placed on a queue for later processing.</p>
+<ul>
+<li><p><strong>Implementation:</strong> Technologies like Kafka, RabbitMQ, or cloud-based queuing services (e.g., AWS SQS, Azure Queue Storage, Google Cloud Pub/Sub) can be used. The prediction service publishes log messages to the queue, and a separate consumer service asynchronously writes the logs to persistent storage. The architecture can be represented as follows:</p>
+<p><span class="math display">\[
+\text{Prediction Request} \rightarrow \text{Prediction Service} \rightarrow \text{Enqueue Log Message} \rightarrow \text{Message Queue} \rightarrow \text{Log Consumer Service} \rightarrow \text{Persistent Storage}
+\]</span></p></li>
+</ul></li>
+<li><p><strong>In-Memory Aggregation:</strong> For real-time monitoring, aggregate metrics in-memory before writing them to a monitoring database. This reduces the frequency of I/O operations.</p>
+<ul>
+<li><strong>Implementation:</strong> Use in-memory data structures like histograms or counters to track key metrics (e.g., prediction latency, throughput, error rates). Periodically flush these aggregated metrics to a time-series database (e.g., Prometheus, InfluxDB). This approach trades off immediate visibility for reduced I/O load.</li>
+</ul></li>
+<li><p><strong>Sampling:</strong> Log only a subset of requests to reduce the volume of data. Sampling can be uniform (randomly selecting a percentage of requests) or stratified (sampling different types of requests at different rates).</p>
+<ul>
+<li><strong>Implementation:</strong> Implement a sampling strategy within the prediction service. For example, log 1% of all requests, or log all requests that exceed a certain latency threshold.</li>
+<li><strong>Mathematical Representation:</strong> Let <span class="math inline">\(p\)</span> be the sampling probability, where <span class="math inline">\(p \in [0, 1]\)</span>. For each request, generate a random number <span class="math inline">\(r\)</span> from a uniform distribution <span class="math inline">\([0, 1]\)</span>. If <span class="math inline">\(r \le p\)</span>, log the request.</li>
+</ul></li>
+<li><p><strong>Stream Processing:</strong> Use a stream processing engine to perform real-time aggregations and anomaly detection on the log data. This allows you to identify issues quickly without querying large datasets.</p>
+<ul>
+<li><strong>Implementation:</strong> Technologies like Apache Flink, Apache Kafka Streams, or cloud-based stream processing services (e.g., AWS Kinesis Data Analytics, Azure Stream Analytics, Google Cloud Dataflow) can be used to process the log data in real-time. For instance, calculate the moving average of prediction latency over a 5-minute window and trigger an alert if it exceeds a predefined threshold.</li>
+</ul></li>
+<li><p><strong>Microservices Architecture:</strong> Decompose the prediction service into smaller, independent microservices. This allows you to scale individual components as needed and isolate failures.</p>
+<ul>
+<li><strong>Implementation:</strong> Separate the prediction service from the logging and monitoring services. Each microservice can be scaled independently based on its workload. Use a service mesh (e.g., Istio, Linkerd) to manage communication between the microservices.</li>
+</ul></li>
+<li><p><strong>Horizontal Scaling:</strong> Scale the logging and monitoring infrastructure horizontally by adding more machines. This distributes the load and improves performance.</p>
+<ul>
+<li><strong>Implementation:</strong> Use a load balancer to distribute traffic across multiple instances of the log consumer service and the monitoring database. Ensure that the underlying storage system is also horizontally scalable (e.g., a distributed file system like HDFS or a cloud-based object storage service like AWS S3).</li>
+</ul></li>
+<li><p><strong>Data Partitioning and Sharding:</strong> Partition the log data across multiple storage nodes to improve query performance.</p>
+<ul>
+<li><p><strong>Implementation:</strong> Shard the data based on a key (e.g., prediction timestamp, model version, customer ID). Use a distributed database like Cassandra or a time-series database like InfluxDB that supports data partitioning. The architecture might look as follows:</p>
+<p><span class="math display">\[
+\text{Log Data} \rightarrow \text{Partitioning Function (e.g., hash(customer\_id) mod N)} \rightarrow \text{N Storage Nodes}
+\]</span></p></li>
+</ul></li>
+<li><p><strong>Buffering:</strong> Introduce buffers at various points in the logging pipeline to absorb bursts of traffic.</p>
+<ul>
+<li><strong>Implementation:</strong> Use in-memory buffers in the log consumer service to batch writes to persistent storage. Configure the message queue with sufficient capacity to handle spikes in log message volume.</li>
+</ul></li>
+<li><p><strong>Careful Selection of Technologies:</strong> Choose technologies that are designed for high-throughput, low-latency environments.</p>
+<ul>
+<li><strong>Examples:</strong>
+<ul>
+<li><strong>Message Queue:</strong> Kafka, RabbitMQ</li>
+<li><strong>Time-Series Database:</strong> Prometheus, InfluxDB, TimescaleDB</li>
+<li><strong>Stream Processing Engine:</strong> Flink, Kafka Streams, Spark Streaming</li>
+<li><strong>Distributed Database:</strong> Cassandra, HBase</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Resource Optimization:</strong> Optimize the prediction service code to minimize resource consumption (CPU, memory, I/O).</p>
+<ul>
+<li><strong>Implementation:</strong> Use profiling tools to identify performance bottlenecks in the prediction service code. Optimize data structures and algorithms to reduce memory usage and CPU cycles. Use caching to reduce I/O operations.</li>
+</ul></li>
+</ol>
+<p><strong>Real-World Considerations</strong></p>
+<ul>
+<li><p><strong>Data Governance and Compliance:</strong> Ensure that the logging and monitoring system complies with data privacy regulations (e.g., GDPR, CCPA). Anonymize or redact sensitive data before logging it.</p></li>
+<li><p><strong>Security:</strong> Secure the logging and monitoring infrastructure to prevent unauthorized access to sensitive data. Use encryption to protect log data in transit and at rest.</p></li>
+<li><p><strong>Cost:</strong> The cost of logging and monitoring can be significant, especially in high-throughput environments. Optimize the logging strategy to minimize storage and processing costs.</p></li>
+<li><p><strong>Observability:</strong> Design the logging and monitoring system with observability in mind. Provide dashboards and visualizations that allow you to easily monitor the health and performance of the prediction service. Implement alerting to notify you of potential issues.</p></li>
+<li><p><strong>Experimentation:</strong> Experiment with different logging and monitoring strategies to find the optimal balance between performance, data fidelity, and cost. Use A/B testing to compare the performance of different logging configurations.</p></li>
+</ul>
+<p><strong>Ensuring Minimal Impact on Inference Speed</strong></p>
+<ul>
+<li><strong>Offload all non-critical tasks:</strong> Ensure any overhead operations are dispatched to asynchronous workers.</li>
+<li><strong>Optimize Logging:</strong> Only log what is essential. Reduce verbosity, and if possible, use aggregated statistics instead of raw data where appropriate.</li>
+<li><strong>Profile and Monitor:</strong> Continuously monitor the impact of logging and monitoring on inference speed. Use profiling tools to identify bottlenecks.</li>
+<li><strong>Hardware Acceleration:</strong> Consider using hardware acceleration (e.g., GPUs) for inference to offset the overhead of logging and monitoring.</li>
+</ul>
+<p>By carefully considering these challenges, trade-offs, and strategies, it’s possible to implement a robust monitoring and logging system that meets the needs of a high-throughput production environment without sacrificing performance or scalability. The key is to design a system that is asynchronous, distributed, and optimized for the specific requirements of the application.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a step-by-step guide on how to articulate this in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with the Core Problem:</strong> Begin by framing the problem: “Implementing real-time monitoring and batch logging in high-throughput environments is challenging because you’re essentially trying to do two conflicting things: get immediate insights and collect comprehensive data, all while maintaining low latency and scalability.”</p></li>
+<li><p><strong>Discuss the Trade-offs:</strong> “The core challenge involves several critical trade-offs. For example, detailed logging gives richer insights but impacts performance and increases storage costs. Synchronous logging guarantees data persistence but increases latency, while asynchronous logging reduces latency but risks data loss.”</p></li>
+<li><p><strong>Introduce Architectural Strategies:</strong> “To address these trade-offs, a combination of architectural strategies is necessary. The most important is asynchronous logging, where we use a message queue like Kafka to decouple the prediction service from the logging service. This allows the prediction service to continue processing requests without waiting for the logs to be written.”</p></li>
+<li><p><strong>Explain Key Technologies:</strong> “We would then leverage technologies like Kafka for queuing, time-series databases like Prometheus or InfluxDB for storing aggregated metrics, and stream processing engines like Flink for real-time analytics on the log data. Microservices architecture helps in scaling individual components as needed.”</p></li>
+<li><p><strong>Deep Dive into a Few Strategies (Choose 2-3):</strong> Pick 2-3 strategies that you can discuss in more detail. For example:</p>
+<ul>
+<li><strong>Asynchronous Logging:</strong> “With asynchronous logging using Kafka, the prediction service simply publishes a message to the Kafka topic. A separate consumer service reads from this topic and writes the logs to persistent storage. This significantly reduces the impact on the prediction latency.”</li>
+<li><strong>In-Memory Aggregation:</strong> “For real-time monitoring, we can aggregate metrics in-memory before writing them to a monitoring database. For example, we might track the average prediction latency over a 5-minute window and only write the aggregated value to the database. This reduces the frequency of I/O operations.”</li>
+<li><strong>Sampling:</strong> “Sampling is also crucial. Logging every single request might be overkill and impact performance. Instead, we can log only a subset of requests, for example, 1% of all requests, or all requests that exceed a certain latency threshold.”</li>
+</ul></li>
+<li><p><strong>Address Scalability:</strong> “Scalability is achieved through horizontal scaling and data partitioning. We would scale the logging and monitoring infrastructure horizontally by adding more machines. We would also partition the log data across multiple storage nodes to improve query performance.”</p></li>
+<li><p><strong>Mention Real-World Considerations:</strong> “Beyond the technical aspects, we also need to consider data governance and compliance, security, and cost. We need to ensure that the logging system complies with data privacy regulations and that the data is protected from unauthorized access.”</p></li>
+<li><p><strong>Summarize the Approach:</strong> “In summary, the key to implementing a robust monitoring and logging system in a high-throughput environment is to design a system that is asynchronous, distributed, and optimized for the specific requirements of the application. It’s a constant balancing act between performance, data fidelity, cost, and regulatory compliance.”</p></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Start High-Level:</strong> Begin with the big picture and then drill down into the details. This helps the interviewer understand the context of your answer.</li>
+<li><strong>Use Visual Aids (if possible):</strong> If you are in a virtual interview, consider sharing a simple diagram to illustrate the architecture of the logging and monitoring system. Even a hand-drawn diagram can be helpful.</li>
+<li><strong>Check for Understanding:</strong> Periodically pause and ask the interviewer if they have any questions. This ensures that they are following along and allows you to address any areas of confusion.</li>
+<li><strong>Tailor the Depth:</strong> Adjust the level of detail based on the interviewer’s background and the flow of the conversation. If the interviewer seems particularly interested in a specific area, delve deeper into that topic.</li>
+<li><strong>Be Honest About Trade-offs:</strong> Don’t try to gloss over the trade-offs involved. Acknowledge the limitations of each approach and explain why you chose a particular solution.</li>
+<li><strong>Focus on the “Why”:</strong> Explain the reasoning behind your choices. Why did you choose Kafka over RabbitMQ? Why did you choose Prometheus over InfluxDB? Demonstrate that you understand the pros and cons of each technology.</li>
+</ul>
+<p>By following these steps, you can effectively communicate your understanding of the challenges and trade-offs of implementing real-time monitoring and batch logging in high-throughput production environments, and demonstrate your ability to design and implement a scalable and low-latency solution.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -128,6 +128,11 @@ ml_ai_ds_topics = {
         'Model Serving (Flask, FastAPI, TensorFlow Serving, TorchServe)',
         'Monitoring and Logging for Deployed Models',
         'A/B Testing, Canary Deployments',
-        'Model Versioning and Governance'
+        'Feature Stores & Data Serving',
+        'Model Versioning and Governance',
+        'Tools & Frameworks in the MLOps Ecosystem',
+        'Model Performance Metrics in Production',
+        'Explainability & Interpretability in Production',
+        'Model Monitoring & Drift Detection' 
     ]
 }

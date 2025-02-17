@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>feature_stores___data_serving_1</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-2.-explain-the-differences-between-offline-and-online-near-real-time-feature-serving-systems.-what-are-the-trade-offs-involved-in-each-approach" class="level2">
+<h2 class="anchored" data-anchor-id="question-2.-explain-the-differences-between-offline-and-online-near-real-time-feature-serving-systems.-what-are-the-trade-offs-involved-in-each-approach">Question: 2. Explain the differences between offline and online (near real-time) feature serving systems. What are the trade-offs involved in each approach?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Feature serving systems are critical components of modern machine learning infrastructure, responsible for providing features to models both during training and at inference time. They ensure that models receive the correct input data in a timely and consistent manner. The primary distinction lies in how features are stored, accessed, and delivered: either in an offline (batch) or an online (near real-time) manner. Let’s delve into the nuances of each approach and analyze their respective trade-offs.</p>
+<p><strong>1. Offline Feature Serving (Batch Feature Serving)</strong></p>
+<ul>
+<li><strong>Purpose:</strong> Primarily used for model training, evaluation, and batch inference.</li>
+<li><strong>Data Storage:</strong> Features are typically stored in data warehouses or data lakes, such as Hadoop Distributed File System (HDFS), AWS S3, Google Cloud Storage (GCS), or Apache Hive.</li>
+<li><strong>Data Freshness:</strong> Data is usually updated in batches, ranging from daily to weekly intervals. It’s <em>not</em> designed for immediate, real-time updates. Data may reflect a point-in-time snapshot.</li>
+<li><strong>Access Pattern:</strong> Features are accessed in bulk using batch processing frameworks like Apache Spark, Apache Flink, or MapReduce.</li>
+<li><strong>Latency:</strong> Higher latency is acceptable because it’s used in offline processes where speed is not critical. Latencies can range from minutes to hours.</li>
+<li><strong>Consistency:</strong> Consistency is generally strong, as feature values are computed based on a historical snapshot of data.</li>
+<li><strong>Typical Architecture:</strong>
+<ol type="1">
+<li><strong>Feature Engineering Pipeline:</strong> Data is extracted, transformed, and loaded (ETL) into the data warehouse.</li>
+<li><strong>Feature Materialization:</strong> Features are pre-computed and stored in a batch-oriented storage system.</li>
+<li><strong>Training/Batch Inference:</strong> Models are trained using the materialized features, or batch predictions are generated.</li>
+</ol></li>
+<li><strong>Example Scenario:</strong> Training a churn prediction model using customer demographics and historical transaction data that is updated daily.</li>
+</ul>
+<p><strong>2. Online Feature Serving (Near Real-Time Feature Serving)</strong></p>
+<ul>
+<li><strong>Purpose:</strong> Used for real-time model inference, where low-latency feature retrieval is crucial.</li>
+<li><strong>Data Storage:</strong> Features are stored in low-latency, high-throughput databases or caches like Redis, Cassandra, DynamoDB, or specialized feature stores.</li>
+<li><strong>Data Freshness:</strong> Data is updated in near real-time, typically within milliseconds to seconds.</li>
+<li><strong>Access Pattern:</strong> Features are accessed individually or in small batches via API calls.</li>
+<li><strong>Latency:</strong> Extremely low latency is required (typically single-digit milliseconds) to minimize the impact on the end-user experience.</li>
+<li><strong>Consistency:</strong> Achieving strong consistency can be challenging due to the distributed nature of online systems and the need for low latency. Eventual consistency is often acceptable.</li>
+<li><strong>Typical Architecture:</strong>
+<ol type="1">
+<li><strong>Data Ingestion:</strong> Real-time data streams are ingested via message queues like Kafka or Kinesis.</li>
+<li><strong>Feature Computation:</strong> Features are computed in real-time using stream processing frameworks like Apache Flink, Apache Kafka Streams, or Spark Streaming.</li>
+<li><strong>Feature Storage:</strong> Computed features are stored in a low-latency feature store.</li>
+<li><strong>Real-Time Inference:</strong> Models fetch features from the feature store to generate predictions.</li>
+</ol></li>
+<li><strong>Example Scenario:</strong> Fraud detection where real-time transaction data needs to be evaluated against a model within milliseconds to prevent fraudulent activity.</li>
+</ul>
+<p><strong>Trade-offs:</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 17%">
+<col style="width: 38%">
+<col style="width: 44%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Feature</th>
+<th>Offline Feature Serving</th>
+<th>Online Feature Serving</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Latency</strong></td>
+<td>High (Minutes to Hours)</td>
+<td>Low (Milliseconds)</td>
+</tr>
+<tr class="even">
+<td><strong>Data Freshness</strong></td>
+<td>Low (Daily to Weekly)</td>
+<td>High (Milliseconds to Seconds)</td>
+</tr>
+<tr class="odd">
+<td><strong>Throughput</strong></td>
+<td>High (Batch Processing)</td>
+<td>Low (Single or Small Batches)</td>
+</tr>
+<tr class="even">
+<td><strong>Consistency</strong></td>
+<td>Strong</td>
+<td>Eventual (Typically)</td>
+</tr>
+<tr class="odd">
+<td><strong>Complexity</strong></td>
+<td>Lower</td>
+<td>Higher</td>
+</tr>
+<tr class="even">
+<td><strong>Cost</strong></td>
+<td>Lower (Cheaper Storage &amp; Compute)</td>
+<td>Higher (Expensive Storage &amp; Compute)</td>
+</tr>
+<tr class="odd">
+<td><strong>Use Cases</strong></td>
+<td>Training, Batch Inference</td>
+<td>Real-time Inference</td>
+</tr>
+<tr class="even">
+<td><strong>Storage</strong></td>
+<td>Data Warehouses, Data Lakes</td>
+<td>Low-Latency Databases, Specialized Feature Stores</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key Considerations &amp; Challenges:</strong></p>
+<ol type="1">
+<li><strong>Feature Synchronization (Training-Serving Skew):</strong> Ensuring that features used during training are identical to those used during inference. This is a major challenge because offline and online systems often have different data pipelines and computation methods.
+<ul>
+<li><strong>Solution:</strong> Implement a feature store that acts as a single source of truth for feature definitions and transformations. Use consistent feature engineering logic across both pipelines.</li>
+<li>This also helps to eliminate the need for redundant code and ensure data consistency.</li>
+</ul></li>
+<li><strong>Data Governance:</strong> Managing the lineage, versioning, and access control of features to ensure data quality and compliance.
+<ul>
+<li><strong>Solution:</strong> Implement a feature catalog to track feature metadata and lineage. Use version control for feature definitions and transformations.</li>
+</ul></li>
+<li><strong>Scalability:</strong> Scaling both offline and online feature serving systems to handle large volumes of data and traffic.
+<ul>
+<li><strong>Solution:</strong> Use distributed computing frameworks for offline processing and horizontally scalable databases for online serving.</li>
+</ul></li>
+<li><strong>Monitoring and Alerting:</strong> Monitoring the performance and health of feature serving systems to detect and resolve issues quickly.
+<ul>
+<li><strong>Solution:</strong> Implement comprehensive monitoring dashboards and alerting systems to track latency, throughput, and data quality metrics.</li>
+</ul></li>
+</ol>
+<p><strong>Mathematical Considerations:</strong></p>
+<p>The latency trade-off can be expressed using queuing theory. In an online system, we aim to minimize the average waiting time (<span class="math inline">\(W_q\)</span>) in the queue, which is related to the arrival rate (<span class="math inline">\(\lambda\)</span>) and service rate (<span class="math inline">\(\mu\)</span>) of feature requests.</p>
+<p><span class="math display">\[
+W_q = \frac{\lambda}{\mu(\mu - \lambda)}
+\]</span></p>
+<p>Where:</p>
+<ul>
+<li><span class="math inline">\(\lambda\)</span> is the average arrival rate of feature requests.</li>
+<li><span class="math inline">\(\mu\)</span> is the average service rate (feature retrieval rate).</li>
+</ul>
+<p>To minimize <span class="math inline">\(W_q\)</span>, we need to ensure that <span class="math inline">\(\mu\)</span> is significantly greater than <span class="math inline">\(\lambda\)</span>, which requires investing in low-latency storage and efficient retrieval mechanisms. Offline systems, being batch-oriented, are less sensitive to these real-time queuing dynamics.</p>
+<p>In summary, choosing between offline and online feature serving depends on the specific requirements of the application. Offline serving is suitable for batch processing and training, while online serving is essential for real-time inference. Building a robust feature serving system requires careful consideration of the trade-offs involved and a well-defined architecture that addresses the challenges of feature synchronization, data governance, scalability, and monitoring. Ideally, a unified feature store that supports both offline and online access patterns is the most desirable solution, reducing redundancy and improving consistency.</p>
+<p><strong>How to Narrate</strong></p>
+<ol type="1">
+<li><strong>Start with the Big Picture:</strong>
+<ul>
+<li>“Feature serving systems are a crucial part of the ML infrastructure, acting as the bridge between data and models, both during training and inference.”</li>
+<li>“The main difference is <em>how</em> and <em>when</em> the features are accessed: either in batch (offline) or near real-time (online).”</li>
+</ul></li>
+<li><strong>Explain Offline Feature Serving:</strong>
+<ul>
+<li>“Offline feature serving is geared towards model training and batch processing. Features are stored in data lakes like S3 or data warehouses.”</li>
+<li>“Data freshness is lower, often updated daily or weekly. We use tools like Spark for processing them in bulk. Latency is not a primary concern here.”</li>
+<li>“For example, imagine training a model to predict customer churn. We can use historical transaction data updated daily, which perfectly fits an offline setup.”</li>
+</ul></li>
+<li><strong>Explain Online Feature Serving:</strong>
+<ul>
+<li>“Online feature serving is all about real-time inference. Low latency is key, so features are stored in fast databases like Redis or DynamoDB.”</li>
+<li>“Data freshness is paramount, with updates occurring within milliseconds to seconds. Access is usually via API calls.”</li>
+<li>“Think of fraud detection. We need to evaluate transactions in real-time, requiring features that are updated instantly and served with minimal delay.”</li>
+</ul></li>
+<li><strong>Discuss Trade-offs:</strong>
+<ul>
+<li>“The choice between offline and online depends heavily on the application requirements. Let’s consider the key trade-offs:” <em>Use the table above as a visual aid if possible, or mention the contrasts.</em></li>
+<li><em>Point out the main contrasts in Latency, Freshness, Throughput, and Complexity.</em> “Online is fast and fresh, but more complex and costly. Offline is slower and less fresh, but simpler and cheaper.”</li>
+</ul></li>
+<li><strong>Highlight Challenges and Solutions:</strong>
+<ul>
+<li>“One of the biggest challenges is maintaining consistency between training and serving – avoiding training-serving skew. If the interviewer seems interested, share equation” <span class="math display">\[W_q = \frac{\lambda}{\mu(\mu - \lambda)}\]</span> “While this queuing formula applies more directly to online systems because of the real-time constraints, understanding how service rate relates to latency helps motivate choices in feature store design. A common pattern is to engineer features consistently in batch (using e.g.&nbsp;Spark) and then to push those pre-computed features into an online store (e.g.&nbsp;Redis) via an ETL job. The alternative is to re-implement the feature transformation logic in a stream processor, which increases complexity and the chances of skew.”</li>
+<li>“We also need good data governance, scalability, and monitoring. Implementing a feature store that acts as a single source of truth for features helps a lot.”</li>
+</ul></li>
+<li><strong>Summarize and Conclude:</strong>
+<ul>
+<li>“Ideally, a unified feature store supporting both offline and online access is the best approach, minimizing redundancy and ensuring consistency. Ultimately, it’s about choosing the right tool for the job based on latency, data freshness, and cost constraints.”</li>
+<li>“The end goal is a reliable, scalable, and consistent feature serving system that delivers the right data to the right model at the right time.”</li>
+</ul></li>
+</ol>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

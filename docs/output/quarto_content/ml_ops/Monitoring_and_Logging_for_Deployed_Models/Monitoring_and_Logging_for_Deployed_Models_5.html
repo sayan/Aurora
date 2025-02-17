@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>monitoring_and_logging_for_deployed_models_5</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-5d3fd86dc4559d58e199c8cc4a79ed5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-practical-application-imagine-your-deployed-model-begins-to-show-unexpected-performance-degradation-in-a-production-scenario-with-messy-data-input.-walk-me-through-your-troubleshooting-process-how-you-would-use-monitoring-and-logging-to-diagnose-the-issue-and-the-steps-youd-take-to-mitigate-it." class="level2">
+<h2 class="anchored" data-anchor-id="question-practical-application-imagine-your-deployed-model-begins-to-show-unexpected-performance-degradation-in-a-production-scenario-with-messy-data-input.-walk-me-through-your-troubleshooting-process-how-you-would-use-monitoring-and-logging-to-diagnose-the-issue-and-the-steps-youd-take-to-mitigate-it.">Question: Practical Application: Imagine your deployed model begins to show unexpected performance degradation in a production scenario with messy data input. Walk me through your troubleshooting process, how you would use monitoring and logging to diagnose the issue, and the steps you’d take to mitigate it.</h2>
+<p><strong>Best Answer</strong></p>
+<p>When a deployed model starts exhibiting unexpected performance degradation in a production environment with messy data, a systematic approach is crucial. My troubleshooting process would focus on several key areas: Verification, Isolation, and Mitigation, supported by robust monitoring and logging.</p>
+<p><strong>1. Immediate Verification and Alert Review:</strong></p>
+<ul>
+<li><p><strong>Alert Fatigue Mitigation</strong>: Before diving into analysis, I’d acknowledge and carefully review any triggered alerts. This involves understanding the alert’s specific threshold and recent firing history to differentiate between a genuine issue and a result of alert fatigue.</p></li>
+<li><p><strong>Basic Sanity Checks</strong>:</p>
+<ul>
+<li>Confirm the model is actually serving predictions and not entirely down.</li>
+<li>Verify that infrastructure components like servers, databases, and message queues are operating normally. Simple “ping” tests and resource utilization checks would be the starting point.</li>
+</ul></li>
+</ul>
+<p><strong>2. Diagnostic Phase - Leveraging Monitoring and Logging:</strong></p>
+<ul>
+<li><strong>Monitoring Dashboard Review:</strong> I would start with the model’s performance monitoring dashboard. Key metrics to examine include:
+<ul>
+<li><strong>Performance Metrics</strong>: Track metrics relevant to the model’s objective (e.g., accuracy, F1-score, AUC, precision, recall). Significant drops compared to baseline metrics during development or previous production performance are critical signals. For example, if the model predicts customer churn, a sudden decline in the precision of identifying churned customers would warrant investigation.</li>
+<li><strong>Response Time</strong>: Monitor the model’s prediction latency. Increased response times could indicate resource contention, inefficient code, or problems with upstream data pipelines.</li>
+<li><strong>Error Rates</strong>: Observe the frequency of errors (e.g., 500 errors, prediction errors, data validation failures). This helps understand the scale of the problem.</li>
+<li><strong>Resource Utilization</strong>: Check CPU, memory, and disk I/O usage of the serving infrastructure. High resource usage might be throttling the model’s performance.</li>
+<li><strong>Throughput</strong>: Measure the number of requests processed per unit of time. A drop in throughput can indicate a bottleneck.</li>
+</ul></li>
+<li><strong>Log Analysis:</strong> I’d delve into the application logs and model-specific logs.
+<ul>
+<li><strong>Application Logs</strong>:
+<ul>
+<li><strong>Error Messages</strong>: Look for exceptions, warnings, or error messages related to data processing, model inference, or communication with other services. Stack traces are particularly valuable for identifying the source of errors.</li>
+<li><strong>Latency Information</strong>: Trace requests from the point they enter the system to when the model produces its output. This helps pinpoint where latency is being introduced (e.g., data loading, preprocessing, model execution).</li>
+</ul></li>
+<li><strong>Model-Specific Logs</strong>:
+<ul>
+<li><strong>Input Data</strong>: Log a sample of the input data along with the model’s predictions. This allows for examining the characteristics of the data causing performance issues. Specifically, looking for common features or patterns in problematic inputs.</li>
+<li><strong>Prediction Probabilities</strong>: If the model outputs probabilities (e.g., for classification), log these probabilities. A sudden shift in the distribution of probabilities can indicate a change in the model’s confidence or a calibration issue.</li>
+<li><strong>Feature Values</strong>: Log pre-processed feature values to identify if the pre-processing steps are functioning as expected and to understand the input distribution.</li>
+</ul></li>
+</ul></li>
+</ul>
+<p><strong>3. Isolating the Root Cause:</strong></p>
+<ul>
+<li><strong>Data Quality Issues:</strong> This is often a prime suspect, especially with “messy data.”
+<ul>
+<li><p><strong>Data Distribution Shifts (Drift):</strong> Compare the distribution of input features in production to the distributions observed during training using statistical tests like the Kolmogorov-Smirnov test (for continuous variables) or Chi-squared test (for categorical variables).</p>
+<p><span class="math display">\[
+D = \sup_x |F_{production}(x) - F_{training}(x)|
+\]</span></p>
+<p>Where <span class="math inline">\(D\)</span> is the Kolmogorov-Smirnov statistic, <span class="math inline">\(F_{production}(x)\)</span> and <span class="math inline">\(F_{training}(x)\)</span> are the empirical cumulative distribution functions of the feature in the production and training datasets, respectively. Significant drift in feature distributions can lead to the model making inaccurate predictions because it’s operating in an unfamiliar data space.</p></li>
+<li><p><strong>Missing Values</strong>: Check for increased rates of missing values in specific features. These might be new features added that the model wasn’t trained on.</p></li>
+<li><p><strong>Invalid Values</strong>: Look for values outside the expected range or format (e.g., negative ages, incorrect date formats).</p></li>
+<li><p><strong>Data Anomalies</strong>: Employ anomaly detection techniques to identify unusual data points that deviate significantly from the norm. This could involve statistical methods like z-score analysis or more advanced techniques like isolation forests or autoencoders.</p>
+<ul>
+<li><strong>z-score analysis</strong>: <span class="math display">\[
+z = \frac{x - \mu}{\sigma}
+\]</span></li>
+</ul>
+<p>Where <span class="math inline">\(x\)</span> is the data point, <span class="math inline">\(\mu\)</span> is the mean of the data, and <span class="math inline">\(\sigma\)</span> is the standard deviation of the data.</p></li>
+<li><p><strong>Feature Correlation Changes</strong>: Examine how feature correlations have changed over time. If a significant shift in correlation has occurred between important features, it can impact the model’s performance.</p></li>
+</ul></li>
+<li><strong>Model Drift:</strong>
+<ul>
+<li><p>If data drift is ruled out or minimized, model drift might be the primary issue. Model drift occurs when the relationship between input features and the target variable changes over time. This can happen due to evolving user behavior, changes in the underlying system, or external factors.</p></li>
+<li><p><strong>Direct Performance Comparison</strong>: Split production data (with ground truth if available, often lagged) and evaluate both the current model and a “challenger” model trained on more recent data. Compare performance metrics.</p></li>
+<li><p><strong>Proxy Metrics</strong>: If ground truth is not immediately available, monitor proxy metrics that correlate with model performance. For example, in recommendation systems, click-through rates or conversion rates can serve as proxy metrics.</p></li>
+</ul></li>
+<li><strong>Infrastructure Issues:</strong> While less likely if basic sanity checks pass, these still need consideration.
+<ul>
+<li><strong>Resource Constraints</strong>: Even with seemingly normal resource utilization, there might be subtle bottlenecks (e.g., network latency to a database).</li>
+<li><strong>Software Bugs</strong>: New code deployments can introduce regressions or bugs that affect model performance. Rollback recent changes if suspected.</li>
+<li><strong>Dependency Conflicts</strong>: Check for version mismatches or conflicts between different libraries or components.</li>
+</ul></li>
+</ul>
+<p><strong>4. Mitigation Strategies:</strong></p>
+<ul>
+<li><p><strong>Data Quality Improvement</strong>:</p>
+<ul>
+<li><strong>Data Cleansing</strong>: Implement data validation and cleansing steps to handle missing, invalid, or inconsistent data. This might involve filling missing values, correcting incorrect formats, or removing outliers.</li>
+<li><strong>Feature Engineering</strong>: Create new features that are more robust to data variations or that capture underlying trends in the data.</li>
+<li><strong>Data Normalization/Standardization</strong>: Apply normalization or standardization techniques to bring features to a similar scale.</li>
+</ul></li>
+<li><p><strong>Model Retraining</strong>:</p>
+<ul>
+<li><strong>Retrain with Recent Data</strong>: Retrain the model using the most recent data to capture evolving patterns. Consider using a sliding window approach where the model is retrained periodically with a fixed amount of recent data.</li>
+<li><strong>Online Learning</strong>: Implement an online learning algorithm that continuously updates the model as new data becomes available. This can help the model adapt to changing data patterns in real-time.</li>
+<li><strong>Adversarial Training</strong>: Incorporate adversarial training techniques to make the model more robust to noisy or adversarial input.</li>
+</ul></li>
+<li><p><strong>Model Rollback</strong>: If a recent model deployment is suspected to be the cause, roll back to the previous stable version.</p></li>
+<li><p><strong>Input Validation</strong>: Implement stricter input validation to reject or flag anomalous data points before they reach the model.</p></li>
+<li><p><strong>Canary Deployments</strong>: When deploying new model versions, use canary deployments to gradually roll out the new model to a small subset of users. Monitor its performance closely and compare it to the existing model. This allows for detecting potential issues early on before they impact a large number of users.</p></li>
+<li><p><strong>Enhanced Monitoring and Logging</strong>: Based on the identified issues, enhance the monitoring and logging infrastructure to capture more granular information about the model’s behavior and the data it processes. This might involve adding new metrics, increasing the logging frequency, or implementing more sophisticated data analysis techniques.</p></li>
+</ul>
+<p><strong>5. Long-Term Prevention:</strong></p>
+<ul>
+<li><strong>Automated Data Quality Monitoring</strong>: Implement automated data quality monitoring to detect data drift, missing values, and other data anomalies in real-time. This can help prevent performance degradation before it occurs.</li>
+<li><strong>Continuous Integration/Continuous Deployment (CI/CD) Pipeline</strong>: Integrate model retraining and deployment into a CI/CD pipeline to automate the process and ensure that new model versions are thoroughly tested before being deployed to production.</li>
+<li><strong>Feedback Loops</strong>: Establish feedback loops to collect user feedback and ground truth data to continuously improve the model’s performance.</li>
+<li><strong>Regular Model Audits</strong>: Conduct regular audits of the model’s performance and behavior to identify potential issues and ensure that it is aligned with the business objectives.</li>
+<li><strong>Update Alerting Rules</strong>: Refine alerting rules to be more precise and reduce false positives.</li>
+</ul>
+<p><strong>Messy Data Considerations:</strong></p>
+<ul>
+<li><strong>Understand Data Sources</strong>: Identify the source of the “messy” data and work with data providers to improve data quality.</li>
+<li><strong>Robust Preprocessing</strong>: Design preprocessing steps that are resilient to noisy or incomplete data. Techniques like robust scaling or outlier removal can be helpful.</li>
+<li><strong>Ensemble Methods</strong>: Use ensemble methods (e.g., random forests, gradient boosting) to reduce the impact of individual noisy data points.</li>
+<li><strong>Feature Selection</strong>: Carefully select features that are less susceptible to noise or that have strong predictive power even in the presence of noise.</li>
+</ul>
+<p><strong>Mathematical Foundations</strong>:</p>
+<p>The analysis relies on a foundation of statistical concepts and techniques:</p>
+<ul>
+<li><strong>Statistical Hypothesis Testing:</strong> Used for detecting data drift and model drift.</li>
+<li><strong>Anomaly Detection Algorithms:</strong> Used for identifying unusual data points.</li>
+<li><strong>Regression Analysis:</strong> Used for building models that predict the relationship between input features and the target variable.</li>
+<li><strong>Time Series Analysis:</strong> Used for analyzing time-dependent data and detecting trends or seasonality.</li>
+<li><strong>Information Theory:</strong> Used for measuring the information content of data and identifying relevant features.</li>
+</ul>
+<p>By systematically addressing each of these points, I can effectively diagnose and mitigate performance degradation issues in production, especially when dealing with messy data. This proactive approach allows us to maintain the model’s reliability and deliver consistent, high-quality results.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a step-by-step guide on how to deliver this answer verbally in an interview, emphasizing clarity and expertise:</p>
+<ol type="1">
+<li><strong>Start with the Initial State (30 seconds)</strong>
+<ul>
+<li>“Okay, so we have a deployed model degrading in performance with messy data. The situation warrants a systematic approach.”</li>
+<li>“My first step would be verifying that the issue is indeed a serious one and not alert fatigue, by reviewing the alerts, before confirming that the model is actually running.”</li>
+</ul></li>
+<li><strong>Diagnostic Phase Explanation (2 minutes)</strong>
+<ul>
+<li>“Next, I would immediately dive into the monitoring dashboards. I’d focus on key performance indicators like accuracy or F1-score, response time to ensure efficient predictions, and error rates to understand problem magnitude, and resource utilization to check for infrastructure bottlenecks..”</li>
+<li>“In parallel, I would meticulously analyze the logs. Application logs could reveal error messages or latency issues. Crucially, I’d examine model-specific logs, focusing on input data (logging a sample for analysis), prediction probabilities, and feature values.”</li>
+</ul></li>
+<li><strong>Isolate the Root Cause (3 minutes)</strong>
+<ul>
+<li>“With the data gathered, I would investigate the potential root causes, and starting with data quality issues.”</li>
+<li>“Data distribution shifts are common, and I’d use statistical tests like the Kolmogorov-Smirnov test to quantify changes. Here, it might be good to write down the equation in latex. Explain what the equation is doing and why you use it.</li>
+<li>“Model drift can also be the reason, which I would try to use comparison between old and new model version to see the performance different and isolate it out.</li>
+<li>“Finally, I would rule out infrastructure issues. If the first couple of steps are all passed, there is a chance we can have a resource constraints.”</li>
+</ul></li>
+<li><strong>Mitigation Strategies (2 minutes)</strong>
+<ul>
+<li>“Based on what’s identified as the primary cause, I’d select appropriate mitigation strategies.</li>
+<li>“If it’s data quality, I’d focus on cleaning, feature engineering, and data normalization.</li>
+<li>“For model drift, retraining with recent data or even online learning could be the next step.”</li>
+<li>“And if the model version cause the error, roll back to the previous version immediately.”</li>
+<li>“In addition, I’d consider input validation to reject bad data and canary deployments for future model releases.”</li>
+</ul></li>
+<li><strong>Long-Term Prevention and Messy Data (1.5 minutes)</strong>
+<ul>
+<li>“For the long term, I would implement automated data quality monitoring, integrate model retraining into a CI/CD pipeline, and establish feedback loops for continuous improvement.”</li>
+<li>“And, because we started with ‘messy data,’ I’d emphasize understanding the data sources and designing robust preprocessing steps to handle noisy data.”</li>
+</ul></li>
+<li><strong>Communicate Expertise (30 seconds)</strong>
+<ul>
+<li>Conclude with: “By combining robust monitoring, logging, a systematic troubleshooting approach, and a strong focus on data quality, I can effectively manage model performance degradation in complex production environments.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush. Take your time to explain each step clearly.</li>
+<li><strong>Visual Aids:</strong> If interviewing in person, consider using a whiteboard to draw diagrams or write down key equations.</li>
+<li><strong>Engage the Interviewer:</strong> Ask if they have any questions at various points in your explanation.</li>
+<li><strong>Be Ready to Elaborate:</strong> The interviewer might ask you to go into more detail about a specific technique.</li>
+<li><strong>Stay Positive:</strong> Even if the scenario is challenging, maintain a positive and confident demeanor.</li>
+<li><strong>Mathematical Acumen:</strong> When introducing equations, say something like, “To formally quantify this, we can use [statistical test] with the following formulation…” Avoid diving too deep into derivations unless explicitly asked.</li>
+</ul>
+<p>By following these steps, you’ll deliver a well-structured and informative answer that showcases your expertise in model monitoring, troubleshooting, and data science principles.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
