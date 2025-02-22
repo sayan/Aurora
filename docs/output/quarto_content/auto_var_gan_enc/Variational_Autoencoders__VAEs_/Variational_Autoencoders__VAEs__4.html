@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.41">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>variational_autoencoders__vaes__4</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-48ffa3e5b9d089919c6712c39e5b00f2.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-a37d0bf9d509de95c1ba4621f20add8c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-5.-posterior-collapse-is-a-common-issue-in-training-vaes-especially-with-powerful-decoders.-what-is-posterior-collapse-and-what-strategies-can-be-implemented-to-mitigate-this-issue" class="level2">
+<h2 class="anchored" data-anchor-id="question-5.-posterior-collapse-is-a-common-issue-in-training-vaes-especially-with-powerful-decoders.-what-is-posterior-collapse-and-what-strategies-can-be-implemented-to-mitigate-this-issue">Question: 5. Posterior collapse is a common issue in training VAEs, especially with powerful decoders. What is posterior collapse, and what strategies can be implemented to mitigate this issue?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Posterior collapse is a significant problem encountered when training Variational Autoencoders (VAEs), particularly when the decoder is overly powerful. It manifests as the decoder learning to ignore the latent code <span class="math inline">\(\mathbf{z}\)</span> sampled from the approximate posterior <span class="math inline">\(q(\mathbf{z}|\mathbf{x})\)</span>, effectively rendering the latent space useless. This leads to a situation where the model reconstructs inputs <span class="math inline">\(\mathbf{x}\)</span> using only the decoder’s internal parameters, bypassing any meaningful usage of the latent representation.</p>
+<p>To understand this better, let’s briefly review the VAE objective function, which consists of two terms: the reconstruction loss (or negative log-likelihood) and the Kullback-Leibler (KL) divergence. The VAE aims to maximize the Evidence Lower Bound (ELBO):</p>
+<p><span class="math display">\[
+\mathcal{L}(\theta, \phi) = \mathbb{E}_{q_{\phi}(\mathbf{z}|\mathbf{x})} [\log p_{\theta}(\mathbf{x}|\mathbf{z})] - D_{KL}(q_{\phi}(\mathbf{z}|\mathbf{x}) || p(\mathbf{z}))
+\]</span></p>
+<p>where: * <span class="math inline">\(\theta\)</span> represents the parameters of the decoder <span class="math inline">\(p_{\theta}(\mathbf{x}|\mathbf{z})\)</span>. * <span class="math inline">\(\phi\)</span> represents the parameters of the encoder <span class="math inline">\(q_{\phi}(\mathbf{z}|\mathbf{x})\)</span>. * <span class="math inline">\(p(\mathbf{z})\)</span> is the prior distribution over the latent space (typically a standard Gaussian). * <span class="math inline">\(q_{\phi}(\mathbf{z}|\mathbf{x})\)</span> is the approximate posterior (encoder output). * <span class="math inline">\(p_{\theta}(\mathbf{x}|\mathbf{z})\)</span> is the decoder output, the reconstructed data. * <span class="math inline">\(D_{KL}(q_{\phi}(\mathbf{z}|\mathbf{x}) || p(\mathbf{z}))\)</span> is the KL divergence between the approximate posterior and the prior.</p>
+<p>Posterior collapse occurs when the KL divergence term dominates the loss function, forcing <span class="math inline">\(q_{\phi}(\mathbf{z}|\mathbf{x})\)</span> to be very close to <span class="math inline">\(p(\mathbf{z})\)</span>, regardless of the input <span class="math inline">\(\mathbf{x}\)</span>. In the extreme case, <span class="math inline">\(q_{\phi}(\mathbf{z}|\mathbf{x}) \approx p(\mathbf{z})\)</span> for all <span class="math inline">\(\mathbf{x}\)</span>. Consequently, the decoder learns to reconstruct the data independently of <span class="math inline">\(\mathbf{z}\)</span>, rendering the latent space uninformative.</p>
+<p><strong>Why does this happen?</strong></p>
+<ul>
+<li><strong>Over-regularization:</strong> The KL term acts as a regularizer, encouraging the latent distribution to stay close to the prior. If the KL term is weighted too heavily, the model prioritizes matching the prior over encoding meaningful information.</li>
+<li><strong>Powerful Decoders:</strong> If the decoder is too powerful (e.g., a deep neural network with many parameters), it can easily memorize the training data and reconstruct it without needing any information from the latent space.</li>
+<li><strong>Mismatch between Encoder and Decoder Capacity:</strong> An imbalance between the encoder and decoder capacity can lead to the encoder being “outcompeted”. A high-capacity decoder might be able to reconstruct the input well even with a poor latent representation from a low-capacity encoder.</li>
+</ul>
+<p><strong>Mitigation Strategies:</strong></p>
+<ol type="1">
+<li><p><strong>KL Annealing / Warm-up:</strong></p>
+<ul>
+<li>Gradually increase the weight of the KL divergence term during training. This allows the model to initially focus on reconstruction before being penalized for deviating from the prior. A common approach is to multiply the KL term by a time-dependent weight <span class="math inline">\(\beta(t)\)</span>:</li>
+</ul>
+<p><span class="math display">\[
+\mathcal{L}(\theta, \phi) = \mathbb{E}_{q_{\phi}(\mathbf{z}|\mathbf{x})} [\log p_{\theta}(\mathbf{x}|\mathbf{z})] - \beta(t) \cdot D_{KL}(q_{\phi}(\mathbf{z}|\mathbf{x}) || p(\mathbf{z}))
+\]</span></p>
+<p>where <span class="math inline">\(\beta(t)\)</span> starts at 0 and increases to 1 over a certain number of epochs. The specific schedule can be linear, sigmoid, or other increasing functions.</p>
+<ul>
+<li>A cyclical annealing schedule can also be used to explore different regions of the latent space.</li>
+</ul></li>
+<li><p><strong>Beta-VAE:</strong></p>
+<ul>
+<li>Introduce a hyperparameter <span class="math inline">\(\beta &gt; 1\)</span> to control the strength of the KL divergence term:</li>
+</ul>
+<p><span class="math display">\[
+\mathcal{L}(\theta, \phi) = \mathbb{E}_{q_{\phi}(\mathbf{z}|\mathbf{x})} [\log p_{\theta}(\mathbf{x}|\mathbf{z})] - \beta \cdot D_{KL}(q_{\phi}(\mathbf{z}|\mathbf{x}) || p(\mathbf{z}))
+\]</span></p>
+<ul>
+<li>By setting <span class="math inline">\(\beta &gt; 1\)</span>, we encourage the model to learn more disentangled representations, but it also increases the risk of posterior collapse. Experimentation is needed to find the right balance.</li>
+</ul></li>
+<li><p><strong>Less Expressive Decoder:</strong></p>
+<ul>
+<li>Reduce the capacity of the decoder to force it to rely more on the latent code. This could involve using fewer layers, fewer neurons per layer, or simpler activation functions. However, this can also reduce the reconstruction quality.</li>
+</ul></li>
+<li><p><strong>Skip Connections:</strong></p>
+<ul>
+<li>Adding skip connections from the input to the decoder can help the decoder reconstruct fine-grained details that might be lost in the latent space. This provides a shortcut for the decoder without entirely bypassing the latent code. U-Net architectures are an example of this.</li>
+</ul></li>
+<li><p><strong>Structured Priors:</strong></p>
+<ul>
+<li>Instead of using a simple Gaussian prior, consider using more complex priors that better reflect the structure of the data. For instance, a hierarchical prior or a mixture of Gaussians can be used. This helps guide the latent space to be more meaningful. An example: VQ-VAE uses a discrete latent space.</li>
+</ul></li>
+<li><p><strong>Improved Variational Inference Techniques:</strong></p>
+<ul>
+<li><strong>Importance Weighted Autoencoders (IWAE):</strong> Use importance weighting to obtain tighter ELBO estimates, leading to better learning. IWAE uses multiple samples from the approximate posterior <span class="math inline">\(q_{\phi}(\mathbf{z}|\mathbf{x})\)</span> to estimate the ELBO.</li>
+</ul>
+<p><span class="math display">\[
+\mathcal{L}_{K}(\theta, \phi) = \mathbb{E}_{\mathbf{x} \sim p_{data}(\mathbf{x})} \left[ \log \frac{1}{K} \sum_{k=1}^{K} \frac{p_{\theta}(\mathbf{x}|\mathbf{z}_{k}) p(\mathbf{z}_{k})}{q_{\phi}(\mathbf{z}_{k}|\mathbf{x})} \right]
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{z}_{k} \sim q_{\phi}(\mathbf{z}|\mathbf{x})\)</span> for <span class="math inline">\(k=1, \dots, K\)</span>.</p>
+<ul>
+<li><strong>Normalizing Flows:</strong> Use normalizing flows to create a more flexible and complex approximate posterior <span class="math inline">\(q_{\phi}(\mathbf{z}|\mathbf{x})\)</span>. Normalizing flows transform a simple distribution (e.g., Gaussian) into a more complex one through a series of invertible transformations.</li>
+</ul></li>
+<li><p><strong>Adversarial Regularization:</strong></p>
+<ul>
+<li>Use an adversarial loss to encourage the latent distribution to match the prior distribution. This can be done by training a discriminator to distinguish between samples from the approximate posterior and samples from the prior.</li>
+</ul></li>
+<li><p><strong>Regularization of Encoder Output:</strong></p>
+<ul>
+<li>Regularize the encoder output (e.g., the mean and variance of the approximate posterior) to prevent it from collapsing to a single point. This can be done by adding a penalty term to the loss function that encourages the encoder to produce diverse latent codes.</li>
+</ul></li>
+</ol>
+<p>The choice of which strategy to use depends on the specific application and the characteristics of the data. It’s often necessary to experiment with different techniques and hyperparameter settings to find the best solution.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a guide for articulating this answer in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with Definition:</strong></p>
+<ul>
+<li>“Posterior collapse is a common issue in VAEs where the decoder learns to ignore the latent code, essentially making the encoder irrelevant for reconstruction. The model reconstructs inputs without utilizing the latent space, which defeats the purpose of learning a meaningful latent representation.”</li>
+</ul></li>
+<li><p><strong>Explain the VAE Objective (Briefly):</strong></p>
+<ul>
+<li>“To understand why this happens, it’s important to consider the VAE objective function, which maximizes the Evidence Lower Bound (ELBO). The ELBO consists of a reconstruction term and a KL divergence term. The reconstruction term encourages the decoder to accurately reproduce the input, while the KL divergence term forces the approximate posterior to stay close to the prior.”</li>
+<li>“You can write down the equation to show your knowledge if the interviewer asks you: <span class="math display">\[
+\mathcal{L}(\theta, \phi) = \mathbb{E}_{q_{\phi}(\mathbf{z}|\mathbf{x})} [\log p_{\theta}(\mathbf{x}|\mathbf{z})] - D_{KL}(q_{\phi}(\mathbf{z}|\mathbf{x}) || p(\mathbf{z}))
+\]</span>”</li>
+</ul></li>
+<li><p><strong>Explain the Cause of Posterior Collapse:</strong></p>
+<ul>
+<li>“Posterior collapse occurs when the KL divergence term dominates the loss function, leading to the encoder producing latent codes that are very similar to the prior, regardless of the input. This is especially likely when the decoder is very powerful and can reconstruct the input without relying on the latent code or when the KL term is heavily weighted. It can also happen due to a mismatch between the encoder and decoder capacity.”</li>
+</ul></li>
+<li><p><strong>Discuss Mitigation Strategies (Prioritize a Few):</strong></p>
+<ul>
+<li>“There are several strategies to mitigate posterior collapse. I’ll focus on a few key ones.”</li>
+<li><strong>KL Annealing:</strong> “One common technique is KL annealing, where we gradually increase the weight of the KL divergence term during training. This allows the model to initially focus on reconstruction before being penalized for deviating from the prior.”</li>
+<li>If comfortable with the interviewer, you can show the KL annealing equation: <span class="math display">\[
+\mathcal{L}(\theta, \phi) = \mathbb{E}_{q_{\phi}(\mathbf{z}|\mathbf{x})} [\log p_{\theta}(\mathbf{x}|\mathbf{z})] - \beta(t) \cdot D_{KL}(q_{\phi}(\mathbf{z}|\mathbf{x}) || p(\mathbf{z}))
+\]</span></li>
+<li><strong>Beta-VAE</strong>: “Another technique is using a Beta-VAE, where a hyperparameter <span class="math inline">\(\beta &gt; 1\)</span> is introduced to control the strength of the KL divergence. This can encourage more disentangled representations but needs careful tuning.” Show the Beta-VAE equation: <span class="math display">\[
+\mathcal{L}(\theta, \phi) = \mathbb{E}_{q_{\phi}(\mathbf{z}|\mathbf{x})} [\log p_{\theta}(\mathbf{x}|\mathbf{z})] - \beta \cdot D_{KL}(q_{\phi}(\mathbf{z}|\mathbf{x}) || p(\mathbf{z}))
+\]</span></li>
+<li><strong>Less Expressive Decoder:</strong> “Reducing the decoder capacity forces it to rely more on the latent code.”</li>
+<li><strong>Mention Other Techniques Briefly:</strong> “Other techniques include using skip connections, structured priors, Importance Weighted Autoencoders (IWAE), normalizing flows, and adversarial regularization. IWAE uses multiple samples from the approximate posterior to estimate ELBO to obtain tighter ELBO estimates.”</li>
+<li>“The choice of the best strategy depends on the specific application and the dataset characteristics.”</li>
+</ul></li>
+<li><p><strong>Conclude:</strong></p>
+<ul>
+<li>“In summary, posterior collapse is a critical issue in VAE training that can be addressed with various techniques aimed at balancing reconstruction quality and latent space regularization.”</li>
+</ul></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush through the explanation. Give the interviewer time to process the information.</li>
+<li><strong>Use Visual Aids (If Possible):</strong> If you’re in an in-person interview, sketch a simple diagram of a VAE on a whiteboard to illustrate the concepts.</li>
+<li><strong>Check for Understanding:</strong> Pause occasionally and ask the interviewer if they have any questions. “Does that make sense so far?”</li>
+<li><strong>Focus on Key Concepts:</strong> Don’t get bogged down in excessive technical details unless the interviewer specifically asks for them.</li>
+<li><strong>Show Enthusiasm:</strong> Demonstrate genuine interest in the topic. This can make a big difference in how your answer is perceived.</li>
+<li><strong>Be Honest About Limitations:</strong> If you’re not familiar with a specific technique, acknowledge it. “I’m not as familiar with normalizing flows, but I understand the basic principle…”</li>
+<li><strong>Adapt to the Interviewer’s Level:</strong> Gauge the interviewer’s knowledge and adjust your explanation accordingly. If they seem unfamiliar with VAEs, provide a more high-level overview. If they are experts, you can dive into more technical details.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

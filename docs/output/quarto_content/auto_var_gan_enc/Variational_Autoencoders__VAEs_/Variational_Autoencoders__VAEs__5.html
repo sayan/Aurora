@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.41">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>variational_autoencoders__vaes__5</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-48ffa3e5b9d089919c6712c39e5b00f2.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-a37d0bf9d509de95c1ba4621f20add8c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-6.-in-a-real-world-deployment-data-can-be-messy-incomplete-or-noisy.-how-would-you-adapt-a-vae-to-handle-such-challenges-and-what-specific-considerations-would-you-have-for-training-and-deploying-the-model-at-scale" class="level2">
+<h2 class="anchored" data-anchor-id="question-6.-in-a-real-world-deployment-data-can-be-messy-incomplete-or-noisy.-how-would-you-adapt-a-vae-to-handle-such-challenges-and-what-specific-considerations-would-you-have-for-training-and-deploying-the-model-at-scale">Question: 6. In a real-world deployment, data can be messy, incomplete, or noisy. How would you adapt a VAE to handle such challenges, and what specific considerations would you have for training and deploying the model at scale?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Variational Autoencoders (VAEs) are powerful generative models, but their performance is heavily influenced by data quality. Deploying them in real-world scenarios requires careful consideration of noisy, incomplete, and messy data. Here’s a breakdown of how to adapt VAEs to these challenges, along with training and deployment considerations at scale:</p>
+<p><strong>1. Robust Preprocessing Methods:</strong></p>
+<ul>
+<li><strong>Data Imputation:</strong> Addressing missing data is crucial. Common techniques include:</li>
+</ul>
+<pre><code>*   *Mean/Median Imputation:* Simple but can introduce bias.
+*   *K-Nearest Neighbors (KNN) Imputation:* More sophisticated, imputes based on similar data points.
+*   *Model-Based Imputation:* Train a model to predict missing values (e.g., using a Bayesian Ridge regressor).</code></pre>
+<ul>
+<li><p><strong>Noise Reduction:</strong> Noisy data can hinder learning. * <em>Filtering:</em> Apply moving average filters or Kalman filters for time-series data. * <em>Wavelet Denoising:</em> Decompose the signal into wavelet components and remove noise-related components. * <em>Autoencoders (Denoising Autoencoders):</em> Train a separate autoencoder to reconstruct clean data from noisy inputs. These can sometimes be integrated as a pre-processing stage.</p></li>
+<li><p><strong>Outlier Detection and Removal:</strong> Identify and remove outliers using methods like: * <em>Z-score/Modified Z-score:</em> Detect outliers based on standard deviations from the mean. * <em>Isolation Forest:</em> An ensemble method that isolates outliers. * <em>One-Class SVM:</em> Learns a boundary around normal data and flags data outside as outliers. * <em>Elliptic Envelope:</em> Assumes the data is Gaussian distributed and fits an ellipse to the inlying data.</p></li>
+<li><p><strong>Data Normalization/Standardization:</strong> Scale features to a similar range to improve training stability and convergence. * <em>Min-Max Scaling:</em> Scales features to [0, 1]. <span class="math inline">\(x' = \frac{x - x_{min}}{x_{max} - x_{min}}\)</span> * <em>Z-score Standardization:</em> Centers features around 0 with unit variance. <span class="math inline">\(x' = \frac{x - \mu}{\sigma}\)</span> * <em>RobustScaler:</em> Uses median and interquartile range, making it robust to outliers.</p></li>
+</ul>
+<p><strong>2. Modifying the Likelihood Function:</strong></p>
+<ul>
+<li><p>The standard VAE uses a Gaussian or Bernoulli likelihood, which might not be appropriate for noisy data.</p></li>
+<li><p><strong>Robust Likelihoods:</strong> Replace the Gaussian likelihood with a more robust distribution, such as a Student’s t-distribution or Huber loss. The Student’s t-distribution has heavier tails, making it less sensitive to outliers. * <em>Gaussian Likelihood:</em> <span class="math display">\[p(x|\mathbf{z}) = \mathcal{N}(x; \mu(\mathbf{z}), \sigma^2(\mathbf{z})I)\]</span> * <em>Student’s t-distribution Likelihood:</em> <span class="math display">\[p(x|\mathbf{z}) = \frac{\Gamma(\frac{\nu + 1}{2})}{\Gamma(\frac{\nu}{2})\sqrt{\pi \nu \sigma^2(\mathbf{z})}} \left(1 + \frac{(x - \mu(\mathbf{z}))^2}{\nu \sigma^2(\mathbf{z})}\right)^{-\frac{\nu + 1}{2}}\]</span> where <span class="math inline">\(\nu\)</span> is the degrees of freedom. Lower values of <span class="math inline">\(\nu\)</span> give heavier tails.</p></li>
+<li><p><strong>Mixture Likelihoods:</strong> Use a mixture of Gaussians or other distributions to model complex data distributions with multiple modes, which can arise from noise or data corruption. * <em>Gaussian Mixture Likelihood:</em> <span class="math display">\[p(x|\mathbf{z}) = \sum_{k=1}^{K} \pi_k \mathcal{N}(x; \mu_k(\mathbf{z}), \sigma_k^2(\mathbf{z})I)\]</span> where <span class="math inline">\(\pi_k\)</span> are the mixing coefficients, and <span class="math inline">\(K\)</span> is the number of mixture components.</p></li>
+<li><p><strong>Handling Missing Data Directly:</strong> Instead of imputation, modify the likelihood to marginalize over missing values. This is more complex but avoids introducing bias from imputation. For example, if <span class="math inline">\(x_i\)</span> is missing, we can modify the reconstruction loss to only consider the observed dimensions: <span class="math display">\[ \log p(x|\mathbf{z}) = \sum_{i \in \text{observed}} \log p(x_i|\mathbf{z}) + \sum_{i \in \text{missing}} \int p(x_i|\mathbf{z}) dx_i\]</span> In practice, the integral is often approximated. Another approach is to use a Masked Autoencoder for Distribution Estimation (MADE)-style architecture within the VAE decoder.</p></li>
+</ul>
+<p><strong>3. Robust Loss Functions:</strong></p>
+<ul>
+<li><p>The standard VAE loss function is a combination of the reconstruction loss and the KL divergence: * <span class="math display">\[L = -E_{q(\mathbf{z}|x)}[\log p(x|\mathbf{z})] + KL(q(\mathbf{z}|x) || p(\mathbf{z}))\]</span></p></li>
+<li><p><strong>Beta-VAE:</strong> Introduce a <span class="math inline">\(\beta\)</span> parameter to control the strength of the KL divergence term. Increasing <span class="math inline">\(\beta\)</span> encourages the model to learn more disentangled representations but can also degrade reconstruction quality. * <span class="math display">\[L = -E_{q(\mathbf{z}|x)}[\log p(x|\mathbf{z})] + \beta \cdot KL(q(\mathbf{z}|x) || p(\mathbf{z}))\]</span></p></li>
+<li><p><strong>Adversarial Training:</strong> Incorporate an adversarial loss to make the generated samples more realistic and robust to noise. This can involve training a discriminator to distinguish between real and generated samples. * <span class="math display">\[L_{adv} = E_{x \sim p_{data}(x)}[\log D(x)] + E_{\mathbf{z} \sim q(\mathbf{z}|x)}[\log(1 - D(G(\mathbf{z})))]\]</span> where <span class="math inline">\(D\)</span> is the discriminator and <span class="math inline">\(G\)</span> is the generator (VAE decoder).</p></li>
+<li><p><strong>Contrastive Learning:</strong> Use contrastive learning techniques to encourage the model to learn similar representations for noisy and clean versions of the same data point.</p></li>
+</ul>
+<p><strong>4. Training Considerations at Scale:</strong></p>
+<ul>
+<li><strong>Mini-Batch Training:</strong> Essential for scalability. Process data in smaller batches to reduce memory requirements.</li>
+<li><strong>Distributed Training:</strong> Utilize multiple GPUs or machines to parallelize training. Frameworks like TensorFlow, PyTorch, and Horovod support distributed training. * <em>Data Parallelism:</em> Distribute the data across multiple workers, each processing a different subset of the data. * <em>Model Parallelism:</em> Partition the model across multiple workers, each responsible for a different part of the model.</li>
+<li><strong>Gradient Accumulation:</strong> Simulate larger batch sizes by accumulating gradients over multiple mini-batches before updating the model parameters.</li>
+<li><strong>Mixed Precision Training:</strong> Use lower precision floating-point numbers (e.g., FP16) to reduce memory consumption and speed up computations.</li>
+<li><strong>Learning Rate Scheduling:</strong> Use techniques like cyclical learning rates or learning rate decay to improve convergence and avoid overfitting, especially when dealing with noisy data.
+<ul>
+<li><em>Cyclical Learning Rates:</em> Vary the learning rate between a minimum and maximum value during training.</li>
+<li><em>Learning Rate Decay:</em> Gradually reduce the learning rate over time. Common decay schedules include step decay, exponential decay, and cosine annealing.</li>
+</ul></li>
+<li><strong>Regularization Techniques:</strong> Apply regularization techniques (e.g., L1/L2 regularization, dropout) to prevent overfitting and improve generalization. * <em>L1 Regularization (Lasso):</em> Adds a penalty proportional to the absolute value of the weights. * <em>L2 Regularization (Ridge):</em> Adds a penalty proportional to the square of the weights. * <em>Dropout:</em> Randomly drops out neurons during training to prevent co-adaptation.</li>
+</ul>
+<p><strong>5. Deployment Considerations at Scale:</strong></p>
+<ul>
+<li><strong>Model Optimization:</strong> Optimize the trained model for inference speed and memory usage. * <em>Model Quantization:</em> Reduce the precision of the model weights (e.g., from FP32 to INT8) to reduce memory footprint and improve inference speed. * <em>Model Pruning:</em> Remove unimportant connections from the model to reduce its size and complexity. * <em>Knowledge Distillation:</em> Train a smaller “student” model to mimic the behavior of a larger “teacher” model.</li>
+<li><strong>Efficient Inference:</strong> Use optimized inference engines (e.g., TensorFlow Lite, TensorRT) to accelerate inference.</li>
+<li><strong>Monitoring and Alerting:</strong> Monitor the performance of the deployed model and set up alerts for anomalies or degradation in performance.</li>
+<li><strong>Data Validation:</strong> Implement data validation checks at the input layer to ensure that the data conforms to the expected format and range. This can help prevent errors and improve the robustness of the deployment.</li>
+<li><strong>Online Learning/Continual Learning:</strong> Adapt the model to new data and changing conditions by continuously training it on incoming data. This can help maintain the model’s accuracy and relevance over time. * <em>Replay Buffer:</em> Store a subset of past data and replay it during training to prevent catastrophic forgetting. * <em>Elastic Weight Consolidation:</em> Penalize changes to important weights to prevent forgetting.</li>
+<li><strong>Version Control:</strong> Use version control to track changes to the model and data pipeline. This allows you to easily roll back to previous versions if necessary.</li>
+</ul>
+<p><strong>6. Specific Considerations for VAEs:</strong></p>
+<ul>
+<li><strong>Disentanglement:</strong> Encouraging disentangled representations can make the VAE more robust to noise. Techniques like Beta-VAE and factor VAE can help with this.</li>
+<li><strong>Variational Inference:</strong> The approximate posterior <span class="math inline">\(q(\mathbf{z}|x)\)</span> is crucial. Consider more flexible approximations, such as normalizing flows, to better capture the true posterior distribution, particularly when dealing with complex or noisy data. * <em>Normalizing Flows:</em> Transform a simple distribution (e.g., Gaussian) into a more complex distribution by applying a series of invertible transformations.</li>
+</ul>
+<p><strong>In summary:</strong> Adapting VAEs for real-world deployment with messy data requires a multi-faceted approach. It includes robust data preprocessing, modifying the likelihood function or loss function to handle noise and missing data, and employing techniques for scalable training and deployment. Continuous monitoring and adaptation are essential to maintain performance in dynamic real-world environments.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s how to present this information in an interview, balancing detail and clarity:</p>
+<ol type="1">
+<li><p><strong>Start with a High-Level Overview:</strong> “VAEs are sensitive to data quality, so adapting them for real-world deployment requires addressing noise, missing data, and scalability. I’d focus on preprocessing, modifying the likelihood or loss, and scaling training/deployment.”</p></li>
+<li><p><strong>Preprocessing (Emphasis on Rationale):</strong></p>
+<ul>
+<li>“First, preprocessing is critical. I’d use data imputation, mentioning techniques like mean/median imputation (simple, but biased) versus KNN imputation (more sophisticated). Briefly explain their trade-offs.”</li>
+<li>“For noise reduction, I’d consider filtering for time series, wavelet denoising, or even training a separate denoising autoencoder. The choice depends on the nature of the noise.”</li>
+<li>“Outlier detection is also important. Methods like Z-score or Isolation Forest can be effective. I’d mention RobustScaler for normalization as it’s outlier-resistant.”</li>
+</ul></li>
+<li><p><strong>Likelihood Function (Pause and Explain):</strong></p>
+<ul>
+<li>“The standard Gaussian likelihood might not be optimal for noisy data. We can use more robust likelihoods.”</li>
+<li>“For example, a Student’s t-distribution has heavier tails, making it less sensitive to outliers. Briefly explain the concept of heavier tails and why it helps.”</li>
+<li>“Mixture likelihoods can also model complex distributions arising from noise. They are a sum of multiple simpler distributions.”</li>
+<li>“It is also possible to handle missing data directly without imputation, by marginalizing over missing values within the likelihood.”</li>
+</ul></li>
+<li><p><strong>Loss Function (Keep it Concise):</strong></p>
+<ul>
+<li>“The standard VAE loss combines reconstruction and KL divergence. Beta-VAE lets us adjust the importance of the KL term for disentanglement.”</li>
+<li>“Adversarial training can also be incorporated to improve robustness.”</li>
+</ul></li>
+<li><p><strong>Training and Deployment at Scale (Focus on Techniques):</strong></p>
+<ul>
+<li>“For scaling training, mini-batch training and distributed training are essential. Mention data and model parallelism.”</li>
+<li>“Techniques like gradient accumulation and mixed precision training can further improve scalability.”</li>
+<li>“Learning rate scheduling and regularization are crucial to prevent overfitting, especially with noisy data.”</li>
+<li>“For deployment, model optimization techniques like quantization, pruning, and knowledge distillation are vital for efficient inference.”</li>
+<li>“Monitoring and data validation are important for maintaining performance in production.”</li>
+<li>“Online learning allows the model to adapt to changing data conditions.”</li>
+</ul></li>
+<li><p><strong>Specific VAE Considerations (Briefly):</strong></p>
+<ul>
+<li>“Encouraging disentanglement can improve robustness. Using Normalizing Flows can also help better approximate the posterior distribution.”</li>
+</ul></li>
+<li><p><strong>Concluding Remarks:</strong> “In summary, adapting VAEs to real-world messy data requires a combination of robust preprocessing, modifications to the likelihood and loss functions, and scalable training and deployment strategies. Continuous monitoring and adaptation are critical.”</p></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush through the answer. Allow time for the interviewer to process the information.</li>
+<li><strong>Use Visual Cues:</strong> If possible, use a whiteboard or virtual whiteboard to sketch diagrams or write down equations to illustrate key concepts. Even simple sketches can significantly improve understanding.</li>
+<li><strong>Check for Understanding:</strong> Periodically ask the interviewer if they have any questions or if they would like you to elaborate on a particular point.</li>
+<li><strong>Be Prepared to Go Deeper:</strong> The interviewer may ask follow-up questions to probe your understanding of specific techniques. Be prepared to provide more detailed explanations and justifications.</li>
+<li><strong>Stay Practical:</strong> Emphasize the practical considerations and trade-offs involved in each technique. This demonstrates that you not only understand the theory but also how to apply it in real-world scenarios.</li>
+<li><strong>Tailor Your Response:</strong> Adapt your response to the interviewer’s background and the specific requirements of the role. If the role is more focused on deployment, spend more time discussing deployment considerations. If the role is more focused on research, delve deeper into the theoretical aspects.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

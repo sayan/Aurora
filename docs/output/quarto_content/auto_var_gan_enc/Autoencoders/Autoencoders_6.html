@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.41">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>autoencoders_6</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../../">
+<script src="../../../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../../site_libs/quarto-html/quarto-syntax-highlighting-48ffa3e5b9d089919c6712c39e5b00f2.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../../site_libs/bootstrap/bootstrap-a37d0bf9d509de95c1ba4621f20add8c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="question-7.-describe-how-you-would-interpret-and-visualize-the-latent-space-of-an-autoencoder.-what-techniques-could-be-employed-to-ensure-that-the-latent-representations-are-both-meaningful-and-useful-for-downstream-tasks" class="level2">
+<h2 class="anchored" data-anchor-id="question-7.-describe-how-you-would-interpret-and-visualize-the-latent-space-of-an-autoencoder.-what-techniques-could-be-employed-to-ensure-that-the-latent-representations-are-both-meaningful-and-useful-for-downstream-tasks">Question: 7. Describe how you would interpret and visualize the latent space of an autoencoder. What techniques could be employed to ensure that the latent representations are both meaningful and useful for downstream tasks?</h2>
+<p><strong>Best Answer</strong></p>
+<p>Autoencoders are neural networks trained to reconstruct their input. They learn a compressed, latent space representation of the input data. This latent space, ideally, captures the most salient features of the data in a lower-dimensional space. Understanding and manipulating this latent space is crucial for various applications, including anomaly detection, data generation, and representation learning for downstream tasks.</p>
+<p><strong>Interpreting and Visualizing the Latent Space</strong></p>
+<p>The first step is to reduce the dimensionality of the latent space if it is still high-dimensional (greater than 3). Common techniques include:</p>
+<ul>
+<li><p><strong>Principal Component Analysis (PCA):</strong> A linear dimensionality reduction technique that projects the data onto orthogonal components that capture the maximum variance. It’s simple but might not be effective for complex, non-linear latent spaces. Mathematically, PCA involves finding the eigenvectors of the covariance matrix of the latent vectors. Let <span class="math inline">\(X\)</span> be the matrix of latent vectors (centered). The covariance matrix is <span class="math inline">\(C = \frac{1}{n}X^TX\)</span>. We then find the eigenvectors <span class="math inline">\(v_i\)</span> and eigenvalues <span class="math inline">\(\lambda_i\)</span> of <span class="math inline">\(C\)</span> such that <span class="math inline">\(Cv_i = \lambda_i v_i\)</span>. The eigenvectors corresponding to the largest eigenvalues are the principal components.</p></li>
+<li><p><strong>t-distributed Stochastic Neighbor Embedding (t-SNE):</strong> A non-linear dimensionality reduction technique that is particularly effective at visualizing high-dimensional data in lower dimensions (2D or 3D). It focuses on preserving the local structure of the data, meaning that points that are close together in the high-dimensional space are also close together in the low-dimensional space. However, t-SNE can be sensitive to hyperparameters and may not preserve global structure.</p></li>
+<li><p><strong>Uniform Manifold Approximation and Projection (UMAP):</strong> Another non-linear dimensionality reduction technique that aims to preserve both local and global structure. It’s often faster and more robust than t-SNE.</p></li>
+</ul>
+<p>After dimensionality reduction, we can visualize the latent space using scatter plots (in 2D or 3D). Interpretation involves:</p>
+<ul>
+<li><p><strong>Cluster Identification:</strong> Look for distinct clusters of points in the latent space. Each cluster might correspond to a different class or type of data.</p></li>
+<li><p><strong>Continuity Inspection:</strong> Check if the latent space is continuous. Smooth transitions in the latent space should correspond to smooth transitions in the original data space. Discontinuities might indicate issues with the training or the architecture of the autoencoder.</p></li>
+<li><p><strong>Latent Space Traversal:</strong> Sample points along a path in the latent space and decode them back to the original data space. This allows us to see how the decoded data changes as we move through the latent space. For example, in the case of images, smoothly varying a latent variable might correspond to changing the pose or expression of an object.</p></li>
+</ul>
+<p><strong>Ensuring Meaningful and Useful Latent Representations</strong></p>
+<p>Several techniques can be used during the training of the autoencoder to encourage the learning of meaningful and useful latent representations:</p>
+<ul>
+<li><p><strong>Regularization:</strong></p>
+<ul>
+<li><strong>L1 and L2 Regularization:</strong> Adding L1 or L2 regularization to the encoder’s weights can encourage sparsity in the latent representation. This forces the autoencoder to focus on the most important features.</li>
+<li>The L1 regularization adds a term to the loss function proportional to the absolute values of the weights: <span class="math display">\[Loss = Loss_{reconstruction} + \lambda \sum |w_i|\]</span></li>
+<li>The L2 regularization adds a term to the loss function proportional to the square of the weights: <span class="math display">\[Loss = Loss_{reconstruction} + \lambda \sum w_i^2\]</span> where <span class="math inline">\(\lambda\)</span> is a hyperparameter controlling the strength of the regularization.</li>
+</ul></li>
+<li><p><strong>Variational Autoencoders (VAEs):</strong> VAEs introduce a probabilistic element by encoding the input into parameters of a probability distribution (typically a Gaussian) in the latent space. This enforces a smooth and continuous latent space, making it more suitable for generative tasks. The loss function for a VAE includes a reconstruction loss and a Kullback-Leibler (KL) divergence term that encourages the latent distribution to be close to a standard normal distribution: <span class="math display">\[Loss = Loss_{reconstruction} + D_{KL}(N(\mu, \sigma^2) || N(0, 1))\]</span> where <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\sigma^2\)</span> are the mean and variance of the encoded Gaussian distribution, and <span class="math inline">\(D_{KL}\)</span> is the KL divergence.</p></li>
+<li><p><strong>Denoising Autoencoders (DAEs):</strong> DAEs are trained to reconstruct the input from a corrupted version of the input (e.g., with added noise or masking). This forces the autoencoder to learn robust representations that are less sensitive to noise.</p></li>
+<li><p><strong>Contractive Autoencoders (CAEs):</strong> CAEs add a penalty term to the loss function that encourages the latent representation to be insensitive to small changes in the input. This is achieved by penalizing the Frobenius norm of the Jacobian matrix of the encoder’s output with respect to the input:</p>
+<p><span class="math display">\[Loss = Loss_{reconstruction} + \lambda ||J_f(x)||_F^2\]</span></p>
+<p>where <span class="math inline">\(f(x)\)</span> is the encoder function, <span class="math inline">\(J_f(x)\)</span> is its Jacobian, and <span class="math inline">\(||\cdot||_F\)</span> denotes the Frobenius norm.</p></li>
+<li><p><strong>Disentanglement Techniques:</strong> These techniques aim to learn latent representations where each dimension corresponds to a specific, independent factor of variation in the data.</p>
+<ul>
+<li><p><strong>Beta-VAE:</strong> Modifies the VAE loss function to control the strength of the KL divergence term, encouraging more disentangled representations. <span class="math display">\[Loss = Loss_{reconstruction} + \beta * D_{KL}(N(\mu, \sigma^2) || N(0, 1))\]</span></p></li>
+<li><p><strong>FactorVAE:</strong> Introduces a total correlation term to explicitly penalize statistical dependencies between latent variables.</p></li>
+<li><p><strong>InfoGAN:</strong> Uses an adversarial training approach to ensure that certain latent variables are related to specific semantic features of the data.</p></li>
+</ul></li>
+<li><p><strong>Evaluation Metrics and Auxiliary Tasks:</strong></p>
+<ul>
+<li><strong>Reconstruction Error:</strong> While a low reconstruction error is important, it doesn’t guarantee a meaningful latent space.</li>
+<li><strong>Downstream Task Performance:</strong> Evaluate the quality of the latent representations by using them as input features for a downstream task, such as classification or clustering. Better performance on the downstream task indicates a more useful latent space. We can use classification accuracy, clustering purity, or other relevant metrics.</li>
+<li><strong>Clustering Metrics:</strong> If the data is expected to have cluster structure, metrics like silhouette score or Davies-Bouldin index can be used to evaluate the quality of the clustering in the latent space.</li>
+</ul></li>
+<li><p><strong>Careful Hyperparameter Tuning:</strong> The architecture of the autoencoder (number of layers, number of neurons per layer, activation functions) and the training hyperparameters (learning rate, batch size, number of epochs) can significantly impact the quality of the learned representations. Experimentation and validation are crucial.</p></li>
+</ul>
+<p><strong>Real-World Considerations</strong></p>
+<ul>
+<li><strong>Data Preprocessing:</strong> Scaling and normalization are critical for the autoencoder to learn effectively. Standardize the data to have zero mean and unit variance, or scale it to the range [0, 1].</li>
+<li><strong>Computational Resources:</strong> Training autoencoders, especially VAEs and those with disentanglement techniques, can be computationally expensive. GPUs are often necessary.</li>
+<li><strong>Overfitting:</strong> Autoencoders can easily overfit the training data, especially with complex architectures. Regularization techniques, early stopping, and dropout can help mitigate overfitting.</li>
+<li><strong>Choice of Architecture:</strong> The choice of encoder and decoder architecture (e.g., convolutional layers for images, recurrent layers for sequences) should be appropriate for the type of data being processed.</li>
+<li><strong>Interpretability Trade-offs:</strong> Disentangled representations are often more interpretable but can come at the cost of reconstruction accuracy or performance on certain downstream tasks.</li>
+</ul>
+<p>By carefully considering these factors, we can train autoencoders that learn meaningful and useful latent representations, enabling us to effectively explore and manipulate the underlying structure of the data.</p>
+<p><strong>How to Narrate</strong></p>
+<p>Here’s a suggested approach for verbally explaining this in an interview:</p>
+<ol type="1">
+<li><p><strong>Start with a high-level definition of Autoencoders:</strong> “Autoencoders are neural networks designed to learn compressed representations of data by reconstructing their input. The core idea is to force the network to capture the essential features in a lower-dimensional latent space.”</p></li>
+<li><p><strong>Explain the goal of latent space analysis:</strong> “The goal is to understand and leverage this latent space for various applications, such as anomaly detection, data generation, and improving performance on downstream tasks.”</p></li>
+<li><p><strong>Describe visualization techniques:</strong> “To visualize the latent space, especially if it’s high-dimensional, we use dimensionality reduction techniques like PCA, t-SNE, or UMAP. PCA is a linear method, while t-SNE and UMAP are non-linear and better at capturing complex relationships. I’d use t-SNE or UMAP initially, as they generally provide better visualizations of complex latent structures. For example, t-SNE plots can reveal clusters corresponding to different classes within the data. After dimensionality reduction we can use scatter plots to visualize the lower dimensional latent representation”</p></li>
+<li><p><strong>Explain how to interpret the visualization, focusing on key aspects:</strong> “Interpreting the visualization involves looking for clusters, checking for continuity, and performing latent space traversals. Clusters can represent different categories or features. Continuity implies a smooth transition of underlying data characteristics. I’d explain latent space traversal as systematically sampling points in the latent space and decoding them to see how the generated output changes, giving us insight into what each region of the latent space represents.”</p></li>
+<li><p><strong>Transition to techniques for ensuring meaningful representations:</strong> “However, simply training an autoencoder doesn’t guarantee a meaningful or useful latent space. We can employ various techniques during training to encourage better representations.”</p></li>
+<li><p><strong>Discuss regularization, emphasizing VAEs, DAEs, and disentanglement:</strong> “Regularization techniques like L1 and L2 can encourage sparsity. More sophisticated methods include Variational Autoencoders (VAEs), which impose a probability distribution on the latent space, Denoising Autoencoders (DAEs) that learn robust representations from corrupted inputs, and techniques specifically designed for disentanglement like Beta-VAE or FactorVAE. For VAEs, I would briefly mention the KL-divergence term that promotes a smooth and well-structured latent space.” You can illustrate by using a simplified loss function representation.</p></li>
+<li><p><strong>Mention evaluation metrics and downstream task performance:</strong> “Finally, it’s important to evaluate the quality of the latent space. We look at reconstruction error, but more importantly, we assess performance on downstream tasks, such as classification or clustering, using the latent representation as input features. For example, a well-structured latent space should lead to better clustering results when used as features for a clustering algorithm.”</p></li>
+<li><p><strong>Touch on real-world considerations:</strong> “In practice, data preprocessing, careful hyperparameter tuning, and being mindful of overfitting are critical. Also, the choice of autoencoder architecture should align with the data type. For example, convolutional layers are well-suited for images, while recurrent layers are good for sequential data.”</p></li>
+<li><p><strong>Conclude with a summary:</strong> “By combining visualization techniques, appropriate training methods, and careful evaluation, we can effectively interpret and leverage the latent space of autoencoders for a wide range of applications.”</p></li>
+</ol>
+<p><strong>Communication Tips:</strong></p>
+<ul>
+<li><strong>Pace Yourself:</strong> Don’t rush through the explanation. Allow time for the interviewer to process the information.</li>
+<li><strong>Use Visual Aids (If Possible):</strong> If you’re in an in-person interview, consider drawing a simple diagram of an autoencoder or showing a t-SNE plot of a latent space. If remote, ask if you can share your screen.</li>
+<li><strong>Gauge Understanding:</strong> Check in with the interviewer periodically to make sure they are following along. Ask if they have any questions.</li>
+<li><strong>Focus on Key Concepts:</strong> Don’t get bogged down in unnecessary details. Highlight the most important concepts and techniques.</li>
+<li><strong>Provide Examples:</strong> Use concrete examples to illustrate your points. For instance, explain how a specific feature in the latent space might correspond to a particular attribute of an image (e.g., the angle of a face).</li>
+<li><strong>Stay Confident:</strong> Even if you’re not sure about every detail, project confidence in your overall understanding of the topic.</li>
+<li><strong>Be Ready to Dive Deeper:</strong> The interviewer might ask follow-up questions on any of these topics, so be prepared to provide more detail if needed. For instance, they might ask you to compare and contrast different dimensionality reduction techniques or to explain the math behind a specific regularization method.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

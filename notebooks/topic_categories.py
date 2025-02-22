@@ -134,5 +134,12 @@ ml_ai_ds_topics = {
         'Model Performance Metrics in Production',
         'Explainability & Interpretability in Production',
         'Model Monitoring & Drift Detection' 
+    ],
+    'autoencoder_var_autoencoder_gan_topics': [
+        'Autoencoders',
+        'Variational Autoencoders (VAEs)',
+        'Generative Adversarial Networks (GANs)',
+        'Conditional GANs',
+        'CycleGAN, StyleGAN, etc.'
     ]
 }
